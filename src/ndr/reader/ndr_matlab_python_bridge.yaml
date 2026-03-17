@@ -210,3 +210,11 @@ classes:
       - name: intanname2mfdaqname
       - name: mfdaqchanneltype2intanfreqheader
       - name: intananychannelname2intanchanneltype
+
+  - name: somecompany_someformat
+    type: class
+    matlab_path: "+ndr/+reader/somecompany_someformat.m"
+    python_path: "ndr/reader/somecompany_someformat.py"
+    python_class: "SomecompanySomeformat"
+    inherits: base
+    notes: "Template/example reader class for creating new format readers."

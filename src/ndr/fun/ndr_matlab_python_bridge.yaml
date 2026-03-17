@@ -1,0 +1,24 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: bitDepth
+    matlab_path: "+ndr/+fun/bitDepth.m"
+    python_path: "ndr/fun/bitDepth.py"
+
+  - name: getDataTypeString
+    matlab_path: "+ndr/+fun/getDataTypeString.m"
+    python_path: "ndr/fun/getDataTypeString.py"
+
+  - name: ndrpath
+    matlab_path: "+ndr/+fun/ndrpath.m"
+    python_path: "ndr/fun/ndrpath.py"
+
+  - name: ndrresource
+    matlab_path: "+ndr/+fun/ndrresource.m"
+    python_path: "ndr/fun/ndrresource.py"
+
+notes:
+  - "python_detect.m is MATLAB-only (detects Python from MATLAB); not applicable in Python."

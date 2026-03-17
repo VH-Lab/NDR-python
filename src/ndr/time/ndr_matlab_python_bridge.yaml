@@ -10,6 +10,28 @@ classes:
     python_path: "ndr/time/clocktype.py"
     python_class: "ClockType"
 
+  - name: timereference
+    type: class
+    matlab_path: "+ndr/+time/timereference.m"
+    python_path: "ndr/time/timereference.py"
+    python_class: "TimeReference"
+    properties:
+      - name: referent
+        type_python: "Any"
+      - name: clocktype
+        type_python: "ClockType"
+      - name: epoch
+        type_python: "int | str | None"
+      - name: time
+        type_python: "float | None"
+      - name: session_ID
+        type_python: "str"
+    methods:
+      - name: ndr_timereference_struct
+        output_arguments:
+          - name: s
+            type_python: "dict[str, Any]"
+
 functions:
   - name: samples2times
     matlab_path: "+ndr/+time/+fun/samples2times.m"

@@ -1,0 +1,35 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: channelstring2channels
+    matlab_path: "+ndr/+string/channelstring2channels.m"
+    python_path: "ndr/string/channelstring2channels.py"
+    input_arguments:
+      - name: channel_string
+        type_python: "str"
+    output_arguments:
+      - name: channels
+        type_python: "list[int]"
+
+  - name: intseq2str
+    matlab_path: "+ndr/+string/intseq2str.m"
+    python_path: "ndr/string/intseq2str.py"
+    input_arguments:
+      - name: seq
+        type_python: "list[int] | numpy.ndarray"
+    output_arguments:
+      - name: s
+        type_python: "str"
+
+  - name: str2intseq
+    matlab_path: "+ndr/+string/str2intseq.m"
+    python_path: "ndr/string/str2intseq.py"
+    input_arguments:
+      - name: s
+        type_python: "str"
+    output_arguments:
+      - name: seq
+        type_python: "list[int]"
