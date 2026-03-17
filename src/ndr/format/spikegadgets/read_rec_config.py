@@ -74,12 +74,14 @@ def read_rec_config(filename: str | Path) -> tuple[dict[str, Any], list[dict[str
                 for ch_elem in device_elem.findall("Channel"):
                     ch_info = dict(ch_elem.attrib)
                     dev_channels.append(ch_info)
-                    officialchannels.append({
-                        "name": ch_info.get("id", ""),
-                        "type": ch_info.get("dataType", ""),
-                        "startbyte": ch_info.get("startByte", ""),
-                        "bit": ch_info.get("bit", ""),
-                    })
+                    officialchannels.append(
+                        {
+                            "name": ch_info.get("id", ""),
+                            "type": ch_info.get("dataType", ""),
+                            "startbyte": ch_info.get("startByte", ""),
+                            "bit": ch_info.get("bit", ""),
+                        }
+                    )
 
             dev_info["channels"] = dev_channels
             device_list.append(dev_info)
@@ -88,7 +90,9 @@ def read_rec_config(filename: str | Path) -> tuple[dict[str, Any], list[dict[str
 
     # Spike configuration / nTrodes
     spike_config = root.find("SpikeConfiguration")
-    num_cards = int(out.get("numChannels", "0")) // 32 if int(out.get("numChannels", "0")) > 0 else 1
+    num_cards = (
+        int(out.get("numChannels", "0")) // 32 if int(out.get("numChannels", "0")) > 0 else 1
+    )
     complete_channel_list = []
 
     if spike_config is not None:

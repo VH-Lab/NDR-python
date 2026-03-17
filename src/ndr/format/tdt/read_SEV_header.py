@@ -25,7 +25,9 @@ _FORMAT_TO_DTYPE = {
 }
 
 
-def read_SEV_header(dirname: str | Path, *, VERBOSE: bool = False, FS: float = 0) -> list[dict[str, Any]]:
+def read_SEV_header(
+    dirname: str | Path, *, VERBOSE: bool = False, FS: float = 0
+) -> list[dict[str, Any]]:
     """Read header info for a TDT directory of SEV files.
 
     Parameters
@@ -103,7 +105,9 @@ def read_SEV_header(dirname: str | Path, *, VERBOSE: bool = False, FS: float = 0
 
                 stream_header["fs"] = 2 ** (rate - 12) * 25000000 / decimate
             else:
-                raise ValueError(f"{sev_path.name} has unknown version {stream_header['fileVersion']}")
+                raise ValueError(
+                    f"{sev_path.name} has unknown version {stream_header['fileVersion']}"
+                )
 
             if stream_header["fileVersion"] == 0:
                 stream_header["dForm"] = "single"

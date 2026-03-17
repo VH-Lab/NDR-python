@@ -143,7 +143,16 @@ def read_Intan_RHD2000_directory(
         6: np.uint16,
         7: np.uint16,
     }
-    conversion_scale = {1: 0, 2: 0.195, 3: 0.0000374, 4: 0.0000748, 5: 0, 6: 0.000050354, 7: 1, 8: 1}
+    conversion_scale = {
+        1: 0,
+        2: 0.195,
+        3: 0.0000374,
+        4: 0.0000748,
+        5: 0,
+        6: 0.000050354,
+        7: 1,
+        8: 1,
+    }
     conversion_shift = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
 
     eval_board_mode = header.get("eval_board_mode", 0)

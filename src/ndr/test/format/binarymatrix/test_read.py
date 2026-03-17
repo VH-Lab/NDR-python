@@ -51,7 +51,9 @@ def test_10_channels_backward(testfile: Path) -> None:
     )
     expected_10bw = expected_10[:, ::-1]
 
-    assert np.array_equal(expected_10bw, data_10bw), "10 samples of 10 channels backward test failed"
+    assert np.array_equal(
+        expected_10bw, data_10bw
+    ), "10 samples of 10 channels backward test failed"
     assert total_samples == 10
     assert s0_out == 1
     assert s1_out == 10

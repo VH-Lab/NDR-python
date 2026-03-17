@@ -32,9 +32,7 @@ def read_SOMSMR_header(filename: str | Path) -> dict[str, Any]:
         Header with ``fileinfo`` and ``channelinfo`` sub-dicts.
     """
     if neo is None:
-        raise ImportError(
-            "neo is required for reading CED files. Install with: pip install neo"
-        )
+        raise ImportError("neo is required for reading CED files. Install with: pip install neo")
 
     filename = Path(filename)
     ext = filename.suffix.lower()

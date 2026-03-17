@@ -80,17 +80,15 @@ def read_Intan_RHD2000_file_var(filename: str | Path) -> dict[str, Any]:
         # Temperature sensor channels (v1.1+)
         num_temp_sensor_channels = 0
         if (
-            (data_file_main_version_number == 1 and data_file_secondary_version_number >= 1)
-            or data_file_main_version_number > 1
-        ):
+            data_file_main_version_number == 1 and data_file_secondary_version_number >= 1
+        ) or data_file_main_version_number > 1:
             num_temp_sensor_channels = _struct.unpack("<h", fid.read(2))[0]
 
         # Board mode (v1.3+)
         board_mode = 0
         if (
-            (data_file_main_version_number == 1 and data_file_secondary_version_number >= 3)
-            or data_file_main_version_number > 1
-        ):
+            data_file_main_version_number == 1 and data_file_secondary_version_number >= 3
+        ) or data_file_main_version_number > 1:
             board_mode = _struct.unpack("<h", fid.read(2))[0]
 
         # Reference channel (v2.0+)
@@ -155,7 +153,9 @@ def read_Intan_RHD2000_file_var(filename: str | Path) -> dict[str, Any]:
                         "digital_trigger_channel": _struct.unpack("<h", fid.read(2))[0],
                         "digital_edge_polarity": _struct.unpack("<h", fid.read(2))[0],
                     }
-                    new_channel["electrode_impedance_magnitude"] = _struct.unpack("<f", fid.read(4))[0]
+                    new_channel["electrode_impedance_magnitude"] = _struct.unpack(
+                        "<f", fid.read(4)
+                    )[0]
                     new_channel["electrode_impedance_phase"] = _struct.unpack("<f", fid.read(4))[0]
 
                     if channel_enabled:
@@ -230,9 +230,8 @@ def read_Intan_RHD2000_file_var(filename: str | Path) -> dict[str, Any]:
         if data_present:
             # Determine timestamp dtype based on version
             if (
-                (data_file_main_version_number == 1 and data_file_secondary_version_number >= 2)
-                or data_file_main_version_number > 1
-            ):
+                data_file_main_version_number == 1 and data_file_secondary_version_number >= 2
+            ) or data_file_main_version_number > 1:
                 ts_dtype = np.dtype("<i4")  # int32
             else:
                 ts_dtype = np.dtype("<u4")  # uint32

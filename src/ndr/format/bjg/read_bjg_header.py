@@ -52,12 +52,14 @@ def read_bjg_header(filename: str | Path) -> dict[str, Any]:
 
         if "Channels" in line:
             import re
+
             m = re.match(r"(\d+)\s*Channels", line)
             if m:
                 h["num_channels"] = int(m.group(1))
 
         if "Samples/Second per Channel" in line:
             import re
+
             m = re.match(r"([\d.]+)\s*Samples/Second per Channel", line)
             if m:
                 h["sample_rate"] = float(m.group(1))

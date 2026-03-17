@@ -154,12 +154,14 @@ def read_Intan_RHD2000_header(filename: str | Path) -> dict[str, Any]:
                 if ch["channel_enabled"]:
                     if signal_type == 0:
                         header["amplifier_channels"].append(ch)
-                        header["spike_triggers"].append({
-                            "voltage_trigger_mode": ch["voltage_trigger_mode"],
-                            "voltage_threshold": ch["voltage_threshold"],
-                            "digital_trigger_channel": ch["digital_trigger_channel"],
-                            "digital_edge_polarity": ch["digital_edge_polarity"],
-                        })
+                        header["spike_triggers"].append(
+                            {
+                                "voltage_trigger_mode": ch["voltage_trigger_mode"],
+                                "voltage_threshold": ch["voltage_threshold"],
+                                "digital_trigger_channel": ch["digital_trigger_channel"],
+                                "digital_edge_polarity": ch["digital_edge_polarity"],
+                            }
+                        )
                     elif signal_type == 1:
                         header["aux_input_channels"].append(ch)
                     elif signal_type == 2:

@@ -27,8 +27,7 @@ def example_rhd() -> Path:
     f = _get_example_file()
     if not f.exists():
         pytest.skip(
-            f"Example data file not found: {f}. "
-            "Download NDR example data to run this test."
+            f"Example data file not found: {f}. " "Download NDR example data to run this test."
         )
     return f
 

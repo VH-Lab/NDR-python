@@ -35,16 +35,14 @@ def _headers_compatible(h1: dict, h2: dict, name1: str, name2: str) -> None:
     ):
         if h1.get(key, []) != h2.get(key, []):
             raise ValueError(
-                f"Acquisition parameters must be the same ({name1} != {name2}): "
-                f"{key} differ."
+                f"Acquisition parameters must be the same ({name1} != {name2}): " f"{key} differ."
             )
 
     # Compare scalar header fields (excluding notes/version-specific info)
     for key in ("dc_amplifier_data_saved", "eval_board_mode"):
         if h1.get(key) != h2.get(key):
             raise ValueError(
-                f"Acquisition parameters must be the same ({name1} != {name2}): "
-                f"{key} differ."
+                f"Acquisition parameters must be the same ({name1} != {name2}): " f"{key} differ."
             )
 
 

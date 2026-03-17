@@ -45,7 +45,9 @@ def read_abf_header(filename: str | Path) -> dict[str, Any]:
     header["lActualAcqLength"] = abf.dataPointCount
     header["recTime"] = [0.0, abf.dataLengthSec]
     header["lActualEpisodes"] = abf.sweepCount
-    header["nOperationMode"] = abf.abfFileHeader.nOperationMode if hasattr(abf, "abfFileHeader") else 0
+    header["nOperationMode"] = (
+        abf.abfFileHeader.nOperationMode if hasattr(abf, "abfFileHeader") else 0
+    )
 
     if abf.sweepCount > 1:
         header["sweepLengthInPts"] = abf.sweepPointCount

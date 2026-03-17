@@ -9,9 +9,7 @@ import numpy as np
 from scipy.interpolate import CubicSpline
 
 
-def upsample2x(
-    t: np.ndarray, v: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+def upsample2x(t: np.ndarray, v: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Upsample sampled voltages by a factor of 2 using cubic spline interpolation.
 
     Parameters

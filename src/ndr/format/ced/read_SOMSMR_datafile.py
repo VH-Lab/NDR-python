@@ -61,9 +61,7 @@ def read_SOMSMR_datafile(
         Time vector for each sample.
     """
     if neo is None:
-        raise ImportError(
-            "neo is required for reading CED files. Install with: pip install neo"
-        )
+        raise ImportError("neo is required for reading CED files. Install with: pip install neo")
 
     filename = Path(filename)
 
@@ -84,9 +82,7 @@ def read_SOMSMR_datafile(
             break
 
     if ch_idx is None:
-        raise ValueError(
-            f"Channel number {channel_number} not recorded in file {filename}."
-        )
+        raise ValueError(f"Channel number {channel_number} not recorded in file {filename}.")
 
     # Get sample rate for this channel
     sr = float(sig_channels[ch_idx]["sampling_rate"])

@@ -54,9 +54,7 @@ def read_SEV_logs(dirname: str | Path, *, VERBOSE: bool = False) -> list[dict[st
         entry["hour"] = int(hour_match.group(1)) if hour_match else 0
 
         if entry["start_sample"] > 2 and entry["hour"] == 0:
-            raise RuntimeError(
-                f"{entry['name']} store starts on sample {entry['start_sample']}"
-            )
+            raise RuntimeError(f"{entry['name']} store starts on sample {entry['start_sample']}")
 
         # Look for gap info
         entry["gaps"] = []
@@ -67,9 +65,7 @@ def read_SEV_logs(dirname: str | Path, *, VERBOSE: bool = False) -> list[dict[st
         )
         if gap_matches:
             entry["gaps"] = [(int(a), int(b)) for a, b in gap_matches]
-            entry["gap_text"] = "; ".join(
-                [f"last={a}, new={b}" for a, b in gap_matches]
-            )
+            entry["gap_text"] = "; ".join([f"last={a}, new={b}" for a, b in gap_matches])
             if entry["hour"] > 0:
                 raise RuntimeError(
                     f"gaps detected in data set for {entry['name']}-{entry['hour']}h!\n"

@@ -20,9 +20,7 @@ def get_header_channels(raw_reader):
     all_channels = []
     for _type in ["signal_channels", "spike_channels", "event_channels"]:
         numpy_channels = header[_type]
-        python_channels = [
-            dict(zip(numpy_channels.dtype.names, x)) for x in numpy_channels
-        ]
+        python_channels = [dict(zip(numpy_channels.dtype.names, x)) for x in numpy_channels]
         for python_channel in python_channels:
             python_channel["_type"] = _type
             all_channels.append(python_channel)
@@ -35,11 +33,7 @@ def get_channels_from_segment(reader, raw_reader, segment_index, block_index):
     block = blocks[block_index]
     segment = block.segments[segment_index]
 
-    signals = (
-        segment.analogsignals
-        + segment.spiketrains
-        + segment.irregularlysampledsignals
-    )
+    signals = segment.analogsignals + segment.spiketrains + segment.irregularlysampledsignals
     channel_names = []
     for signal in signals:
         channel_names += signal.array_annotations["channel_names"].tolist()

@@ -87,37 +87,27 @@ class TimeReference:
             )
 
         if hasattr(referent, "session"):
-            session_obj = (
-                referent.session()
-                if callable(referent.session)
-                else referent.session
-            )
+            session_obj = referent.session() if callable(referent.session) else referent.session
             if session_obj is None:
-                raise TypeError(
-                    "The referent must have a session with a valid id."
-                )
-            session_ID = session_obj.id() if callable(getattr(session_obj, "id", None)) else str(session_obj)
-        else:
-            raise TypeError(
-                "The referent must have a session property with a valid id."
+                raise TypeError("The referent must have a session with a valid id.")
+            session_ID = (
+                session_obj.id() if callable(getattr(session_obj, "id", None)) else str(session_obj)
             )
+        else:
+            raise TypeError("The referent must have a session property with a valid id.")
 
         # ------------------------------------------------------------------
         # Validate clocktype
         # ------------------------------------------------------------------
         if not isinstance(clocktype, ClockType):
-            raise TypeError(
-                "clocktype must be an instance of ndr.time.clocktype.ClockType."
-            )
+            raise TypeError("clocktype must be an instance of ndr.time.clocktype.ClockType.")
 
         # ------------------------------------------------------------------
         # Validate epoch requirement
         # ------------------------------------------------------------------
         if clocktype.needsepoch():
             if epoch is None:
-                raise ValueError(
-                    "Time is local; an epoch must be specified."
-                )
+                raise ValueError("Time is local; an epoch must be specified.")
 
         # ------------------------------------------------------------------
         # Assign properties

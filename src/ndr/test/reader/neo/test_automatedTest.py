@@ -249,8 +249,16 @@ class TestGetchannelsepoch:
         intan_channels = intan_reader.getchannelsepoch([str(filepath)], 1)
         neo_channels = neo_reader.getchannelsepoch([str(filepath)], "all")
 
-        ch0_name = intan_channels[0].get("name") if isinstance(intan_channels[0], dict) else getattr(intan_channels[0], "name", None)
-        neo_ch0_name = neo_channels[0].get("name") if isinstance(neo_channels[0], dict) else getattr(neo_channels[0], "name", None)
+        ch0_name = (
+            intan_channels[0].get("name")
+            if isinstance(intan_channels[0], dict)
+            else getattr(intan_channels[0], "name", None)
+        )
+        neo_ch0_name = (
+            neo_channels[0].get("name")
+            if isinstance(neo_channels[0], dict)
+            else getattr(neo_channels[0], "name", None)
+        )
         assert ch0_name == "ai1"
         assert neo_ch0_name == "A-000"
 

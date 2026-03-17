@@ -87,7 +87,9 @@ class ndr_reader_intan__rhd(ndr_reader_base):
         header = read_Intan_RHD2000_header(filename)
 
         for c in range(len(channelnumber)):
-            intan_type, absolute = ndr_reader_intan__rhd.intananychannelname2intanchanneltype(channelprefix[c])
+            intan_type, absolute = ndr_reader_intan__rhd.intananychannelname2intanchanneltype(
+                channelprefix[c]
+            )
             ndr_type = ndr_reader_intan__rhd.intanchanneltype2mfdaqchanneltype(intan_type)
             header_name = ndr_reader_intan__rhd.mfdaqchanneltype2intanheadertype(ndr_type)
             header_chunk = header.get(header_name, [])
@@ -177,7 +179,9 @@ class ndr_reader_intan__rhd(ndr_reader_base):
 
         for intan_type in intan_channel_types:
             if intan_type in header and header[intan_type]:
-                channel_type_entry = ndr_reader_intan__rhd.intanheadertype2mfdaqchanneltype(intan_type)
+                channel_type_entry = ndr_reader_intan__rhd.intanheadertype2mfdaqchanneltype(
+                    intan_type
+                )
                 for ch in header[intan_type]:
                     name = ndr_reader_intan__rhd.intanname2mfdaqname(channel_type_entry, ch)
                     time_channel = 2 if channel_type_entry == "auxiliary_in" else 1
@@ -464,7 +468,10 @@ class ndr_reader_intan__rhd(ndr_reader_base):
         """
         # First try as a standard ndr channel type
         try:
-            return ndr_reader_intan__rhd.mfdaqchanneltype2intanchanneltype(intananychannelname), False
+            return (
+                ndr_reader_intan__rhd.mfdaqchanneltype2intanchanneltype(intananychannelname),
+                False,
+            )
         except ValueError:
             pass
 

@@ -54,9 +54,7 @@ def copy_Intan_RHD2000_blocks(
     header_size = blockinfo["header_size"]
 
     if b1 < 1 or b2 > num_data_blocks:
-        raise ValueError(
-            f"Requested block out of the range 1..{num_data_blocks}."
-        )
+        raise ValueError(f"Requested block out of the range 1..{num_data_blocks}.")
 
     # Build list of block-range chunks
     block_starts = list(range(b1, b2 + 1, chunk_size))

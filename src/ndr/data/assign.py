@@ -52,9 +52,7 @@ def assign(target: dict[str, Any], *args: Any) -> dict[str, Any]:
         elif isinstance(arg, (list, tuple)):
             flat = list(arg)
         else:
-            raise TypeError(
-                "A single argument must be a dict or a list of name/value pairs."
-            )
+            raise TypeError("A single argument must be a dict or a list of name/value pairs.")
     else:
         flat = list(args)
 

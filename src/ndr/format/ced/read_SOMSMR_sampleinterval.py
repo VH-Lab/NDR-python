@@ -44,9 +44,7 @@ def read_SOMSMR_sampleinterval(
         Block information.
     """
     if CedRawIO is None:
-        raise ImportError(
-            "neo is required for reading CED files. Install with: pip install neo"
-        )
+        raise ImportError("neo is required for reading CED files. Install with: pip install neo")
 
     filename = Path(filename)
 

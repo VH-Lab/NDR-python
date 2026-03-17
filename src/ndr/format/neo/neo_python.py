@@ -173,6 +173,4 @@ def readevents_epochsamples_native(
 
         return [list_of_timestamps, list_of_events]
     else:
-        raise ValueError(
-            f"channel_type should be either 'marker' or 'event', not {channel_type}"
-        )
+        raise ValueError(f"channel_type should be either 'marker' or 'event', not {channel_type}")

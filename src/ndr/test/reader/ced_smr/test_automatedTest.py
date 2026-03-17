@@ -46,8 +46,7 @@ def example_smr() -> Path:
     f = _get_example_file()
     if not f.exists():
         pytest.skip(
-            f"Example data file not found: {f}. "
-            "Download NDR example data to run this test."
+            f"Example data file not found: {f}. " "Download NDR example data to run this test."
         )
     return f
 
@@ -79,18 +78,53 @@ class TestReadeventsMarker:
 
         # Expected timestamps for each channel
         t_expected = [
-            np.array([9.46626, 20.25515, 31.02761, 41.80011, 52.57258,
-                       63.35325, 74.13393, 84.91459, 95.67888]),
-            np.array([12.36624, 23.14691, 33.91940, 44.70006, 55.47256,
-                       66.25321, 77.02569, 87.80637, 98.57885]),
-            np.array([9.46533, 20.23972, 31.01611, 41.79250, 52.56889,
-                       63.34528, 74.12267, 84.89906, 95.67545]),
+            np.array(
+                [
+                    9.46626,
+                    20.25515,
+                    31.02761,
+                    41.80011,
+                    52.57258,
+                    63.35325,
+                    74.13393,
+                    84.91459,
+                    95.67888,
+                ]
+            ),
+            np.array(
+                [
+                    12.36624,
+                    23.14691,
+                    33.91940,
+                    44.70006,
+                    55.47256,
+                    66.25321,
+                    77.02569,
+                    87.80637,
+                    98.57885,
+                ]
+            ),
+            np.array(
+                [
+                    9.46533,
+                    20.23972,
+                    31.01611,
+                    41.79250,
+                    52.56889,
+                    63.34528,
+                    74.12267,
+                    84.89906,
+                    95.67545,
+                ]
+            ),
         ]
 
         for i in range(3):
             np.testing.assert_allclose(
-                timestamps[i], t_expected[i], atol=1e-4,
-                err_msg=f"Timestamps mismatch for channel index {i}"
+                timestamps[i],
+                t_expected[i],
+                atol=1e-4,
+                err_msg=f"Timestamps mismatch for channel index {i}",
             )
 
         # Expected data for channel 31 (mk31, index 1): Neo returns string labels
@@ -115,10 +149,19 @@ class TestReadeventsMarker:
         # Neo returns string labels for markers
         assert len(data) == 9
 
-        t_expected = np.array([
-            9.46626, 20.25515, 31.02761, 41.80011, 52.57258,
-            63.35325, 74.13393, 84.91459, 95.67888
-        ])
+        t_expected = np.array(
+            [
+                9.46626,
+                20.25515,
+                31.02761,
+                41.80011,
+                52.57258,
+                63.35325,
+                74.13393,
+                84.91459,
+                95.67888,
+            ]
+        )
         np.testing.assert_allclose(timestamps, t_expected, atol=1e-4)
 
 
@@ -142,13 +185,42 @@ class TestReadeventsEvent:
         np.testing.assert_allclose(timestamps[0], t0_expected, atol=1e-4)
 
         # Channel 23 (index 1): many events
-        t1_expected = np.array([
-            9.47933, 9.49633, 9.51233, 9.52933, 9.54533, 9.56233, 9.57933,
-            9.59533, 9.61233, 9.62833, 9.64533, 9.66133, 9.67833, 9.69533,
-            9.71133, 9.72834, 9.74434, 9.76134, 9.77734, 9.79434, 9.81134,
-            9.82734, 9.84434, 9.86034, 9.87734, 9.89434, 9.91034, 9.92734,
-            9.94334, 9.96034, 9.97634, 9.99334,
-        ])
+        t1_expected = np.array(
+            [
+                9.47933,
+                9.49633,
+                9.51233,
+                9.52933,
+                9.54533,
+                9.56233,
+                9.57933,
+                9.59533,
+                9.61233,
+                9.62833,
+                9.64533,
+                9.66133,
+                9.67833,
+                9.69533,
+                9.71133,
+                9.72834,
+                9.74434,
+                9.76134,
+                9.77734,
+                9.79434,
+                9.81134,
+                9.82734,
+                9.84434,
+                9.86034,
+                9.87734,
+                9.89434,
+                9.91034,
+                9.92734,
+                9.94334,
+                9.96034,
+                9.97634,
+                9.99334,
+            ]
+        )
         np.testing.assert_allclose(timestamps[1], t1_expected, atol=1e-4)
 
         # Channels 28, 29 (indices 2, 3): empty
@@ -165,12 +237,41 @@ class TestReadeventsEvent:
             "event", [23], [str(example_smr)], 1, 0, 10
         )
 
-        t_expected = np.array([
-            9.47933, 9.49633, 9.51233, 9.52933, 9.54533, 9.56233, 9.57933,
-            9.59533, 9.61233, 9.62833, 9.64533, 9.66133, 9.67833, 9.69533,
-            9.71133, 9.72834, 9.74434, 9.76134, 9.77734, 9.79434, 9.81134,
-            9.82734, 9.84434, 9.86034, 9.87734, 9.89434, 9.91034, 9.92734,
-            9.94334, 9.96034, 9.97634, 9.99334,
-        ])
+        t_expected = np.array(
+            [
+                9.47933,
+                9.49633,
+                9.51233,
+                9.52933,
+                9.54533,
+                9.56233,
+                9.57933,
+                9.59533,
+                9.61233,
+                9.62833,
+                9.64533,
+                9.66133,
+                9.67833,
+                9.69533,
+                9.71133,
+                9.72834,
+                9.74434,
+                9.76134,
+                9.77734,
+                9.79434,
+                9.81134,
+                9.82734,
+                9.84434,
+                9.86034,
+                9.87734,
+                9.89434,
+                9.91034,
+                9.92734,
+                9.94334,
+                9.96034,
+                9.97634,
+                9.99334,
+            ]
+        )
         np.testing.assert_allclose(timestamps, t_expected, atol=1e-4)
         np.testing.assert_allclose(data, t_expected, atol=1e-4)

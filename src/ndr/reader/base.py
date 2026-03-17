@@ -344,9 +344,7 @@ class ndr_reader_base(ABC):
                 pass
             else:
                 t0t1 = self.t0_t1(epochstreams, epoch_select)
-                sr = self.samplerate(
-                    epochstreams, epoch_select, channelprefix[0], channelnumber[0]
-                )
+                sr = self.samplerate(epochstreams, epoch_select, channelprefix[0], channelnumber[0])
                 actual_t0 = t0 if t0 is not None else t0t1[0][0]
                 actual_t1 = t1 if t1 is not None else t0t1[0][1]
                 s0 = round(1 + actual_t0 * sr)
