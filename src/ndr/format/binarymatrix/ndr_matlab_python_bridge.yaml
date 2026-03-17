@@ -1,0 +1,37 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: read
+    matlab_path: "+ndr/+format/+binarymatrix/read.m"
+    python_path: "ndr/format/binarymatrix/read.py"
+    input_arguments:
+      - name: filename_or_fileobj
+        type_python: "str | Path"
+      - name: num_channels
+        type_python: "int"
+      - name: channel_indexes
+        type_python: "int | list[int] | numpy.ndarray"
+      - name: s0
+        type_python: "float"
+      - name: s1
+        type_python: "float"
+      - name: dataType
+        type_python: "str"
+      - name: byteOrder
+        type_python: "str"
+      - name: force_single_channel_read
+        type_python: "bool"
+      - name: headerSkip
+        type_python: "int"
+    output_arguments:
+      - name: data
+        type_python: "numpy.ndarray"
+      - name: total_samples
+        type_python: "int"
+      - name: s0_out
+        type_python: "int"
+      - name: s1_out
+        type_python: "int"

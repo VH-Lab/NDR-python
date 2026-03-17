@@ -1,0 +1,47 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: abfTimeToDatetime
+    matlab_path: "+ndr/+format/+axon/abfTimeToDatetime.m"
+    python_path: "ndr/format/axon/abfTimeToDatetime.py"
+    input_arguments:
+      - name: uFileStartDate
+        type_python: "float"
+      - name: uFileStartTimeMS
+        type_python: "float"
+    output_arguments:
+      - name: dt
+        type_python: "datetime"
+
+  - name: read_abf
+    matlab_path: "+ndr/+format/+axon/read_abf.m"
+    python_path: "ndr/format/axon/read_abf.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+      - name: header
+        type_python: "dict | None"
+      - name: channel_type
+        type_python: "str"
+      - name: channel_numbers
+        type_python: "int | list[int]"
+      - name: t0
+        type_python: "float"
+      - name: t1
+        type_python: "float"
+    output_arguments:
+      - name: data
+        type_python: "numpy.ndarray"
+
+  - name: read_abf_header
+    matlab_path: "+ndr/+format/+axon/read_abf_header.m"
+    python_path: "ndr/format/axon/read_abf_header.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+    output_arguments:
+      - name: header
+        type_python: "dict"

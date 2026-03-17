@@ -1,0 +1,61 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: read_SOMSMR_datafile
+    matlab_path: "+ndr/+format/+ced/read_SOMSMR_datafile.m"
+    python_path: "ndr/format/ced/read_SOMSMR_datafile.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+      - name: header
+        type_python: "dict | None"
+      - name: channel_number
+        type_python: "int"
+      - name: t0
+        type_python: "float"
+      - name: t1
+        type_python: "float"
+    output_arguments:
+      - name: data
+        type_python: "numpy.ndarray"
+      - name: total_samples
+        type_python: "int | None"
+      - name: total_time
+        type_python: "float | None"
+      - name: blockinfo
+        type_python: "object"
+      - name: time
+        type_python: "numpy.ndarray | None"
+
+  - name: read_SOMSMR_header
+    matlab_path: "+ndr/+format/+ced/read_SOMSMR_header.m"
+    python_path: "ndr/format/ced/read_SOMSMR_header.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+    output_arguments:
+      - name: header
+        type_python: "dict"
+
+  - name: read_SOMSMR_sampleinterval
+    matlab_path: "+ndr/+format/+ced/read_SOMSMR_sampleinterval.m"
+    python_path: "ndr/format/ced/read_SOMSMR_sampleinterval.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+      - name: header
+        type_python: "dict | None"
+      - name: channel_number
+        type_python: "int"
+    output_arguments:
+      - name: sampleinterval
+        type_python: "float"
+      - name: total_samples
+        type_python: "int | None"
+      - name: total_time
+        type_python: "float | None"
+      - name: blockinfo
+        type_python: "object"

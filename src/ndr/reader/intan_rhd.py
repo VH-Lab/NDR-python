@@ -16,10 +16,10 @@ from ndr.format.intan.read_Intan_RHD2000_datafile import (
     read_Intan_RHD2000_datafile,
 )
 from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 
 
-class IntanRHD(Base):
+class ndr_reader_intan__rhd(ndr_reader_base):
     """Reader for Intan Technologies .RHD file format.
 
     Port of ndr.reader.intan_rhd.
@@ -27,6 +27,51 @@ class IntanRHD(Base):
 
     def __init__(self) -> None:
         super().__init__()
+
+    def read(
+        self,
+        epochstreams: list[str],
+        channelstring: str,
+        options: dict[str, Any] | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Read data using channel string, supporting Intan native names.
+
+        Accepts standard NDR channel strings (e.g., 'ai1-3') or Intan
+        native channel names (e.g., 'A021', 'A000+A001').
+        """
+        from ndr.string.channelstring2channels import channelstring2channels
+
+        if options is None:
+            options = {}
+        epoch_select = options.get("epoch_select", 1)
+        use_samples = options.get("useSamples", 0)
+        s0 = options.get("s0", None)
+        s1 = options.get("s1", None)
+
+        channelprefix, channelnumber = channelstring2channels(channelstring)
+        channelstruct = self.daqchannels2internalchannels(
+            channelprefix, channelnumber, epochstreams, epoch_select
+        )
+
+        if not channelstruct:
+            raise ValueError(f"Could not resolve channels from '{channelstring}'.")
+
+        internal_type = channelstruct[0]["internal_type"]
+        channels = [ch["internal_number"] for ch in channelstruct]
+
+        if not use_samples or s0 is None or s1 is None:
+            t0t1 = self.t0_t1(epochstreams, epoch_select)
+            sr = channelstruct[0]["samplerate"]
+            s0 = round(1 + t0t1[0][0] * sr)
+            s1 = round(1 + t0t1[0][1] * sr)
+
+        data = self.readchannels_epochsamples(
+            internal_type, channels, epochstreams, epoch_select, int(s0), int(s1)
+        )
+        time = self.readchannels_epochsamples(
+            "time", channels, epochstreams, epoch_select, int(s0), int(s1)
+        )
+        return data, time
 
     def daqchannels2internalchannels(
         self,
@@ -42,9 +87,11 @@ class IntanRHD(Base):
         header = read_Intan_RHD2000_header(filename)
 
         for c in range(len(channelnumber)):
-            intan_type, absolute = IntanRHD.intananychannelname2intanchanneltype(channelprefix[c])
-            ndr_type = IntanRHD.intanchanneltype2mfdaqchanneltype(intan_type)
-            header_name = IntanRHD.mfdaqchanneltype2intanheadertype(ndr_type)
+            intan_type, absolute = ndr_reader_intan__rhd.intananychannelname2intanchanneltype(
+                channelprefix[c]
+            )
+            ndr_type = ndr_reader_intan__rhd.intanchanneltype2mfdaqchanneltype(intan_type)
+            header_name = ndr_reader_intan__rhd.mfdaqchanneltype2intanheadertype(ndr_type)
             header_chunk = header.get(header_name, [])
 
             entry: dict[str, Any] = {
@@ -132,9 +179,11 @@ class IntanRHD(Base):
 
         for intan_type in intan_channel_types:
             if intan_type in header and header[intan_type]:
-                channel_type_entry = IntanRHD.intanheadertype2mfdaqchanneltype(intan_type)
+                channel_type_entry = ndr_reader_intan__rhd.intanheadertype2mfdaqchanneltype(
+                    intan_type
+                )
                 for ch in header[intan_type]:
-                    name = IntanRHD.intanname2mfdaqname(channel_type_entry, ch)
+                    name = ndr_reader_intan__rhd.intanname2mfdaqname(channel_type_entry, ch)
                     time_channel = 2 if channel_type_entry == "auxiliary_in" else 1
                     channels.append(
                         {
@@ -179,7 +228,7 @@ class IntanRHD(Base):
         """Read data from specified channels."""
         filename, parentdir, isdirectory = self.filenamefromepochfiles(epochstreams)
 
-        intanchanneltype = IntanRHD.mfdaqchanneltype2intanchanneltype(channeltype)
+        intanchanneltype = ndr_reader_intan__rhd.mfdaqchanneltype2intanchanneltype(channeltype)
 
         if isinstance(channel, int):
             channel = [channel]
@@ -242,7 +291,7 @@ class IntanRHD(Base):
             else:
                 ct = channeltype
 
-            freq_field = IntanRHD.mfdaqchanneltype2intanfreqheader(ct)
+            freq_field = ndr_reader_intan__rhd.mfdaqchanneltype2intanfreqheader(ct)
             sr_list.append(header["frequency_parameters"][freq_field])
 
         if len(sr_list) == 1:
@@ -382,7 +431,7 @@ class IntanRHD(Base):
         if chan is None and chip_channel is not None:
             chan = chip_channel + 1
 
-        prefix = Base.mfdaq_prefix(channel_type)
+        prefix = ndr_reader_base.mfdaq_prefix(channel_type)
         if chan is None:
             return prefix
         return f"{prefix}{chan}"
@@ -419,7 +468,10 @@ class IntanRHD(Base):
         """
         # First try as a standard ndr channel type
         try:
-            return IntanRHD.mfdaqchanneltype2intanchanneltype(intananychannelname), False
+            return (
+                ndr_reader_intan__rhd.mfdaqchanneltype2intanchanneltype(intananychannelname),
+                False,
+            )
         except ValueError:
             pass
 

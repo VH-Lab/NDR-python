@@ -8,7 +8,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/base.m"
     python_path: "ndr/reader/base.py"
-    python_class: "Base"
+    python_class: "ndr_reader_base"
     properties:
       - name: MightHaveTimeGaps
         type_python: "bool"
@@ -182,7 +182,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/intan_rhd.m"
     python_path: "ndr/reader/intan_rhd.py"
-    python_class: "IntanRHD"
+    python_class: "ndr_reader_intan__rhd"
     inherits: base
     methods:
       - name: daqchannels2internalchannels
@@ -210,3 +210,11 @@ classes:
       - name: intanname2mfdaqname
       - name: mfdaqchanneltype2intanfreqheader
       - name: intananychannelname2intanchanneltype
+
+  - name: somecompany_someformat
+    type: class
+    matlab_path: "+ndr/+reader/somecompany_someformat.m"
+    python_path: "ndr/reader/somecompany_someformat.py"
+    python_class: "ndr_reader_somecompany__someformat"
+    inherits: base
+    notes: "Template/example reader class for creating new format readers."

@@ -14,15 +14,15 @@ from typing import Any
 import numpy as np
 
 from ndr.fun.ndrresource import ndrresource
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 from ndr.string.channelstring2channels import channelstring2channels
 from ndr.time.clocktype import ClockType
 
 
-class Reader:
+class ndr_reader:
     """High-level Neuroscience Data Reader.
 
-    Wraps a format-specific reader (subclass of ndr.reader.base.Base)
+    Wraps a format-specific reader (subclass of ndr.reader.base.ndr_reader_base)
     and provides a unified interface.
 
     Port of ndr.reader (the MATLAB class, not the package).
@@ -51,7 +51,7 @@ class Reader:
         class_name = parts[1]
         module = importlib.import_module(module_path)
         cls = getattr(module, class_name)
-        self.ndr_reader_base: Base = cls()
+        self.ndr_reader_base: ndr_reader_base = cls()
 
     def read(
         self,
@@ -91,7 +91,7 @@ class Reader:
         tuple of (numpy.ndarray, numpy.ndarray)
             (data, time)
         """
-        is_neo = type(self.ndr_reader_base).__name__ == "NeoReader"
+        is_neo = type(self.ndr_reader_base).__name__ == "ndr_reader_neo"
 
         if is_neo:
             channelstruct = self.ndr_reader_base.daqchannels2internalchannels(
@@ -123,8 +123,11 @@ class Reader:
         ):
             if not useSamples:
                 sr = channelstruct[0]["samplerate"]
-                s0 = round(1 + t0 * sr)
-                s1 = round(1 + t1 * sr)
+                t0t1 = self.t0_t1(epochstreams, epoch_select)
+                actual_t0 = t0 if np.isfinite(t0) else t0t1[0][0]
+                actual_t1 = t1 if np.isfinite(t1) else t0t1[0][1]
+                s0 = round(1 + actual_t0 * sr)
+                s1 = round(1 + actual_t1 * sr)
 
             if is_neo:
                 channels = channelstring

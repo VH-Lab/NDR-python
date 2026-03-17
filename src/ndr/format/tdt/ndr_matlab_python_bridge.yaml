@@ -1,0 +1,51 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: read_SEV_channel
+    matlab_path: "+ndr/+format/+tdt/read_SEV_channel.m"
+    python_path: "ndr/format/tdt/read_SEV_channel.py"
+    input_arguments:
+      - name: dirname
+        type_python: "str | Path"
+      - name: header
+        type_python: "list[dict] | None"
+      - name: channeltype
+        type_python: "str"
+      - name: channel
+        type_python: "int"
+      - name: s0
+        type_python: "int"
+      - name: s1
+        type_python: "int | float"
+    output_arguments:
+      - name: data
+        type_python: "numpy.ndarray"
+
+  - name: read_SEV_header
+    matlab_path: "+ndr/+format/+tdt/read_SEV_header.m"
+    python_path: "ndr/format/tdt/read_SEV_header.py"
+    input_arguments:
+      - name: dirname
+        type_python: "str | Path"
+      - name: VERBOSE
+        type_python: "bool"
+      - name: FS
+        type_python: "float"
+    output_arguments:
+      - name: header
+        type_python: "list[dict]"
+
+  - name: read_SEV_logs
+    matlab_path: "+ndr/+format/+tdt/read_SEV_logs.m"
+    python_path: "ndr/format/tdt/read_SEV_logs.py"
+    input_arguments:
+      - name: dirname
+        type_python: "str | Path"
+      - name: VERBOSE
+        type_python: "bool"
+    output_arguments:
+      - name: logs
+        type_python: "list[dict]"

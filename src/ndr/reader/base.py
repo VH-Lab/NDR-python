@@ -15,13 +15,13 @@ from ndr.time.fun.samples2times import samples2times as _samples2times
 from ndr.time.fun.times2samples import times2samples as _times2samples
 
 
-class Base(ABC):
+class ndr_reader_base(ABC):
     """Abstract base class for Neuroscience Data Readers.
 
     All format-specific readers inherit from this class and must implement
     the abstract methods.
 
-    Port of ndr.reader.base.
+    Port of ndr.reader.base. MATLAB: ndr.reader.base
     """
 
     def __init__(self) -> None:
@@ -294,6 +294,76 @@ class Base(ABC):
             [[t0, t1]] for each clock type. Abstract class returns [[NaN, NaN]].
         """
         return [[float("nan"), float("nan")]]
+
+    def read(
+        self,
+        epochstreams: list[str],
+        channelstring: str,
+        options: dict[str, Any] | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Read data and time from specified channels.
+
+        Convenience method that parses a channel string and calls the
+        appropriate low-level read method.
+
+        Parameters
+        ----------
+        epochstreams : list of str
+            File paths comprising the epoch.
+        channelstring : str
+            Channel specification (e.g., 'ai1-3', 'A021', 'e22').
+        options : dict, optional
+            Options dict with keys: epoch_select (int), useSamples (bool),
+            s0 (int), s1 (int), t0 (float), t1 (float).
+
+        Returns
+        -------
+        tuple of (numpy.ndarray, numpy.ndarray)
+            (data, time)
+        """
+        from ndr.string.channelstring2channels import channelstring2channels
+
+        if options is None:
+            options = {}
+        epoch_select = options.get("epoch_select", 1)
+        use_samples = options.get("useSamples", 0)
+        s0 = options.get("s0", None)
+        s1 = options.get("s1", None)
+        t0 = options.get("t0", None)
+        t1 = options.get("t1", None)
+
+        channelprefix, channelnumber = channelstring2channels(channelstring)
+
+        if not channelprefix:
+            raise ValueError(f"Could not parse channel string '{channelstring}'.")
+
+        ndr_type = self.mfdaq_type(channelprefix[0])
+
+        if ndr_type in ("analog_in", "analog_out", "time", "ax"):
+            if use_samples and s0 is not None and s1 is not None:
+                pass
+            else:
+                t0t1 = self.t0_t1(epochstreams, epoch_select)
+                sr = self.samplerate(epochstreams, epoch_select, channelprefix[0], channelnumber[0])
+                actual_t0 = t0 if t0 is not None else t0t1[0][0]
+                actual_t1 = t1 if t1 is not None else t0t1[0][1]
+                s0 = round(1 + actual_t0 * sr)
+                s1 = round(1 + actual_t1 * sr)
+
+            data = self.readchannels_epochsamples(
+                channelprefix[0], channelnumber, epochstreams, epoch_select, int(s0), int(s1)
+            )
+            time = self.readchannels_epochsamples(
+                "time", channelnumber, epochstreams, epoch_select, int(s0), int(s1)
+            )
+            return data, time
+        else:
+            t0t1 = self.t0_t1(epochstreams, epoch_select)
+            actual_t0 = t0 if t0 is not None else t0t1[0][0]
+            actual_t1 = t1 if t1 is not None else t0t1[0][1]
+            return self.readevents_epochsamples_native(
+                ndr_type, channelnumber, epochstreams, epoch_select, actual_t0, actual_t1
+            )
 
     def samples2times(
         self,

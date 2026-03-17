@@ -10,10 +10,10 @@ from typing import Any
 
 import numpy as np
 
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 
 
-class CedSMR(Base):
+class ndr_reader_ced__smr(ndr_reader_base):
     """Reader for CED Spike2 (.smr) file format.
 
     Port of ndr.reader.ced_smr.
@@ -21,6 +21,46 @@ class CedSMR(Base):
 
     def __init__(self) -> None:
         super().__init__()
+
+    @staticmethod
+    def _load_segment(epochstreams: list[str], epoch_select: int = 1):
+        """Load a Neo segment from SMR file."""
+        try:
+            from neo.io import Spike2IO
+        except ImportError as err:
+            raise ImportError(
+                "neo is required for reading SMR files. Install with: pip install neo"
+            ) from err
+
+        smr_file = ndr_reader_ced__smr._filenamefromepochfiles(epochstreams)
+        reader = Spike2IO(filename=smr_file)
+        block = reader.read_block(signal_group_mode="split-all")
+        return block.segments[epoch_select - 1]
+
+    @staticmethod
+    def _find_analog_by_ced_channel(seg, ced_channel: int):
+        """Find a Neo analog signal by CED channel number (1-based).
+
+        CED channel N maps to Neo ch_id N-1.
+        """
+        target_id = ced_channel - 1
+        for sig in seg.analogsignals:
+            ch_ids = sig.array_annotations.get("channel_ids", [])
+            if len(ch_ids) > 0 and int(ch_ids[0]) == target_id:
+                return sig
+        raise ValueError(f"No analog signal found for CED channel {ced_channel}")
+
+    @staticmethod
+    def _find_event_by_ced_channel(seg, ced_channel: int):
+        """Find a Neo event by CED channel number (1-based).
+
+        CED channel N maps to Neo event id N-1.
+        """
+        target_id = str(ced_channel - 1)
+        for evt in seg.events:
+            if evt.annotations.get("id", "") == target_id:
+                return evt
+        return None
 
     def readchannels_epochsamples(
         self,
@@ -32,20 +72,10 @@ class CedSMR(Base):
         s1: int,
     ) -> np.ndarray:
         """Read data from specified channels."""
-        try:
-            from neo.io import Spike2IO
-        except ImportError as err:
-            raise ImportError(
-                "neo is required for reading SMR files. Install with: pip install neo"
-            ) from err
-
         if isinstance(channel, int):
             channel = [channel]
 
-        smr_file = self._filenamefromepochfiles(epochstreams)
-        reader = Spike2IO(filename=smr_file)
-        block = reader.read_block(signal_group_mode="split-all")
-        seg = block.segments[epoch_select - 1]
+        seg = self._load_segment(epochstreams, epoch_select)
 
         if channeltype in ("time", "timestamp", "t"):
             sig = seg.analogsignals[0]
@@ -54,7 +84,7 @@ class CedSMR(Base):
 
         data_list = []
         for ch in channel:
-            sig = seg.analogsignals[ch - 1]
+            sig = self._find_analog_by_ced_channel(seg, ch)
             data_list.append(sig.magnitude[s0 - 1 : s1].flatten())
 
         return np.column_stack(data_list)
@@ -67,53 +97,59 @@ class CedSMR(Base):
         epoch_select: int,
         t0: float,
         t1: float,
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[Any, Any]:
         """Read events from CED files."""
-        try:
-            from neo.io import Spike2IO
-        except ImportError as err:
-            raise ImportError("neo is required for reading SMR files.") from err
+        seg = self._load_segment(epochstreams, epoch_select)
 
-        smr_file = self._filenamefromepochfiles(epochstreams)
-        reader = Spike2IO(filename=smr_file)
-        block = reader.read_block(signal_group_mode="split-all")
-        seg = block.segments[epoch_select - 1]
+        if isinstance(channel, int):
+            channel = [channel]
 
         timestamps_all = []
         data_all = []
 
-        for evt in seg.events:
-            times = evt.times.magnitude
-            mask = (times >= t0) & (times <= t1)
-            timestamps_all.append(times[mask])
-            data_all.append(np.ones(np.sum(mask)))
+        for ch in channel:
+            evt = self._find_event_by_ced_channel(seg, ch)
+            if evt is not None:
+                times = evt.times.magnitude
+                mask = (times >= t0) & (times <= t1)
+                timestamps_all.append(times[mask])
+                if channeltype in ("marker", "mark", "mk"):
+                    data_all.append(evt.labels[mask] if hasattr(evt, "labels") else np.array([]))
+                else:
+                    data_all.append(times[mask])
+            else:
+                timestamps_all.append(np.array([]))
+                data_all.append(np.array([]))
 
-        if timestamps_all:
-            return np.concatenate(timestamps_all), np.concatenate(data_all)
-        return np.array([]), np.array([])
+        if len(channel) == 1:
+            return timestamps_all[0], data_all[0]
+        return timestamps_all, data_all
 
     def getchannelsepoch(
         self, epochstreams: list[str], epoch_select: int = 1
     ) -> list[dict[str, Any]]:
         """List channels available for a given epoch."""
-        try:
-            from neo.io import Spike2IO
-        except ImportError as err:
-            raise ImportError("neo is required for reading SMR files.") from err
-
-        smr_file = self._filenamefromepochfiles(epochstreams)
-        reader = Spike2IO(filename=smr_file)
-        block = reader.read_block(signal_group_mode="split-all")
-        seg = block.segments[epoch_select - 1]
+        seg = self._load_segment(epochstreams, epoch_select)
 
         channels: list[dict[str, Any]] = []
-        channels.append({"name": "t1", "type": "time", "time_channel": 1})
 
-        for i, _sig in enumerate(seg.analogsignals):
-            channels.append({"name": f"ai{i + 1}", "type": "analog_in", "time_channel": 1})
+        for sig in seg.analogsignals:
+            ch_ids = sig.array_annotations.get("channel_ids", [])
+            if len(ch_ids) > 0:
+                ced_ch = int(ch_ids[0]) + 1
+            else:
+                ced_ch = 0
+            channels.append({"name": f"ai{ced_ch}", "type": "analog_in", "time_channel": 1})
 
-        for i, _evt in enumerate(seg.events):
-            channels.append({"name": f"e{i + 1}", "type": "event", "time_channel": 1})
+        for evt in seg.events:
+            ced_ch = int(evt.annotations.get("id", "0")) + 1
+            name = evt.name if hasattr(evt, "name") else ""
+            if "mark" in str(name).lower() or "keyboard" in str(name).lower():
+                channels.append({"name": f"mk{ced_ch}", "type": "mark", "time_channel": 1})
+            elif "text" in str(name).lower():
+                channels.append({"name": f"text{ced_ch}", "type": "text", "time_channel": 1})
+            else:
+                channels.append({"name": f"e{ced_ch}", "type": "event", "time_channel": 1})
 
         return channels
 
@@ -125,24 +161,17 @@ class CedSMR(Base):
         channel: int | list[int],
     ) -> float | np.ndarray:
         """Get the sample rate."""
-        try:
-            from neo.io import Spike2IO
-        except ImportError as err:
-            raise ImportError("neo is required for reading SMR files.") from err
-
-        smr_file = self._filenamefromepochfiles(epochstreams)
-        reader = Spike2IO(filename=smr_file)
-        block = reader.read_block(signal_group_mode="split-all")
-        seg = block.segments[epoch_select - 1]
+        seg = self._load_segment(epochstreams, epoch_select)
 
         if isinstance(channel, int):
             channel = [channel]
 
         sr_list = []
         for ch in channel:
-            if ch - 1 < len(seg.analogsignals):
-                sr_list.append(float(seg.analogsignals[ch - 1].sampling_rate.magnitude))
-            else:
+            try:
+                sig = self._find_analog_by_ced_channel(seg, ch)
+                sr_list.append(float(sig.sampling_rate.magnitude))
+            except ValueError:
                 sr_list.append(float("nan"))
 
         if len(sr_list) == 1:
@@ -151,15 +180,7 @@ class CedSMR(Base):
 
     def t0_t1(self, epochstreams: list[str], epoch_select: int = 1) -> list[list[float]]:
         """Return the beginning and end times for an epoch."""
-        try:
-            from neo.io import Spike2IO
-        except ImportError as err:
-            raise ImportError("neo is required for reading SMR files.") from err
-
-        smr_file = self._filenamefromepochfiles(epochstreams)
-        reader = Spike2IO(filename=smr_file)
-        block = reader.read_block(signal_group_mode="split-all")
-        seg = block.segments[epoch_select - 1]
+        seg = self._load_segment(epochstreams, epoch_select)
 
         if seg.analogsignals:
             sig = seg.analogsignals[0]

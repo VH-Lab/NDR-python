@@ -1,0 +1,47 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: assign
+    matlab_path: "+ndr/+data/assign.m"
+    python_path: "ndr/data/assign.py"
+    input_arguments:
+      - name: target
+        type_python: "dict[str, Any]"
+      - name: args
+        type_python: "*Any"
+    output_arguments:
+      - name: target
+        type_python: "dict[str, Any]"
+
+  - name: colvec
+    matlab_path: "+ndr/+data/colvec.m"
+    python_path: "ndr/data/colvec.py"
+    input_arguments:
+      - name: x
+        type_python: "numpy.ndarray"
+    output_arguments:
+      - name: y
+        type_python: "numpy.ndarray"
+
+  - name: rowvec
+    matlab_path: "+ndr/+data/rowvec.m"
+    python_path: "ndr/data/rowvec.py"
+    input_arguments:
+      - name: x
+        type_python: "numpy.ndarray"
+    output_arguments:
+      - name: y
+        type_python: "numpy.ndarray"
+
+  - name: struct2namevaluepair
+    matlab_path: "+ndr/+data/struct2namevaluepair.m"
+    python_path: "ndr/data/struct2namevaluepair.py"
+    input_arguments:
+      - name: thestruct
+        type_python: "dict[str, Any]"
+    output_arguments:
+      - name: nv
+        type_python: "list[Any]"

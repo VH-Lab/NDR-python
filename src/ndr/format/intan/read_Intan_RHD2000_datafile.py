@@ -106,40 +106,33 @@ def _get_header_size(filename: Path, header: dict[str, Any]) -> int:
         f.read(4 + 2 + 2)
 
         main_version = header["data_file_main_version_number"]
+        secondary_version = header["data_file_secondary_version_number"]
 
         # Sample rate
         f.read(4)
 
-        # DSP fields
-        f.read(2 + 4 + 4)
-        if main_version > 0:
-            f.read(4)  # lower_settle_bandwidth
-        f.read(4 + 4 + 4)
-        if main_version > 0:
-            f.read(4)  # desired_lower_settle_bandwidth
-        f.read(4)
+        # DSP fields: dsp_enabled(2) + actual_dsp_cutoff(4) + actual_lower_bw(4)
+        # + actual_upper_bw(4) + desired_dsp_cutoff(4) + desired_lower_bw(4)
+        # + desired_upper_bw(4)
+        f.read(2 + 4 + 4 + 4 + 4 + 4 + 4)
 
-        # Notch filter
+        # Notch filter mode(2) + desired_impedance_test_freq(4) + actual_impedance_test_freq(4)
         f.read(2 + 4 + 4)
 
-        if main_version > 1:
-            f.read(2 + 2)  # amp_settle_mode, charge_recovery_mode
+        # Notes (always present)
+        for _ in range(3):
+            _read_qstring_skip(f)
 
-        # Notes
-        if main_version > 0:
-            for _ in range(3):
-                _read_qstring_skip(f)
-
-        # DC amplifier data saved
-        if main_version > 1:
+        # Temperature sensor channels (v1.1+)
+        if (main_version == 1 and secondary_version >= 1) or main_version > 1:
             f.read(2)
 
-        # Eval board mode
-        if main_version > 1:
+        # Eval board mode (v1.3+)
+        if (main_version == 1 and secondary_version >= 3) or main_version > 1:
             f.read(2)
 
-        # Reference channel
-        if main_version > 0:
+        # Reference channel (v2.0+)
+        if main_version > 1:
             _read_qstring_skip(f)
 
         # Signal groups
@@ -155,12 +148,12 @@ def _get_header_size(filename: Path, header: dict[str, Any]) -> int:
             for _ in range(num_channels):
                 _read_qstring_skip(f)  # native_channel_name
                 _read_qstring_skip(f)  # custom_channel_name
-                f.read(
-                    4 + 4 + 4 + 2 + 2
-                )  # native_order, custom_order, signal_type, enabled, chip_channel
-                if main_version > 0:
-                    f.read(2)  # command_stream
-                f.read(2 + 2 + 2 + 2 + 2 + 4 + 4)
+                # native_order(2) + custom_order(2) + signal_type(2)
+                # + enabled(2) + chip_channel(2) + board_stream(2)
+                # + voltage_trigger_mode(2) + voltage_threshold(2)
+                # + digital_trigger_channel(2) + digital_edge_polarity(2)
+                # + impedance_magnitude(4) + impedance_phase(4)
+                f.read(2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 4 + 4)
 
         return f.tell()
 

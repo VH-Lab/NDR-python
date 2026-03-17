@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 
 
-class Dabrowska(Base):
+class ndr_reader_dabrowska(ndr_reader_base):
     """Reader for Dabrowska file format.
 
     Port of ndr.reader.dabrowska.

@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 
 
-class SpikeGadgetsRec(Base):
+class ndr_reader_spikegadgets__rec(ndr_reader_base):
     """Reader for SpikeGadgets .rec file format.
 
     Port of ndr.reader.spikegadgets_rec.

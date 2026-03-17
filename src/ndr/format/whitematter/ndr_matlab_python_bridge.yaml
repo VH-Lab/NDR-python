@@ -1,0 +1,41 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: header
+    matlab_path: "+ndr/+format/+whitematter/header.m"
+    python_path: "ndr/format/whitematter/header.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+    output_arguments:
+      - name: header
+        type_python: "dict"
+
+  - name: read
+    matlab_path: "+ndr/+format/+whitematter/read.m"
+    python_path: "ndr/format/whitematter/read.py"
+    input_arguments:
+      - name: fname
+        type_python: "str | Path"
+      - name: t0
+        type_python: "float"
+      - name: t1
+        type_python: "float"
+      - name: numChans
+        type_python: "int"
+      - name: SR
+        type_python: "float"
+      - name: byteOrder
+        type_python: "str"
+      - name: channels
+        type_python: "list[int] | numpy.ndarray | None"
+    output_arguments:
+      - name: D
+        type_python: "numpy.ndarray"
+      - name: t
+        type_python: "numpy.ndarray"
+      - name: s0s1
+        type_python: "list[float]"

@@ -27,21 +27,20 @@ def _fread_QString(f) -> str:
 
 def _read_channel_header(f, data_file_main_version: int) -> dict[str, Any]:
     """Read a single channel header entry."""
-    ch = {}
+    ch: dict[str, Any] = {}
     ch["native_channel_name"] = _fread_QString(f)
     ch["custom_channel_name"] = _fread_QString(f)
-    ch["native_order"] = struct.unpack("<i", f.read(4))[0]
-    ch["custom_order"] = struct.unpack("<i", f.read(4))[0]
-    ch["signal_type"] = struct.unpack("<i", f.read(4))[0]
+    ch["native_order"] = struct.unpack("<h", f.read(2))[0]
+    ch["custom_order"] = struct.unpack("<h", f.read(2))[0]
+    ch["signal_type"] = struct.unpack("<h", f.read(2))[0]
     ch["channel_enabled"] = struct.unpack("<h", f.read(2))[0]
     ch["chip_channel"] = struct.unpack("<h", f.read(2))[0]
-    if data_file_main_version > 0:
-        ch["command_stream"] = struct.unpack("<h", f.read(2))[0]
     ch["board_stream"] = struct.unpack("<h", f.read(2))[0]
-    ch["spike_scope_trigger_mode"] = struct.unpack("<h", f.read(2))[0]
-    ch["spike_scope_voltage_thresh"] = struct.unpack("<h", f.read(2))[0]
-    ch["spike_scope_digital_trigger_channel"] = struct.unpack("<h", f.read(2))[0]
-    ch["spike_scope_digital_edge_polarity"] = struct.unpack("<h", f.read(2))[0]
+    # Spike trigger settings
+    ch["voltage_trigger_mode"] = struct.unpack("<h", f.read(2))[0]
+    ch["voltage_threshold"] = struct.unpack("<h", f.read(2))[0]
+    ch["digital_trigger_channel"] = struct.unpack("<h", f.read(2))[0]
+    ch["digital_edge_polarity"] = struct.unpack("<h", f.read(2))[0]
     ch["electrode_impedance_magnitude"] = struct.unpack("<f", f.read(4))[0]
     ch["electrode_impedance_phase"] = struct.unpack("<f", f.read(4))[0]
     return ch
@@ -74,29 +73,23 @@ def read_Intan_RHD2000_header(filename: str | Path) -> dict[str, Any]:
         header["data_file_secondary_version_number"] = struct.unpack("<h", f.read(2))[0]
 
         main_version = header["data_file_main_version_number"]
+        secondary_version = header["data_file_secondary_version_number"]
 
         # Frequency parameters
-        freq = {}
-        freq["amplifier_sample_rate"] = struct.unpack("<f", f.read(4))[0]
-        freq["aux_input_sample_rate"] = freq["amplifier_sample_rate"] / 4.0
-        freq["supply_voltage_sample_rate"] = freq["amplifier_sample_rate"] / 60.0
-        freq["board_adc_sample_rate"] = freq["amplifier_sample_rate"]
-        freq["board_dig_in_sample_rate"] = freq["amplifier_sample_rate"]
+        freq: dict[str, Any] = {}
+        sample_rate = struct.unpack("<f", f.read(4))[0]
+        freq["amplifier_sample_rate"] = sample_rate
+        freq["aux_input_sample_rate"] = sample_rate / 4.0
+        freq["board_adc_sample_rate"] = sample_rate
+        freq["board_dig_in_sample_rate"] = sample_rate
 
         freq["dsp_enabled"] = struct.unpack("<h", f.read(2))[0]
         freq["actual_dsp_cutoff_frequency"] = struct.unpack("<f", f.read(4))[0]
         freq["actual_lower_bandwidth"] = struct.unpack("<f", f.read(4))[0]
-
-        if main_version > 0:
-            freq["actual_lower_settle_bandwidth"] = struct.unpack("<f", f.read(4))[0]
-
         freq["actual_upper_bandwidth"] = struct.unpack("<f", f.read(4))[0]
+
         freq["desired_dsp_cutoff_frequency"] = struct.unpack("<f", f.read(4))[0]
         freq["desired_lower_bandwidth"] = struct.unpack("<f", f.read(4))[0]
-
-        if main_version > 0:
-            freq["desired_lower_settle_bandwidth"] = struct.unpack("<f", f.read(4))[0]
-
         freq["desired_upper_bandwidth"] = struct.unpack("<f", f.read(4))[0]
 
         # Notch filter mode
@@ -104,33 +97,36 @@ def read_Intan_RHD2000_header(filename: str | Path) -> dict[str, Any]:
         freq["desired_impedance_test_frequency"] = struct.unpack("<f", f.read(4))[0]
         freq["actual_impedance_test_frequency"] = struct.unpack("<f", f.read(4))[0]
 
-        if main_version > 1:
-            freq["amp_settle_mode"] = struct.unpack("<h", f.read(2))[0]
-            freq["charge_recovery_mode"] = struct.unpack("<h", f.read(2))[0]
-
         header["frequency_parameters"] = freq
 
-        # Note
-        if main_version > 0:
-            header["note1"] = _fread_QString(f)
-            header["note2"] = _fread_QString(f)
-            header["note3"] = _fread_QString(f)
+        # Notes (always present)
+        header["note1"] = _fread_QString(f)
+        header["note2"] = _fread_QString(f)
+        header["note3"] = _fread_QString(f)
 
-        # DC amplifier data saved
-        if main_version > 1:
-            header["dc_amplifier_data_saved"] = struct.unpack("<h", f.read(2))[0]
-        else:
-            header["dc_amplifier_data_saved"] = 0
+        # Temperature sensor channels (v1.1+)
+        header["num_temp_sensor_channels"] = 0
+        if (main_version == 1 and secondary_version >= 1) or main_version > 1:
+            header["num_temp_sensor_channels"] = struct.unpack("<h", f.read(2))[0]
 
-        # Eval board mode
-        if main_version > 1:
+        # Eval board mode (v1.3+)
+        header["eval_board_mode"] = 0
+        if (main_version == 1 and secondary_version >= 3) or main_version > 1:
             header["eval_board_mode"] = struct.unpack("<h", f.read(2))[0]
-        else:
-            header["eval_board_mode"] = 0
 
         # Reference channel (v2.0+)
-        if main_version > 0:
+        if main_version > 1:
             header["reference_channel"] = _fread_QString(f)
+        else:
+            header["reference_channel"] = ""
+
+        # Samples per data block
+        if main_version == 1:
+            num_samples_per_data_block = 60
+        else:
+            num_samples_per_data_block = 128
+        header["num_samples_per_data_block"] = num_samples_per_data_block
+        freq["supply_voltage_sample_rate"] = sample_rate / num_samples_per_data_block
 
         # Number of signal groups
         num_signal_groups = struct.unpack("<h", f.read(2))[0]
@@ -142,6 +138,7 @@ def read_Intan_RHD2000_header(filename: str | Path) -> dict[str, Any]:
         header["board_adc_channels"] = []
         header["board_dig_in_channels"] = []
         header["board_dig_out_channels"] = []
+        header["spike_triggers"] = []
 
         for _g in range(num_signal_groups):
             _group_name = _fread_QString(f)
@@ -157,6 +154,14 @@ def read_Intan_RHD2000_header(filename: str | Path) -> dict[str, Any]:
                 if ch["channel_enabled"]:
                     if signal_type == 0:
                         header["amplifier_channels"].append(ch)
+                        header["spike_triggers"].append(
+                            {
+                                "voltage_trigger_mode": ch["voltage_trigger_mode"],
+                                "voltage_threshold": ch["voltage_threshold"],
+                                "digital_trigger_channel": ch["digital_trigger_channel"],
+                                "digital_edge_polarity": ch["digital_edge_polarity"],
+                            }
+                        )
                     elif signal_type == 1:
                         header["aux_input_channels"].append(ch)
                     elif signal_type == 2:

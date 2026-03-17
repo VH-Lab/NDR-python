@@ -10,10 +10,10 @@ from typing import Any
 
 import numpy as np
 
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 
 
-class NeoReader(Base):
+class ndr_reader_neo(ndr_reader_base):
     """Reader that wraps the Python neo library.
 
     Port of ndr.reader.neo. Provides NDR interface for any format
