@@ -42,7 +42,6 @@ def rec_reader():
     return SpikegadgetsRec()
 
 
-@pytest.mark.skip(reason="requires test data download")
 def test_readertest(rec_reader, example_rec: Path) -> None:
     """Test the SpikeGadgets rec reader.read convenience function.
 

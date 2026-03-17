@@ -43,7 +43,6 @@ def abf_reader():
     return AxonABF()
 
 
-@pytest.mark.skip(reason="requires test data download")
 def test_readertest(abf_reader, example_abf: Path) -> None:
     """Test the ABF reader.read convenience function.
 

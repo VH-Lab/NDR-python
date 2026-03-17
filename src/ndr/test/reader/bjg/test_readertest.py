@@ -44,7 +44,6 @@ def bjg_reader():
     return BJG()
 
 
-@pytest.mark.skip(reason="requires test data download")
 def test_readertest(bjg_reader, example_bjg: Path) -> None:
     """Test the BJG reader.read convenience function.
 

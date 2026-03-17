@@ -43,7 +43,6 @@ def sev_reader():
     return TdtSev()
 
 
-@pytest.mark.skip(reason="requires test data download")
 def test_readertest(sev_reader, example_sev: Path) -> None:
     """Test the TDT SEV reader.read convenience function.
 

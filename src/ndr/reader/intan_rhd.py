@@ -28,6 +28,51 @@ class IntanRHD(Base):
     def __init__(self) -> None:
         super().__init__()
 
+    def read(
+        self,
+        epochstreams: list[str],
+        channelstring: str,
+        options: dict[str, Any] | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Read data using channel string, supporting Intan native names.
+
+        Accepts standard NDR channel strings (e.g., 'ai1-3') or Intan
+        native channel names (e.g., 'A021', 'A000+A001').
+        """
+        from ndr.string.channelstring2channels import channelstring2channels
+
+        if options is None:
+            options = {}
+        epoch_select = options.get("epoch_select", 1)
+        use_samples = options.get("useSamples", 0)
+        s0 = options.get("s0", None)
+        s1 = options.get("s1", None)
+
+        channelprefix, channelnumber = channelstring2channels(channelstring)
+        channelstruct = self.daqchannels2internalchannels(
+            channelprefix, channelnumber, epochstreams, epoch_select
+        )
+
+        if not channelstruct:
+            raise ValueError(f"Could not resolve channels from '{channelstring}'.")
+
+        internal_type = channelstruct[0]["internal_type"]
+        channels = [ch["internal_number"] for ch in channelstruct]
+
+        if not use_samples or s0 is None or s1 is None:
+            t0t1 = self.t0_t1(epochstreams, epoch_select)
+            sr = channelstruct[0]["samplerate"]
+            s0 = round(1 + t0t1[0][0] * sr)
+            s1 = round(1 + t0t1[0][1] * sr)
+
+        data = self.readchannels_epochsamples(
+            internal_type, channels, epochstreams, epoch_select, int(s0), int(s1)
+        )
+        time = self.readchannels_epochsamples(
+            "time", channels, epochstreams, epoch_select, int(s0), int(s1)
+        )
+        return data, time
+
     def daqchannels2internalchannels(
         self,
         channelprefix: list[str],

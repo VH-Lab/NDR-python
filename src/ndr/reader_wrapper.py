@@ -123,8 +123,11 @@ class Reader:
         ):
             if not useSamples:
                 sr = channelstruct[0]["samplerate"]
-                s0 = round(1 + t0 * sr)
-                s1 = round(1 + t1 * sr)
+                t0t1 = self.t0_t1(epochstreams, epoch_select)
+                actual_t0 = t0 if np.isfinite(t0) else t0t1[0][0]
+                actual_t1 = t1 if np.isfinite(t1) else t0t1[0][1]
+                s0 = round(1 + actual_t0 * sr)
+                s1 = round(1 + actual_t1 * sr)
 
             if is_neo:
                 channels = channelstring

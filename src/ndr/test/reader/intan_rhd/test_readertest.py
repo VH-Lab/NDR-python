@@ -42,7 +42,6 @@ def intan_reader():
     return IntanRHD()
 
 
-@pytest.mark.skip(reason="requires test data download")
 def test_readertest(intan_reader, example_rhd: Path) -> None:
     """Test the Intan reader.read convenience function.
 

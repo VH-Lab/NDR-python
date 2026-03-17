@@ -42,7 +42,6 @@ def smr_reader():
     return CedSMR()
 
 
-@pytest.mark.skip(reason="requires test data download")
 def test_readertest(smr_reader, example_smr: Path) -> None:
     """Test the CED SMR reader.read convenience function.
 
