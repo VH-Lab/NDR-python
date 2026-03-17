@@ -4,78 +4,95 @@ import numpy as np
 import pytest
 
 from ndr.known_readers import known_readers
-from ndr.reader.intan_rhd import IntanRHD
+from ndr.reader.intan_rhd import ndr_reader_intan__rhd
 from ndr.string.channelstring2channels import channelstring2channels
 from ndr.string.str2intseq import str2intseq
 from ndr.time.fun.samples2times import samples2times
 from ndr.time.fun.times2samples import times2samples
 
 
-class TestIntanRHDStatic:
-    """Test static methods of IntanRHD that don't require data files."""
+class Testndr_reader_intan__rhdStatic:
+    """Test static methods of ndr_reader_intan__rhd that don't require data files."""
 
     def test_mfdaqchanneltype2intanheadertype(self):
-        assert IntanRHD.mfdaqchanneltype2intanheadertype("analog_in") == "amplifier_channels"
-        assert IntanRHD.mfdaqchanneltype2intanheadertype("ai") == "amplifier_channels"
-        assert IntanRHD.mfdaqchanneltype2intanheadertype("digital_in") == "board_dig_in_channels"
+        assert (
+            ndr_reader_intan__rhd.mfdaqchanneltype2intanheadertype("analog_in")
+            == "amplifier_channels"
+        )
+        assert ndr_reader_intan__rhd.mfdaqchanneltype2intanheadertype("ai") == "amplifier_channels"
+        assert (
+            ndr_reader_intan__rhd.mfdaqchanneltype2intanheadertype("digital_in")
+            == "board_dig_in_channels"
+        )
 
     def test_intanheadertype2mfdaqchanneltype(self):
-        assert IntanRHD.intanheadertype2mfdaqchanneltype("amplifier_channels") == "analog_in"
-        assert IntanRHD.intanheadertype2mfdaqchanneltype("board_dig_in_channels") == "digital_in"
+        assert (
+            ndr_reader_intan__rhd.intanheadertype2mfdaqchanneltype("amplifier_channels")
+            == "analog_in"
+        )
+        assert (
+            ndr_reader_intan__rhd.intanheadertype2mfdaqchanneltype("board_dig_in_channels")
+            == "digital_in"
+        )
 
     def test_mfdaqchanneltype2intanchanneltype(self):
-        assert IntanRHD.mfdaqchanneltype2intanchanneltype("analog_in") == "amp"
-        assert IntanRHD.mfdaqchanneltype2intanchanneltype("digital_in") == "din"
-        assert IntanRHD.mfdaqchanneltype2intanchanneltype("time") == "time"
+        assert ndr_reader_intan__rhd.mfdaqchanneltype2intanchanneltype("analog_in") == "amp"
+        assert ndr_reader_intan__rhd.mfdaqchanneltype2intanchanneltype("digital_in") == "din"
+        assert ndr_reader_intan__rhd.mfdaqchanneltype2intanchanneltype("time") == "time"
 
     def test_intanchanneltype2mfdaqchanneltype(self):
-        assert IntanRHD.intanchanneltype2mfdaqchanneltype("amp") == "ai"
-        assert IntanRHD.intanchanneltype2mfdaqchanneltype("din") == "di"
+        assert ndr_reader_intan__rhd.intanchanneltype2mfdaqchanneltype("amp") == "ai"
+        assert ndr_reader_intan__rhd.intanchanneltype2mfdaqchanneltype("din") == "di"
 
     def test_intananychannelname2intanchanneltype(self):
-        ct, absolute = IntanRHD.intananychannelname2intanchanneltype("ai")
+        ct, absolute = ndr_reader_intan__rhd.intananychannelname2intanchanneltype("ai")
         assert ct == "amp"
         assert absolute is False
 
-        ct, absolute = IntanRHD.intananychannelname2intanchanneltype("A")
+        ct, absolute = ndr_reader_intan__rhd.intananychannelname2intanchanneltype("A")
         assert ct == "amp"
         assert absolute is True
 
     def test_mfdaqchanneltype2intanfreqheader(self):
-        assert IntanRHD.mfdaqchanneltype2intanfreqheader("ai") == "amplifier_sample_rate"
-        assert IntanRHD.mfdaqchanneltype2intanfreqheader("auxiliary") == "aux_input_sample_rate"
+        assert (
+            ndr_reader_intan__rhd.mfdaqchanneltype2intanfreqheader("ai") == "amplifier_sample_rate"
+        )
+        assert (
+            ndr_reader_intan__rhd.mfdaqchanneltype2intanfreqheader("auxiliary")
+            == "aux_input_sample_rate"
+        )
 
     def test_intanname2mfdaqname_struct(self):
-        name = IntanRHD.intanname2mfdaqname(
+        name = ndr_reader_intan__rhd.intanname2mfdaqname(
             "analog_in",
             {"native_channel_name": "A-000", "chip_channel": 0},
         )
         assert name == "ai1"
 
     def test_intanname2mfdaqname_string(self):
-        name = IntanRHD.intanname2mfdaqname("analog_in", "A-000")
+        name = ndr_reader_intan__rhd.intanname2mfdaqname("analog_in", "A-000")
         assert name == "ai1"
 
     def test_intanname2mfdaqname_aux(self):
-        name = IntanRHD.intanname2mfdaqname(
+        name = ndr_reader_intan__rhd.intanname2mfdaqname(
             "auxiliary_in",
             {"native_channel_name": "AUX1", "chip_channel": 0},
         )
         assert name == "ax1"
 
     def test_filenamefromepochfiles(self):
-        reader = IntanRHD()
+        reader = ndr_reader_intan__rhd()
         fn, pdir, isdir = reader.filenamefromepochfiles(["/path/to/data.rhd"])
         assert fn == "/path/to/data.rhd"
         assert isdir is False
 
     def test_filenamefromepochfiles_no_rhd(self):
-        reader = IntanRHD()
+        reader = ndr_reader_intan__rhd()
         with pytest.raises(ValueError, match="Need 1 .rhd"):
             reader.filenamefromepochfiles(["/path/to/data.abf"])
 
     def test_filenamefromepochfiles_multiple_rhd(self):
-        reader = IntanRHD()
+        reader = ndr_reader_intan__rhd()
         with pytest.raises(ValueError, match="Need only 1"):
             reader.filenamefromepochfiles(["/path/a.rhd", "/path/b.rhd"])
 
@@ -161,7 +178,7 @@ class TestReaderWrapper:
         assert hasattr(ndr, "reader")
 
     def test_unknown_type(self):
-        from ndr.reader_wrapper import Reader
+        from ndr.reader_wrapper import ndr_reader
 
         with pytest.raises(ValueError, match="Do not know"):
-            Reader("nonexistent_format")
+            ndr_reader("nonexistent_format")

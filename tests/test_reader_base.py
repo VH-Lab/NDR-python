@@ -3,11 +3,11 @@
 import numpy as np
 import pytest
 
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 from ndr.time.clocktype import ClockType
 
 
-class ConcreteReader(Base):
+class ConcreteReader(ndr_reader_base):
     """Minimal concrete implementation for testing."""
 
     def readchannels_epochsamples(self, channeltype, channel, epochstreams, epoch_select, s0, s1):
@@ -19,36 +19,36 @@ class ConcreteReader(Base):
         return np.array([]), np.array([])
 
 
-class TestBase:
+class Testndr_reader_base:
     def test_mfdaq_channeltypes(self):
-        ct = Base.mfdaq_channeltypes()
+        ct = ndr_reader_base.mfdaq_channeltypes()
         assert "analog_in" in ct
         assert "digital_in" in ct
         assert "time" in ct
         assert len(ct) == 8
 
     def test_mfdaq_prefix(self):
-        assert Base.mfdaq_prefix("analog_in") == "ai"
-        assert Base.mfdaq_prefix("ai") == "ai"
-        assert Base.mfdaq_prefix("digital_in") == "di"
-        assert Base.mfdaq_prefix("time") == "t"
-        assert Base.mfdaq_prefix("auxiliary") == "ax"
-        assert Base.mfdaq_prefix("event") == "e"
-        assert Base.mfdaq_prefix("marker") == "mk"
+        assert ndr_reader_base.mfdaq_prefix("analog_in") == "ai"
+        assert ndr_reader_base.mfdaq_prefix("ai") == "ai"
+        assert ndr_reader_base.mfdaq_prefix("digital_in") == "di"
+        assert ndr_reader_base.mfdaq_prefix("time") == "t"
+        assert ndr_reader_base.mfdaq_prefix("auxiliary") == "ax"
+        assert ndr_reader_base.mfdaq_prefix("event") == "e"
+        assert ndr_reader_base.mfdaq_prefix("marker") == "mk"
 
     def test_mfdaq_prefix_unknown(self):
         with pytest.raises(ValueError, match="Unknown channel type"):
-            Base.mfdaq_prefix("nonexistent")
+            ndr_reader_base.mfdaq_prefix("nonexistent")
 
     def test_mfdaq_type(self):
-        assert Base.mfdaq_type("ai") == "analog_in"
-        assert Base.mfdaq_type("analog_in") == "analog_in"
-        assert Base.mfdaq_type("di") == "digital_in"
-        assert Base.mfdaq_type("time") == "time"
+        assert ndr_reader_base.mfdaq_type("ai") == "analog_in"
+        assert ndr_reader_base.mfdaq_type("analog_in") == "analog_in"
+        assert ndr_reader_base.mfdaq_type("di") == "digital_in"
+        assert ndr_reader_base.mfdaq_type("time") == "time"
 
     def test_mfdaq_type_unknown(self):
         with pytest.raises(ValueError, match="unknown"):
-            Base.mfdaq_type("nonexistent")
+            ndr_reader_base.mfdaq_type("nonexistent")
 
     def test_canbereadtogether_same_sr(self):
         reader = ConcreteReader()
