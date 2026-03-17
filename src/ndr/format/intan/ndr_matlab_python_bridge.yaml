@@ -51,3 +51,71 @@ functions:
         type_python: "int"
       - name: num_data_blocks
         type_python: "int"
+
+  - name: fread_QString
+    matlab_path: "+ndr/+format/+intan/fread_QString.m"
+    python_path: "ndr/format/intan/fread_QString.py"
+    input_arguments:
+      - name: fid
+        type_python: "file-like"
+    output_arguments:
+      - name: a
+        type_python: "str"
+
+  - name: read_Intan_RHD2000_directory
+    matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_directory.m"
+    python_path: "ndr/format/intan/read_Intan_RHD2000_directory.py"
+    input_arguments:
+      - name: directoryname
+        type_python: "str | Path"
+      - name: header
+        type_python: "dict | None"
+      - name: channel_type
+        type_python: "str | int"
+      - name: channel_numbers
+        type_python: "int | list[int]"
+      - name: t0
+        type_python: "float"
+      - name: t1
+        type_python: "float"
+    output_arguments:
+      - name: data
+        type_python: "numpy.ndarray"
+      - name: total_samples
+        type_python: "int"
+      - name: total_time
+        type_python: "float"
+
+  - name: cat_Intan_RHD2000_files
+    matlab_path: "+ndr/+format/+intan/cat_Intan_RHD2000_files.m"
+    python_path: "ndr/format/intan/cat_Intan_RHD2000_files.py"
+    input_arguments:
+      - name: filenames
+        type_python: "str | Path (variadic)"
+    output_arguments:
+      - name: status
+        type_python: "int"
+
+  - name: concat_rhd_files
+    matlab_path: "+ndr/+format/+intan/concat_rhd_files.m"
+    python_path: "ndr/format/intan/concat_rhd_files.py"
+    input_arguments:
+      - name: dirname
+        type_python: "str | Path"
+    output_arguments: []
+
+  - name: copy_Intan_RHD2000_blocks
+    matlab_path: "+ndr/+format/+intan/copy_Intan_RHD2000_blocks.m"
+    python_path: "ndr/format/intan/copy_Intan_RHD2000_blocks.py"
+    input_arguments:
+      - name: filename_in
+        type_python: "str | Path"
+      - name: b1
+        type_python: "int"
+      - name: b2
+        type_python: "int"
+      - name: filename_out
+        type_python: "str | Path"
+    output_arguments:
+      - name: status
+        type_python: "int"
