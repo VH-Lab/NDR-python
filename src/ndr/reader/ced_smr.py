@@ -10,10 +10,10 @@ from typing import Any
 
 import numpy as np
 
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 
 
-class CedSMR(Base):
+class ndr_reader_ced__smr(ndr_reader_base):
     """Reader for CED Spike2 (.smr) file format.
 
     Port of ndr.reader.ced_smr.
@@ -32,7 +32,7 @@ class CedSMR(Base):
                 "neo is required for reading SMR files. Install with: pip install neo"
             ) from err
 
-        smr_file = CedSMR._filenamefromepochfiles(epochstreams)
+        smr_file = ndr_reader_ced__smr._filenamefromepochfiles(epochstreams)
         reader = Spike2IO(filename=smr_file)
         block = reader.read_block(signal_group_mode="split-all")
         return block.segments[epoch_select - 1]

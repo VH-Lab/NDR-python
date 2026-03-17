@@ -4,36 +4,40 @@ Status of the MATLAB → Python port of [NDR-matlab](https://github.com/VH-Lab/N
 
 ## Naming Convention
 
-Python class names are a mechanical mapping of the MATLAB originals:
+Python class names are a mechanical mapping of the fully-qualified MATLAB class name,
+applying the **Mirror Rule**:
 
-| MATLAB path | Python module | Python class |
+1. Periods (`.`) are replaced with single underscores (`_`).
+2. Existing underscores (`_`) in the MATLAB name are replaced with double underscores (`__`).
+
+| MATLAB qualified name | Python module | Python class |
 |---|---|---|
-| `+ndr/+reader/base.m` | `ndr.reader.base` | `Base` |
-| `+ndr/+reader/intan_rhd.m` | `ndr.reader.intan_rhd` | `IntanRHD` |
-| `+ndr/+reader/ced_smr.m` | `ndr.reader.ced_smr` | `CedSMR` |
-| `+ndr/+reader/axon_abf.m` | `ndr.reader.axon_abf` | `AxonABF` |
-| `+ndr/+reader/neo.m` | `ndr.reader.neo` | `NeoReader` |
-| `+ndr/+reader/spikegadgets_rec.m` | `ndr.reader.spikegadgets_rec` | `SpikeGadgetsRec` |
-| `+ndr/+reader/tdt_sev.m` | `ndr.reader.tdt_sev` | `TdtSev` |
-| `+ndr/+reader/bjg.m` | `ndr.reader.bjg` | `BJG` |
-| `+ndr/+reader/dabrowska.m` | `ndr.reader.dabrowska` | `Dabrowska` |
-| `+ndr/+reader/whitematter.m` | `ndr.reader.whitematter` | `WhiteMatter` |
-
-File names are preserved exactly from MATLAB (snake\_case). Class names are PascalCase conversions of the same.
+| `ndr.reader` | `ndr.reader_wrapper` | `ndr_reader` |
+| `ndr.reader.base` | `ndr.reader.base` | `ndr_reader_base` |
+| `ndr.reader.intan_rhd` | `ndr.reader.intan_rhd` | `ndr_reader_intan__rhd` |
+| `ndr.reader.ced_smr` | `ndr.reader.ced_smr` | `ndr_reader_ced__smr` |
+| `ndr.reader.axon_abf` | `ndr.reader.axon_abf` | `ndr_reader_axon__abf` |
+| `ndr.reader.neo` | `ndr.reader.neo` | `ndr_reader_neo` |
+| `ndr.reader.spikegadgets_rec` | `ndr.reader.spikegadgets_rec` | `ndr_reader_spikegadgets__rec` |
+| `ndr.reader.tdt_sev` | `ndr.reader.tdt_sev` | `ndr_reader_tdt__sev` |
+| `ndr.reader.bjg` | `ndr.reader.bjg` | `ndr_reader_bjg` |
+| `ndr.reader.dabrowska` | `ndr.reader.dabrowska` | `ndr_reader_dabrowska` |
+| `ndr.reader.whitematter` | `ndr.reader.whitematter` | `ndr_reader_whitematter` |
+| `ndr.reader.somecompany_someformat` | `ndr.reader.somecompany_someformat` | `ndr_reader_somecompany__someformat` |
 
 ## Reader Status
 
 | Reader | getchannelsepoch | t0\_t1 | samplerate | readchannels\_epochsamples | readevents\_epochsamples\_native | read | Tests |
 |---|---|---|---|---|---|---|---|
-| **IntanRHD** | Yes | Yes | Yes | Yes (single-file) | Stub (empty) | Yes | 6 pass |
-| **CedSMR** | Yes | Yes | Yes | Yes | Yes | Yes (via Base) | 14 pass |
-| **AxonABF** | Yes | Yes | Yes | Yes | Stub (empty) | Yes (via Base) | 6 pass |
-| **NeoReader** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | 24 xfail |
-| **SpikeGadgetsRec** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | skipped |
-| **TdtSev** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | skipped |
-| **BJG** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | skipped |
-| **Dabrowska** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | skipped |
-| **WhiteMatter** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | skipped |
+| **ndr\_reader\_intan\_\_rhd** | Yes | Yes | Yes | Yes (single-file) | Stub (empty) | Yes | 6 pass |
+| **ndr\_reader\_ced\_\_smr** | Yes | Yes | Yes | Yes | Yes | Yes (via base) | 14 pass |
+| **ndr\_reader\_axon\_\_abf** | Yes | Yes | Yes | Yes | Stub (empty) | Yes (via base) | 6 pass |
+| **ndr\_reader\_neo** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | 24 xfail |
+| **ndr\_reader\_spikegadgets\_\_rec** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | xfail |
+| **ndr\_reader\_tdt\_\_sev** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | skipped |
+| **ndr\_reader\_bjg** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | skipped |
+| **ndr\_reader\_dabrowska** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | skipped |
+| **ndr\_reader\_whitematter** | Stub (empty) | Stub | Stub | NotImplementedError | Stub (empty) | No | skipped |
 
 **Legend:**
 - **Yes** — Fully implemented and tested with example data
@@ -63,7 +67,7 @@ Note: For SpikeGadgets, TDT, BJG, Dabrowska, and WhiteMatter, the format parsers
 
 ## Reader Wrapper
 
-The top-level `ndr.Reader` class (`reader_wrapper.py`) wraps any format-specific reader and adds:
+The top-level `ndr_reader` class (`reader_wrapper.py`) wraps any format-specific reader and adds:
 
 | Feature | Status |
 |---|---|
@@ -75,14 +79,14 @@ The top-level `ndr.Reader` class (`reader_wrapper.py`) wraps any format-specific
 
 | Dependency | Used by | Purpose |
 |---|---|---|
-| `neo` | CedSMR, NeoReader | Read CED SMR/SON and Blackrock files |
-| `pyabf` | AxonABF | Read Axon Binary Format files |
+| `neo` | ndr\_reader\_ced\_\_smr, ndr\_reader\_neo | Read CED SMR/SON and Blackrock files |
+| `pyabf` | ndr\_reader\_axon\_\_abf | Read Axon Binary Format files |
 | `numpy` | All readers | Array operations |
 
 ## Test Summary
 
 ```
-36 passed, 24 xfailed, 19 skipped, 2 failed (pre-existing spikegadgets format test issues)
+38 passed, 28 xfailed, 13 skipped, 2 failed (pre-existing spikegadgets format test issues)
 ```
 
 Example data files are included in `src/ndr/example_data/` for Intan (.rhd), CED (.smr), Axon (.abf), SpikeGadgets (.rec), and Blackrock (.nev, .ns2).

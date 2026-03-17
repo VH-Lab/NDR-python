@@ -39,12 +39,12 @@ def test_reader_creation() -> None:
     """Test that an ABF reader can be instantiated."""
     # The MATLAB test calls: r = ndr.reader('abf')
     try:
-        from ndr.reader.axon_abf import AxonABF
+        from ndr.reader.axon_abf import ndr_reader_axon__abf
 
-        r = AxonABF()
+        r = ndr_reader_axon__abf()
         assert r is not None
     except ImportError:
-        pytest.skip("ndr.reader.axon_abf.AxonABF not yet available")
+        pytest.skip("ndr.reader.axon_abf.ndr_reader_axon__abf not yet available")
 
 
 def test_getchannelsepoch(example_abf: Path) -> None:
@@ -53,11 +53,11 @@ def test_getchannelsepoch(example_abf: Path) -> None:
     #   r = ndr.reader('abf')
     #   channels = r.getchannelsepoch({filename})
     try:
-        from ndr.reader.axon_abf import AxonABF
+        from ndr.reader.axon_abf import ndr_reader_axon__abf
     except ImportError:
-        pytest.skip("ndr.reader.axon_abf.AxonABF not yet available")
+        pytest.skip("ndr.reader.axon_abf.ndr_reader_axon__abf not yet available")
 
-    r = AxonABF()
+    r = ndr_reader_axon__abf()
     channels = r.getchannelsepoch([str(example_abf)])
 
     assert channels is not None
@@ -75,11 +75,11 @@ def test_readchannels_epochsamples(example_abf: Path) -> None:
     #   d = r.readchannels_epochsamples('ai', 1, {filename}, 1, 1, 10000)
     #   t = r.readchannels_epochsamples('time', 1, {filename}, 1, 1, 10000)
     try:
-        from ndr.reader.axon_abf import AxonABF
+        from ndr.reader.axon_abf import ndr_reader_axon__abf
     except ImportError:
-        pytest.skip("ndr.reader.axon_abf.AxonABF not yet available")
+        pytest.skip("ndr.reader.axon_abf.ndr_reader_axon__abf not yet available")
 
-    r = AxonABF()
+    r = ndr_reader_axon__abf()
     epoch_select = 1
     channel = 1
 
@@ -97,11 +97,11 @@ def test_epochclock(example_abf: Path) -> None:
     #   ec = r.epochclock({filename}, epoch_select)
     #   t0t1 = r.t0_t1({filename}, epoch_select)
     try:
-        from ndr.reader.axon_abf import AxonABF
+        from ndr.reader.axon_abf import ndr_reader_axon__abf
     except ImportError:
-        pytest.skip("ndr.reader.axon_abf.AxonABF not yet available")
+        pytest.skip("ndr.reader.axon_abf.ndr_reader_axon__abf not yet available")
 
-    r = AxonABF()
+    r = ndr_reader_axon__abf()
     epoch_select = 1
 
     ec = r.epochclock([str(example_abf)], epoch_select)
@@ -117,11 +117,11 @@ def test_readertest(example_abf: Path) -> None:
     #   r = ndr.reader('axon_abf')
     #   [d, t] = r.read({filename}, 'ai1')
     try:
-        from ndr.reader.axon_abf import AxonABF
+        from ndr.reader.axon_abf import ndr_reader_axon__abf
     except ImportError:
-        pytest.skip("ndr.reader.axon_abf.AxonABF not yet available")
+        pytest.skip("ndr.reader.axon_abf.ndr_reader_axon__abf not yet available")
 
-    r = AxonABF()
+    r = ndr_reader_axon__abf()
     d, t = r.read([str(example_abf)], "ai1")
 
     assert d is not None

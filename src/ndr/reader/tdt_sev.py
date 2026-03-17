@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 
 
-class TdtSev(Base):
+class ndr_reader_tdt__sev(ndr_reader_base):
     """Reader for TDT .sev file format.
 
     Port of ndr.reader.tdt_sev.

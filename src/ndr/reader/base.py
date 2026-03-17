@@ -15,13 +15,13 @@ from ndr.time.fun.samples2times import samples2times as _samples2times
 from ndr.time.fun.times2samples import times2samples as _times2samples
 
 
-class Base(ABC):
+class ndr_reader_base(ABC):
     """Abstract base class for Neuroscience Data Readers.
 
     All format-specific readers inherit from this class and must implement
     the abstract methods.
 
-    Port of ndr.reader.base.
+    Port of ndr.reader.base. MATLAB: ndr.reader.base
     """
 
     def __init__(self) -> None:

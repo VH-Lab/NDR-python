@@ -1,38 +1,38 @@
 [
   {
     "type": ["intan_rhd", "intan", "rhd"],
-    "classname": "ndr.reader.intan_rhd.IntanRHD"
+    "classname": "ndr.reader.intan_rhd.ndr_reader_intan__rhd"
   },
   {
     "type": ["axon_abf", "axon", "abf"],
-    "classname": "ndr.reader.axon_abf.AxonABF"
+    "classname": "ndr.reader.axon_abf.ndr_reader_axon__abf"
   },
   {
     "type": ["ced_smr", "ced", "smr"],
-    "classname": "ndr.reader.ced_smr.CedSMR"
+    "classname": "ndr.reader.ced_smr.ndr_reader_ced__smr"
   },
   {
     "type": ["spikegadgets_rec", "spikegadgets", "rec"],
-    "classname": "ndr.reader.spikegadgets_rec.SpikeGadgetsRec"
+    "classname": "ndr.reader.spikegadgets_rec.ndr_reader_spikegadgets__rec"
   },
   {
     "type": ["tdt_sev", "tdt", "sev"],
-    "classname": "ndr.reader.tdt_sev.TdtSev"
+    "classname": "ndr.reader.tdt_sev.ndr_reader_tdt__sev"
   },
   {
     "type": ["neo"],
-    "classname": "ndr.reader.neo.NeoReader"
+    "classname": "ndr.reader.neo.ndr_reader_neo"
   },
   {
     "type": ["whitematter"],
-    "classname": "ndr.reader.whitematter.WhiteMatter"
+    "classname": "ndr.reader.whitematter.ndr_reader_whitematter"
   },
   {
     "type": ["bjg"],
-    "classname": "ndr.reader.bjg.BJG"
+    "classname": "ndr.reader.bjg.ndr_reader_bjg"
   },
   {
     "type": ["dabrowska"],
-    "classname": "ndr.reader.dabrowska.Dabrowska"
+    "classname": "ndr.reader.dabrowska.ndr_reader_dabrowska"
   }
 ]

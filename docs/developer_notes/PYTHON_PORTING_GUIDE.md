@@ -17,6 +17,21 @@ Function and class names must match MATLAB exactly.
 - **Case Preservation:** Use `readchannels_epochsamples`, not `read_channels_epoch_samples`.
 - **Directory Parity:** Python file paths must mirror MATLAB `+namespace` paths
   (e.g., `+ndr/+reader` -> `src/ndr/reader/`).
+- **Class Name Mirror Rule:** Python class names are derived from the fully-qualified
+  MATLAB class name by applying two substitutions:
+  1. Periods (`.`) are replaced with single underscores (`_`).
+  2. Existing underscores (`_`) in the MATLAB name are replaced with double
+     underscores (`__`).
+
+  Examples:
+  | MATLAB qualified name               | Python class name                      |
+  |--------------------------------------|----------------------------------------|
+  | `ndr.reader`                         | `ndr_reader`                           |
+  | `ndr.reader.base`                    | `ndr_reader_base`                      |
+  | `ndr.reader.intan_rhd`              | `ndr_reader_intan__rhd`               |
+  | `ndr.reader.ced_smr`                | `ndr_reader_ced__smr`                 |
+  | `ndr.reader.axon_abf`               | `ndr_reader_axon__abf`                |
+  | `ndr.reader.somecompany_someformat` | `ndr_reader_somecompany__someformat`  |
 
 ## 3. The Porting Workflow (The Bridge Protocol)
 1. **Check the Bridge:** Open the `ndr_matlab_python_bridge.yaml` in the target package.

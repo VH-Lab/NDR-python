@@ -38,10 +38,10 @@ def example_sev() -> Path:
 def sev_reader():
     """Create a TDT SEV reader instance."""
     try:
-        from ndr.reader.tdt_sev import TdtSev
+        from ndr.reader.tdt_sev import ndr_reader_tdt__sev
     except ImportError:
-        pytest.skip("ndr.reader.tdt_sev.TdtSev not yet available")
-    return TdtSev()
+        pytest.skip("ndr.reader.tdt_sev.ndr_reader_tdt__sev not yet available")
+    return ndr_reader_tdt__sev()
 
 
 def test_reader_creation(sev_reader) -> None:

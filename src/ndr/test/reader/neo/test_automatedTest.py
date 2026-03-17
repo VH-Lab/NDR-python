@@ -40,9 +40,9 @@ def _skip_if_missing(filepath: Path) -> Path:
 def neo_reader():
     """Create a Neo reader instance."""
     try:
-        from ndr.reader.neo import NeoReader as Neo
+        from ndr.reader.neo import ndr_reader_neo as Neo
     except ImportError:
-        pytest.skip("ndr.reader.neo.NeoReader not yet available")
+        pytest.skip("ndr.reader.neo.ndr_reader_neo not yet available")
     return Neo()
 
 
@@ -50,20 +50,20 @@ def neo_reader():
 def intan_reader():
     """Create an Intan RHD reader instance."""
     try:
-        from ndr.reader.intan_rhd import IntanRHD
+        from ndr.reader.intan_rhd import ndr_reader_intan__rhd
     except ImportError:
-        pytest.skip("ndr.reader.intan_rhd.IntanRHD not yet available")
-    return IntanRHD()
+        pytest.skip("ndr.reader.intan_rhd.ndr_reader_intan__rhd not yet available")
+    return ndr_reader_intan__rhd()
 
 
 @pytest.fixture()
 def ced_reader():
     """Create a CED SMR reader instance."""
     try:
-        from ndr.reader.ced_smr import CedSMR
+        from ndr.reader.ced_smr import ndr_reader_ced__smr
     except ImportError:
-        pytest.skip("ndr.reader.ced_smr.CedSMR not yet available")
-    return CedSMR()
+        pytest.skip("ndr.reader.ced_smr.ndr_reader_ced__smr not yet available")
+    return ndr_reader_ced__smr()
 
 
 # ---------------------------------------------------------------------------

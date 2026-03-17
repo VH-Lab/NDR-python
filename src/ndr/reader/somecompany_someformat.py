@@ -7,18 +7,18 @@ from __future__ import annotations
 
 import numpy as np
 
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 
 
-class SomecompanySomeformat(Base):
+class ndr_reader_somecompany__someformat(ndr_reader_base):
     """NDR reader template for a particular company or group's format.
 
-    This is a template class for making :class:`ndr.reader.base.Base`
+    This is a template class for making :class:`ndr.reader.base.ndr_reader_base`
     subclasses that interpret and read data from a particular company
     or group (SOMECOMPANY) in a particular format (SOMEFORMAT).
 
     Subclass this template and implement the abstract methods from
-    :class:`~ndr.reader.base.Base` to create a working reader.
+    :class:`~ndr.reader.base.ndr_reader_base` to create a working reader.
     """
 
     def __init__(self) -> None:

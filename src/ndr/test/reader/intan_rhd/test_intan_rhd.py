@@ -37,10 +37,10 @@ def example_rhd() -> Path:
 def intan_reader():
     """Create an Intan RHD reader instance."""
     try:
-        from ndr.reader.intan_rhd import IntanRHD
+        from ndr.reader.intan_rhd import ndr_reader_intan__rhd
     except ImportError:
-        pytest.skip("ndr.reader.intan_rhd.IntanRHD not yet available")
-    return IntanRHD()
+        pytest.skip("ndr.reader.intan_rhd.ndr_reader_intan__rhd not yet available")
+    return ndr_reader_intan__rhd()
 
 
 def test_reader_creation(intan_reader) -> None:

@@ -37,10 +37,10 @@ def example_abf() -> Path:
 def abf_reader():
     """Create an Axon ABF reader instance."""
     try:
-        from ndr.reader.axon_abf import AxonABF
+        from ndr.reader.axon_abf import ndr_reader_axon__abf
     except ImportError:
-        pytest.skip("ndr.reader.axon_abf.AxonABF not yet available")
-    return AxonABF()
+        pytest.skip("ndr.reader.axon_abf.ndr_reader_axon__abf not yet available")
+    return ndr_reader_axon__abf()
 
 
 def test_readertest(abf_reader, example_abf: Path) -> None:

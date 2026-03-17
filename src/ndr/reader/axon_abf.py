@@ -10,10 +10,10 @@ from typing import Any
 
 import numpy as np
 
-from ndr.reader.base import Base
+from ndr.reader.base import ndr_reader_base
 
 
-class AxonABF(Base):
+class ndr_reader_axon__abf(ndr_reader_base):
     """Reader for Axon ABF (.abf) file format.
 
     Port of ndr.reader.axon_abf.

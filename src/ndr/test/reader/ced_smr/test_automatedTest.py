@@ -56,10 +56,10 @@ def example_smr() -> Path:
 def smr_reader():
     """Create a CED SMR reader instance."""
     try:
-        from ndr.reader.ced_smr import CedSMR
+        from ndr.reader.ced_smr import ndr_reader_ced__smr
     except ImportError:
-        pytest.skip("ndr.reader.ced_smr.CedSMR not yet available")
-    return CedSMR()
+        pytest.skip("ndr.reader.ced_smr.ndr_reader_ced__smr not yet available")
+    return ndr_reader_ced__smr()
 
 
 class TestReadeventsMarker:

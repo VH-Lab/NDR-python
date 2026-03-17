@@ -37,12 +37,12 @@ def test_reader_creation() -> None:
     """Test that a CED SMR reader can be instantiated."""
     # The MATLAB test calls: r = ndr.reader('smr')
     try:
-        from ndr.reader.ced_smr import CedSMR
+        from ndr.reader.ced_smr import ndr_reader_ced__smr
 
-        r = CedSMR()
+        r = ndr_reader_ced__smr()
         assert r is not None
     except ImportError:
-        pytest.skip("ndr.reader.ced_smr.CedSMR not yet available")
+        pytest.skip("ndr.reader.ced_smr.ndr_reader_ced__smr not yet available")
 
 
 def test_getchannelsepoch(example_smr: Path) -> None:
@@ -51,11 +51,11 @@ def test_getchannelsepoch(example_smr: Path) -> None:
     #   r = ndr.reader('smr')
     #   channels = r.getchannelsepoch({filename})
     try:
-        from ndr.reader.ced_smr import CedSMR
+        from ndr.reader.ced_smr import ndr_reader_ced__smr
     except ImportError:
-        pytest.skip("ndr.reader.ced_smr.CedSMR not yet available")
+        pytest.skip("ndr.reader.ced_smr.ndr_reader_ced__smr not yet available")
 
-    r = CedSMR()
+    r = ndr_reader_ced__smr()
     channels = r.getchannelsepoch([str(example_smr)])
 
     assert channels is not None
@@ -72,11 +72,11 @@ def test_readchannels_epochsamples(example_smr: Path) -> None:
     #   d = r.readchannels_epochsamples('ai', 21, {filename}, 1, 1, 10000)
     #   t = r.readchannels_epochsamples('time', 21, {filename}, 1, 1, 10000)
     try:
-        from ndr.reader.ced_smr import CedSMR
+        from ndr.reader.ced_smr import ndr_reader_ced__smr
     except ImportError:
-        pytest.skip("ndr.reader.ced_smr.CedSMR not yet available")
+        pytest.skip("ndr.reader.ced_smr.ndr_reader_ced__smr not yet available")
 
-    r = CedSMR()
+    r = ndr_reader_ced__smr()
     epoch_select = 1
     channel = 21
 
@@ -91,11 +91,11 @@ def test_readchannels_epochsamples(example_smr: Path) -> None:
 def test_epochclock(example_smr: Path) -> None:
     """Test getting epoch clock and t0/t1 from a CED SMR file."""
     try:
-        from ndr.reader.ced_smr import CedSMR
+        from ndr.reader.ced_smr import ndr_reader_ced__smr
     except ImportError:
-        pytest.skip("ndr.reader.ced_smr.CedSMR not yet available")
+        pytest.skip("ndr.reader.ced_smr.ndr_reader_ced__smr not yet available")
 
-    r = CedSMR()
+    r = ndr_reader_ced__smr()
     epoch_select = 1
 
     ec = r.epochclock([str(example_smr)], epoch_select)
@@ -111,11 +111,11 @@ def test_readertest(example_smr: Path) -> None:
     Reads analog input channel 21 and event channel 22.
     """
     try:
-        from ndr.reader.ced_smr import CedSMR
+        from ndr.reader.ced_smr import ndr_reader_ced__smr
     except ImportError:
-        pytest.skip("ndr.reader.ced_smr.CedSMR not yet available")
+        pytest.skip("ndr.reader.ced_smr.ndr_reader_ced__smr not yet available")
 
-    r = CedSMR()
+    r = ndr_reader_ced__smr()
 
     # Read analog input 21
     d, t = r.read([str(example_smr)], "ai21")
