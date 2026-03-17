@@ -5,14 +5,12 @@ Port of +ndr/+format/+intan/read_Intan_RHD2000_directory.m
 
 from __future__ import annotations
 
-import struct
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
-from ndr.format.intan.read_Intan_RHD2000_datafile import Intan_RHD2000_blockinfo
 
 
 def read_Intan_RHD2000_directory(

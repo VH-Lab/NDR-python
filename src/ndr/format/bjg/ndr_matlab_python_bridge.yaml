@@ -1,0 +1,35 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: read
+    matlab_path: "+ndr/+format/+bjg/read.m"
+    python_path: "ndr/format/bjg/read.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+      - name: header
+        type_python: "dict | None"
+      - name: channel_type
+        type_python: "str"
+      - name: channel_numbers
+        type_python: "int | list[int]"
+      - name: t0
+        type_python: "float"
+      - name: t1
+        type_python: "float"
+    output_arguments:
+      - name: data
+        type_python: "numpy.ndarray"
+
+  - name: read_bjg_header
+    matlab_path: "+ndr/+format/+bjg/read_bjg_header.m"
+    python_path: "ndr/format/bjg/read_bjg_header.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+    output_arguments:
+      - name: header
+        type_python: "dict"

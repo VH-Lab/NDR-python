@@ -1,0 +1,29 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: header
+    matlab_path: "+ndr/+format/+dabrowska/header.m"
+    python_path: "ndr/format/dabrowska/header.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+    output_arguments:
+      - name: header
+        type_python: "dict"
+
+  - name: read
+    matlab_path: "+ndr/+format/+dabrowska/read.m"
+    python_path: "ndr/format/dabrowska/read.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+      - name: channeltype
+        type_python: "str"
+      - name: header
+        type_python: "dict | None"
+    output_arguments:
+      - name: data
+        type_python: "numpy.ndarray"

@@ -7,9 +7,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
 from ndr.format.intan.read_Intan_RHD2000_datafile import _get_header_size
-
+from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
 
 _COPY_CHUNK = 10000
 

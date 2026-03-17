@@ -6,13 +6,11 @@ Port of +ndr/+format/+intan/copy_Intan_RHD2000_blocks.m
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
-from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
 from ndr.format.intan.read_Intan_RHD2000_datafile import (
     Intan_RHD2000_blockinfo,
-    _get_header_size,
 )
+from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
 
 
 def copy_Intan_RHD2000_blocks(
