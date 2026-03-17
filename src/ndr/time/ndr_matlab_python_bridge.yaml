@@ -1,0 +1,40 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+classes:
+  - name: clocktype
+    type: class
+    matlab_path: "+ndr/+time/clocktype.m"
+    python_path: "ndr/time/clocktype.py"
+    python_class: "ClockType"
+
+functions:
+  - name: samples2times
+    matlab_path: "+ndr/+time/+fun/samples2times.m"
+    python_path: "ndr/time/fun/samples2times.py"
+    input_arguments:
+      - name: s
+        type_python: "numpy.ndarray | int | float"
+      - name: t0_t1
+        type_python: "tuple[float, float]"
+      - name: sr
+        type_python: "float"
+    output_arguments:
+      - name: t
+        type_python: "numpy.ndarray"
+
+  - name: times2samples
+    matlab_path: "+ndr/+time/+fun/times2samples.m"
+    python_path: "ndr/time/fun/times2samples.py"
+    input_arguments:
+      - name: t
+        type_python: "numpy.ndarray | float"
+      - name: t0_t1
+        type_python: "tuple[float, float]"
+      - name: sr
+        type_python: "float"
+    output_arguments:
+      - name: s
+        type_python: "numpy.ndarray"

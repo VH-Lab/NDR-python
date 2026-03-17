@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ndr"
+version = "0.1.0"
+description = "Neuroscience Data Reader - Python implementation"
+readme = "README.md"
+license = {text = "CC-BY-NC-SA-4.0"}
+authors = [{name = "VH-Lab", email = "vhlab@brandeis.edu"}]
+maintainers = [{name = "Waltham Data Science"}]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.20.0",
+    "pydantic>=2.0",
+    "vhlab-toolbox-python @ git+https://github.com/VH-Lab/vhlab-toolbox-python.git@main",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+formats = [
+    "pyabf>=2.3.0",
+    "neo>=0.12.0",
+    "tdt>=0.5.0",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ndr"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short --ignore=tests/symmetry"
+markers = [
+    "slow: marks tests as slow",
+    "symmetry: marks cross-language symmetry tests",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501", "B905", "E402", "B017", "B028"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "UP035"]

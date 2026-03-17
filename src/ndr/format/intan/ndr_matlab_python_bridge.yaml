@@ -1,0 +1,53 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: read_Intan_RHD2000_header
+    matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_header.m"
+    python_path: "ndr/format/intan/read_Intan_RHD2000_header.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+    output_arguments:
+      - name: header
+        type_python: "dict"
+
+  - name: read_Intan_RHD2000_datafile
+    matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_datafile.m"
+    python_path: "ndr/format/intan/read_Intan_RHD2000_datafile.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+      - name: header_filename
+        type_python: "str"
+      - name: channeltype
+        type_python: "str"
+      - name: channel
+        type_python: "int | list[int]"
+      - name: t0
+        type_python: "float"
+      - name: t1
+        type_python: "float"
+    output_arguments:
+      - name: data
+        type_python: "numpy.ndarray"
+
+  - name: Intan_RHD2000_blockinfo
+    matlab_path: "+ndr/+format/+intan/Intan_RHD2000_blockinfo.m"
+    python_path: "ndr/format/intan/read_Intan_RHD2000_datafile.py"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+      - name: header
+        type_python: "dict"
+    output_arguments:
+      - name: blockinfo
+        type_python: "dict"
+      - name: bytes_per_block
+        type_python: "int"
+      - name: bytes_present
+        type_python: "int"
+      - name: num_data_blocks
+        type_python: "int"
