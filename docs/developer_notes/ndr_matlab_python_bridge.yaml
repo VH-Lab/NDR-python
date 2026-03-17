@@ -1,0 +1,40 @@
+# The NDR Bridge Protocol: YAML Specification
+#
+# Name:     ndr_matlab_python_bridge.yaml
+# Location: One file per sub-package directory
+#           (e.g., src/ndr/reader/ndr_matlab_python_bridge.yaml).
+# Role:     Primary Contract. Defines how MATLAB names and types map to Python.
+
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+# When porting a function:
+# 1. Check:  Does the function/class exist in the YAML?
+# 2. Add/Update: If missing or changed, update the YAML first.
+# 3. Record Hash: git log -1 --format="%h" -- <path-to-matlab-file>
+# 4. Notify: Tell the user what was added/changed.
+
+# --- Example: Class ---
+# - name: base
+#   type: class
+#   matlab_path: "+ndr/+reader/base.m"
+#   python_path: "ndr/reader/base.py"
+#   matlab_last_sync_hash: "a4c9e07"
+#   methods:
+#     - name: readchannels_epochsamples
+#       input_arguments:
+#         - name: channeltype
+#           type_python: "str"
+#         - name: channel
+#           type_python: "int | list[int]"
+#         - name: epoch
+#           type_python: "str | int"
+#         - name: s0
+#           type_python: "int"
+#         - name: s1
+#           type_python: "int"
+#       output_arguments:
+#         - name: data
+#           type_python: "numpy.ndarray"
