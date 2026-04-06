@@ -120,9 +120,7 @@ def read(
 
     # Generate time vector
     if data.size > 0:
-        t = samples2times(
-            np.arange(s0_actual, s1_actual + 1, dtype=float), t0_t1, SR
-        )
+        t = samples2times(np.arange(s0_actual, s1_actual + 1, dtype=float), t0_t1, SR)
     else:
         t = np.array([])
         data = np.array([], dtype=np.int16)

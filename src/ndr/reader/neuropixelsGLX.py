@@ -128,9 +128,7 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
             datasize = 16
             p = np.tile([0, 1], (n_channels, 1))
         else:
-            return super().underlying_datatype(
-                epochstreams, epoch_select, channeltype, channel
-            )
+            return super().underlying_datatype(epochstreams, epoch_select, channeltype, channel)
 
         return datatype, p, datasize
 
@@ -159,9 +157,7 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
 
         if ct in ("time", "timestamp", "t"):
             t0t1 = self.t0_t1(epochstreams, epoch_select)
-            data = samples2times(
-                np.arange(s0, s1 + 1, dtype=float), t0t1[0], info["sample_rate"]
-            )
+            data = samples2times(np.arange(s0, s1 + 1, dtype=float), t0t1[0], info["sample_rate"])
             return data.reshape(-1, 1) if data.ndim == 1 else data
 
         elif ct in ("analog_in", "ai"):
@@ -244,9 +240,7 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
         if len(matches) == 0:
             raise FileNotFoundError("No .ap.meta file found in the epoch file list.")
         if len(matches) > 1:
-            raise ValueError(
-                "Multiple .ap.meta files found. Each epoch should have exactly one."
-            )
+            raise ValueError("Multiple .ap.meta files found. Each epoch should have exactly one.")
         return matches[0]
 
     def daqchannels2internalchannels(
@@ -273,16 +267,16 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
                     and avail_prefix[0].lower() == current_prefix
                     and avail_number[0] == current_number
                 ):
-                    sr = self.samplerate(
-                        epochstreams, epoch_select, current_prefix, current_number
-                    )
+                    sr = self.samplerate(epochstreams, epoch_select, current_prefix, current_number)
                     channelstruct.append(
                         {
                             "internal_channelname": ch_avail["name"],
                             "internal_type": ch_avail["type"],
                             "internal_number": current_number,
                             "ndr_type": self.mfdaq_type(ch_avail["type"]),
-                            "samplerate": float(sr) if not isinstance(sr, np.ndarray) else float(sr.item()),
+                            "samplerate": (
+                                float(sr) if not isinstance(sr, np.ndarray) else float(sr.item())
+                            ),
                         }
                     )
                     break

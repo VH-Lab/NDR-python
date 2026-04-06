@@ -27,9 +27,7 @@ def _find_meta_field(meta: dict[str, str], target: str) -> str:
     return ""
 
 
-def _parse_snsGeomMap(
-    geommap_str: str, n_neural: int
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _parse_snsGeomMap(geommap_str: str, n_neural: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Parse the snsGeomMap string for electrode positions.
 
     Format: (header)(shank:x:y:used)(shank:x:y:used)...
@@ -57,9 +55,7 @@ def _parse_snsGeomMap(
     for i in range(n_neural):
         parts = tokens[i + 1].split(":")
         if len(parts) < 4:
-            raise ValueError(
-                f"Could not parse snsGeomMap entry {i}: \"{tokens[i + 1]}\"."
-            )
+            raise ValueError(f'Could not parse snsGeomMap entry {i}: "{tokens[i + 1]}".')
         shank[i] = int(parts[0]) + 1  # Convert 0-based to 1-based
         x[i] = float(parts[1])
         y[i] = float(parts[2])
