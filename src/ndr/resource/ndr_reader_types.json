@@ -34,5 +34,9 @@
   {
     "type": ["dabrowska"],
     "classname": "ndr.reader.dabrowska.ndr_reader_dabrowska"
+  },
+  {
+    "type": ["neuropixelsGLX", "neuropixels", "spikeglx", "imec"],
+    "classname": "ndr.reader.neuropixelsGLX.ndr_reader_neuropixelsGLX"
   }
 ]
