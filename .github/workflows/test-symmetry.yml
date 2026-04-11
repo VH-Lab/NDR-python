@@ -1,0 +1,120 @@
+name: Test Cross-Language Symmetry
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  symmetry:
+    name: MATLAB <-> Python symmetry tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # -- Checkout both repos ----------------------------------------------
+      - name: Check out NDR-python
+        uses: actions/checkout@v4
+        with:
+          path: NDR-python
+
+      - name: Check out NDR-matlab
+        uses: actions/checkout@v4
+        with:
+          repository: VH-Lab/NDR-matlab
+          path: NDR-matlab
+
+      # -- Runtime setup ----------------------------------------------------
+      - name: Start virtual display server
+        run: |
+          sudo apt-get install -y xvfb
+          Xvfb :99 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+
+      - name: Set up MATLAB
+        uses: matlab-actions/setup-matlab@v2
+        with:
+          release: latest
+          cache: true
+          products: |
+            Signal_Processing_Toolbox
+            Statistics_and_Machine_Learning_Toolbox
+
+      - name: Install MatBox
+        uses: ehennestad/matbox-actions/install-matbox@v1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install NDR-python (with dev extras)
+        working-directory: NDR-python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # -- Stage 1: MATLAB makeArtifacts ------------------------------------
+      - name: "Stage 1: MATLAB makeArtifacts"
+        uses: matlab-actions/run-command@v2
+        with:
+          command: |
+            cd("NDR-matlab");
+            addpath(genpath("+ndr"));
+            addpath(genpath("tools"));
+            ndr_Init;
+
+            import matlab.unittest.TestSuite
+            import matlab.unittest.TestRunner
+
+            suite = TestSuite.fromPackage("ndr.symmetry.makeArtifacts", "IncludingSubpackages", true);
+            fprintf("\n=== MATLAB makeArtifacts: %d test(s) ===\n", numel(suite));
+            assert(~isempty(suite), "No MATLAB makeArtifacts tests found.")
+
+            runner = TestRunner.withTextOutput("Verbosity", "Detailed");
+            results = runner.run(suite);
+
+            fprintf("\n=== MATLAB makeArtifacts: %d passed, %d failed ===\n", ...
+                nnz([results.Passed]), nnz([results.Failed]));
+            assert(all(~[results.Failed]), "MATLAB makeArtifacts failed")
+
+      # -- Stage 2: Python readArtifacts (reads MATLAB artifacts) -----------
+      - name: "Stage 2: Python readArtifacts (reads MATLAB artifacts)"
+        working-directory: NDR-python
+        run: |
+          pytest tests/symmetry/read_artifacts/ -v --tb=short
+
+      # -- Stage 3: Python makeArtifacts ------------------------------------
+      - name: "Stage 3: Python makeArtifacts"
+        working-directory: NDR-python
+        run: |
+          pytest tests/symmetry/make_artifacts/ -v --tb=short
+
+      # -- Stage 4: MATLAB readArtifacts (reads Python artifacts) -----------
+      - name: "Stage 4: MATLAB readArtifacts (reads Python artifacts)"
+        uses: matlab-actions/run-command@v2
+        with:
+          command: |
+            cd("NDR-matlab");
+            addpath(genpath("+ndr"));
+            addpath(genpath("tools"));
+            ndr_Init;
+
+            import matlab.unittest.TestSuite
+            import matlab.unittest.TestRunner
+
+            suite = TestSuite.fromPackage("ndr.symmetry.readArtifacts", "IncludingSubpackages", true);
+            fprintf("\n=== MATLAB readArtifacts: %d test(s) ===\n", numel(suite));
+            assert(~isempty(suite), "No MATLAB readArtifacts tests found.")
+
+            runner = TestRunner.withTextOutput("Verbosity", "Detailed");
+            results = runner.run(suite);
+
+            fprintf("\n=== MATLAB readArtifacts: %d passed, %d failed ===\n", ...
+                nnz([results.Passed]), nnz([results.Failed]));
+            assert(all(~[results.Failed]), "MATLAB readArtifacts failed")
