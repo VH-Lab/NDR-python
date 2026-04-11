@@ -23,11 +23,18 @@ jobs:
         with:
           path: NDR-python
 
-      - name: Check out NDR-matlab
+      # Check out NDR-matlab at the same branch name as this workflow run
+      # (e.g. the PR's head branch or the branch being pushed to main).
+      # Developers are expected to keep matching branch names across the
+      # two repos when making cross-language changes, the same way the
+      # symmetry branches work. Falls back to main via the default so
+      # `main` pushes also work.
+      - name: Check out NDR-matlab (matching branch)
         uses: actions/checkout@v4
         with:
           repository: VH-Lab/NDR-matlab
           path: NDR-matlab
+          ref: ${{ github.head_ref || github.ref_name }}
 
       # -- Runtime setup ----------------------------------------------------
       - name: Start virtual display server
@@ -72,6 +79,10 @@ jobs:
             addpath(ndrRoot);
             addpath(fullfile(ndrRoot, "tools", "tests"));
 
+            % Install MATLAB dependencies declared in tools/requirements.txt
+            % (e.g. vhlab-toolbox-matlab, which provides vlt.string.*).
+            matbox.installRequirements(fullfile(ndrRoot, "tools"));
+
             % Skip ndr_Init -- it tries to mkdir filecache paths under
             % userpath which are not writable on the CI runner.
             % The symmetry tests only use ndr.fun.ndrpath() which is
@@ -111,6 +122,7 @@ jobs:
             ndrRoot = fullfile(pwd, "NDR-matlab");
             addpath(ndrRoot);
             addpath(fullfile(ndrRoot, "tools", "tests"));
+            matbox.installRequirements(fullfile(ndrRoot, "tools"));
 
             import matlab.unittest.TestSuite
             import matlab.unittest.TestRunner
