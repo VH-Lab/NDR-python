@@ -18,21 +18,27 @@ from ndr.time.fun.samples2times import samples2times
 
 
 class ndr_reader_neuropixelsGLX(ndr_reader_base):
-    """Reader for Neuropixels SpikeGLX AP-band data.
+    """Reader for SpikeGLX data (AP, LF, and NIDQ streams).
 
-    This class reads action-potential band data from Neuropixels probes
-    acquired with the SpikeGLX software. Each instance handles one probe's
-    AP stream (one .ap.bin / .ap.meta file pair per epoch).
+    This class reads data from Neuropixels probes and NI-DAQ devices
+    acquired with the SpikeGLX software. Each instance handles one
+    stream (one .bin / .meta file pair per epoch).
 
-    SpikeGLX saves Neuropixels data as flat interleaved int16 binary files
-    with companion .meta text files. The binary files have no header.
-    Channel count, sample rate, and gain information are read from the
-    .meta file.
+    SpikeGLX saves data as flat interleaved int16 binary files with
+    companion .meta text files. The binary files have no header.
+    Channel count, sample rate, and gain information are read from
+    the .meta file.
 
     Channel mapping:
-        - Neural channels are exposed as 'analog_in' (ai1..aiN)
-        - The sync word is exposed as 'digital_in' (di1)
-        - A single time channel 't1' is always present
+        - Analog channels are exposed as 'analog_in' (ai1..aiN).
+          For AP streams these are neural probe channels; for NIDQ
+          streams these are NI-DAQ analog inputs (MN + MA + XA).
+        - Digital lines are exposed as 'digital_in' (di1..diM),
+          where each di channel is a single bit of the packed digital
+          word(s). For NIDQ streams the count comes from
+          ``8 * (niXDBytes1 + niXDBytes2)``; for IMEC streams it is
+          ``16 * n_sync_chans``.
+        - A single time channel 't1' is always present.
 
     Data is returned as int16 to preserve native precision. Use
     :func:`ndr.format.neuropixelsGLX.samples2volts` for voltage conversion.
@@ -75,8 +81,10 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
     ) -> list[dict[str, Any]]:
         """List channels available for a given epoch.
 
-        Neural channels are 'analog_in' (ai1..aiN), the sync channel is
-        'digital_in' (di1), and a time channel 't1' is always present.
+        Analog channels are 'analog_in' (ai1..aiN), digital lines are
+        'digital_in' (di1..diM) with one entry per single-bit line in
+        the packed digital word(s), and a time channel 't1' is always
+        present.
         """
         metafile = self.filenamefromepochfiles(epochstreams)
         info = header(metafile)
@@ -86,13 +94,13 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
         # Time channel
         channels.append({"name": "t1", "type": "time", "time_channel": 1})
 
-        # Neural channels (analog_in)
+        # Analog channels (analog_in)
         for i in range(1, info["n_neural_chans"] + 1):
             channels.append({"name": f"ai{i}", "type": "analog_in", "time_channel": 1})
 
-        # Sync channel (digital_in)
-        if info["n_sync_chans"] > 0:
-            channels.append({"name": "di1", "type": "digital_in", "time_channel": 1})
+        # Digital lines (digital_in) — one per bit of the packed digital word(s)
+        for i in range(1, info["n_digital_lines"] + 1):
+            channels.append({"name": f"di{i}", "type": "digital_in", "time_channel": 1})
 
         return channels
 
@@ -145,9 +153,12 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
 
         Reads data between sample s0 and s1 (inclusive, 1-based).
 
-        For 'analog_in': returns int16 neural data.
+        For 'analog_in': returns int16 data (neural for AP, NI-DAQ analog
+        inputs for NIDQ).
         For 'time': returns float64 time stamps in seconds.
-        For 'digital_in': returns int16 sync word values.
+        For 'digital_in': returns int16 single-bit values (0 or 1)
+        extracted from the packed digital word(s). ``channel`` gives
+        the 1-based digital line(s).
         """
         metafile = self.filenamefromepochfiles(epochstreams)
         info = header(metafile)
@@ -178,18 +189,46 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
             return data
 
         elif ct in ("digital_in", "di"):
-            # Sync channel is the last channel in the file
-            sync_chan = np.array([info["n_saved_chans"]], dtype=np.int64)
-            data, _, _, _ = binarymatrix_read(
-                binfile,
-                info["n_saved_chans"],
-                sync_chan,
-                float(s0),
-                float(s1),
-                dataType="int16",
-                byteOrder="ieee-le",
-                headerSkip=0,
-            )
+            if isinstance(channel, int):
+                channel = [channel]
+            line_idx = np.array(channel, dtype=int)
+
+            if np.any(line_idx < 1) or np.any(line_idx > info["n_digital_lines"]):
+                raise ValueError(
+                    f"Digital line out of range; valid lines are 1..{info['n_digital_lines']}."
+                )
+
+            # Digital word columns are at the end of each sample row
+            first_dw_col = info["n_saved_chans"] - info["n_digital_word_cols"] + 1
+
+            # Look up the (column, bit) position for each requested line
+            # line_idx is 1-based; digital_line_col/bit arrays are 0-indexed
+            col_offsets = info["digital_line_col"][line_idx - 1]
+            bit_pos = info["digital_line_bit"][line_idx - 1]
+
+            n_samples = int(s1) - int(s0) + 1
+            data = np.zeros((n_samples, len(channel)), dtype=np.int16)
+
+            unique_cols = np.unique(col_offsets)
+            for uc in unique_cols:
+                file_col = np.array([first_dw_col + uc], dtype=np.int64)
+                raw, _, _, _ = binarymatrix_read(
+                    binfile,
+                    info["n_saved_chans"],
+                    file_col,
+                    float(s0),
+                    float(s1),
+                    dataType="int16",
+                    byteOrder="ieee-le",
+                    headerSkip=0,
+                )
+                # raw is (n_samples, 1) int16 — treat as uint16 for bit extraction
+                raw_uint = raw[:, 0].view(np.uint16)
+                mask = col_offsets == uc
+                indices = np.where(mask)[0]
+                for idx in indices:
+                    data[:, idx] = ((raw_uint >> bit_pos[idx]) & 1).astype(np.int16)
+
             return data
 
         else:
@@ -204,9 +243,9 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
         t0: float,
         t1: float,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Read events or markers. Neuropixels has no native event channels.
+        """Read events or markers. SpikeGLX has no native event channels.
 
-        Returns empty arrays since Neuropixels data is purely
+        Returns empty arrays since SpikeGLX data is purely
         regularly-sampled.
         """
         return np.array([]), np.array([])
@@ -220,8 +259,8 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
     ) -> np.ndarray | float:
         """Get the sample rate for specified channels.
 
-        For Neuropixels AP-band, all channels share the same sample rate
-        (typically 30 kHz).
+        All channels in a single SpikeGLX binary file share one sample
+        rate: typically 30 kHz for AP, 2.5 kHz for LF, or ~25 kHz for NIDQ.
         """
         metafile = self.filenamefromepochfiles(epochstreams)
         info = header(metafile)
@@ -230,18 +269,39 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
         return info["sample_rate"]
 
     def filenamefromepochfiles(self, filename_array: list[str]) -> str:
-        """Identify the .ap.meta file from epoch file list.
+        """Identify the companion .meta file from the epoch file list.
 
-        Searches the list for a file matching *.ap.meta. Errors if zero
-        or more than one match is found.
+        First searches for a ``.bin`` file and derives the ``.meta`` path
+        from it (replacing the last 3 characters). This allows multiple
+        ``.meta`` files (e.g. both AP and NIDQ) to coexist in the same
+        epoch file list — the ``.bin`` file disambiguates which stream
+        this reader instance handles.
+
+        If no ``.bin`` file is present, falls back to finding a single
+        ``.meta`` file. Errors if zero or more than one ``.meta`` match
+        is found without a ``.bin`` to disambiguate.
         """
-        matches = [f for f in filename_array if f.lower().endswith(".ap.meta")]
+        # Primary path: find the .bin file and derive .meta from it
+        binfile = ""
+        for f in filename_array:
+            if f.lower().endswith(".bin"):
+                binfile = f
+                break
 
-        if len(matches) == 0:
-            raise FileNotFoundError("No .ap.meta file found in the epoch file list.")
-        if len(matches) > 1:
-            raise ValueError("Multiple .ap.meta files found. Each epoch should have exactly one.")
-        return matches[0]
+        if binfile:
+            metafile = binfile[:-3] + "meta"
+            # Verify the .meta exists in the file list or on disk
+            if metafile not in filename_array and not Path(metafile).is_file():
+                raise FileNotFoundError(f"No companion .meta file found for {binfile}.")
+            return metafile
+
+        # Fallback: find a single .meta file
+        meta_matches = [f for f in filename_array if f.lower().endswith(".meta")]
+        if len(meta_matches) == 0:
+            raise FileNotFoundError("No .meta file found in the epoch file list.")
+        if len(meta_matches) > 1:
+            raise ValueError("Multiple .meta files found and no .bin file to disambiguate.")
+        return meta_matches[0]
 
     def daqchannels2internalchannels(
         self,
