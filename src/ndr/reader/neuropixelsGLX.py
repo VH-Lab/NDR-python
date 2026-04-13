@@ -300,9 +300,7 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
         if len(meta_matches) == 0:
             raise FileNotFoundError("No .meta file found in the epoch file list.")
         if len(meta_matches) > 1:
-            raise ValueError(
-                "Multiple .meta files found and no .bin file to disambiguate."
-            )
+            raise ValueError("Multiple .meta files found and no .bin file to disambiguate.")
         return meta_matches[0]
 
     def daqchannels2internalchannels(

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import struct
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +9,6 @@ import pytest
 
 from ndr.format.neuropixelsGLX.header import header
 from ndr.reader.neuropixelsGLX import ndr_reader_neuropixelsGLX
-
 
 # ---------------------------------------------------------------------------
 # Fixtures: create minimal .meta / .bin files on disk

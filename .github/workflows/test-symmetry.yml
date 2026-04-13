@@ -26,15 +26,24 @@ jobs:
       # Check out NDR-matlab at the same branch name as this workflow run
       # (e.g. the PR's head branch or the branch being pushed to main).
       # Developers are expected to keep matching branch names across the
-      # two repos when making cross-language changes, the same way the
-      # symmetry branches work. Falls back to main via the default so
-      # `main` pushes also work.
+      # two repos when making cross-language changes. Falls back to main
+      # when the matching branch does not exist in NDR-matlab.
+      - name: Resolve NDR-matlab branch
+        id: matlab-ref
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          if git ls-remote --exit-code --heads https://github.com/VH-Lab/NDR-matlab.git "$BRANCH" >/dev/null 2>&1; then
+            echo "ref=$BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=main" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check out NDR-matlab (matching branch)
         uses: actions/checkout@v4
         with:
           repository: VH-Lab/NDR-matlab
           path: NDR-matlab
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: ${{ steps.matlab-ref.outputs.ref }}
 
       # -- Runtime setup ----------------------------------------------------
       - name: Start virtual display server
