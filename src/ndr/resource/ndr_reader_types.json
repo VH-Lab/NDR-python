@@ -1,42 +1,52 @@
 [
   {
-    "type": ["intan_rhd", "intan", "rhd"],
-    "classname": "ndr.reader.intan_rhd.ndr_reader_intan__rhd"
+    "type": ["intan_rhd", "intan", "rhd", "intanRHD"],
+    "classname": "ndr.reader.intan_rhd.ndr_reader_intan__rhd",
+    "implemented": true
   },
   {
     "type": ["axon_abf", "axon", "abf"],
-    "classname": "ndr.reader.axon_abf.ndr_reader_axon__abf"
+    "classname": "ndr.reader.axon_abf.ndr_reader_axon__abf",
+    "implemented": true
   },
   {
-    "type": ["ced_smr", "ced", "smr"],
-    "classname": "ndr.reader.ced_smr.ndr_reader_ced__smr"
+    "type": ["ced_smr", "ced", "smr", "ced-smr", "son"],
+    "classname": "ndr.reader.ced_smr.ndr_reader_ced__smr",
+    "implemented": true
   },
   {
-    "type": ["spikegadgets_rec", "spikegadgets", "rec"],
-    "classname": "ndr.reader.spikegadgets_rec.ndr_reader_spikegadgets__rec"
+    "type": ["spikegadgets_rec", "spikegadgets", "rec", "SpikeGadgetsREC"],
+    "classname": "ndr.reader.spikegadgets_rec.ndr_reader_spikegadgets__rec",
+    "implemented": false
   },
   {
     "type": ["tdt_sev", "tdt", "sev"],
-    "classname": "ndr.reader.tdt_sev.ndr_reader_tdt__sev"
+    "classname": "ndr.reader.tdt_sev.ndr_reader_tdt__sev",
+    "implemented": false
   },
   {
     "type": ["neo"],
-    "classname": "ndr.reader.neo.ndr_reader_neo"
+    "classname": "ndr.reader.neo.ndr_reader_neo",
+    "implemented": false
   },
   {
-    "type": ["whitematter"],
-    "classname": "ndr.reader.whitematter.ndr_reader_whitematter"
+    "type": ["whitematter", "WMHS"],
+    "classname": "ndr.reader.whitematter.ndr_reader_whitematter",
+    "implemented": false
   },
   {
-    "type": ["bjg"],
-    "classname": "ndr.reader.bjg.ndr_reader_bjg"
+    "type": ["bjg", "bjg_bin"],
+    "classname": "ndr.reader.bjg.ndr_reader_bjg",
+    "implemented": false
   },
   {
-    "type": ["dabrowska"],
-    "classname": "ndr.reader.dabrowska.ndr_reader_dabrowska"
+    "type": ["dabrowska", "dabrowska_mat"],
+    "classname": "ndr.reader.dabrowska.ndr_reader_dabrowska",
+    "implemented": false
   },
   {
     "type": ["neuropixelsGLX", "neuropixels", "spikeglx", "imec"],
-    "classname": "ndr.reader.neuropixelsGLX.ndr_reader_neuropixelsGLX"
+    "classname": "ndr.reader.neuropixelsGLX.ndr_reader_neuropixelsGLX",
+    "implemented": true
   }
 ]
