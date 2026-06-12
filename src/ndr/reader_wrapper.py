@@ -44,6 +44,16 @@ class ndr_reader:
         if match is None:
             raise ValueError(f"Do not know how to make a reader of type '{ndr_reader_type}'.")
 
+        # Fail fast on a known-but-unimplemented reader stub: these raise
+        # NotImplementedError deep inside a read otherwise. The registry marks
+        # them with "implemented": false (default true for back-compat).
+        if not match.get("implemented", True):
+            raise NotImplementedError(
+                f"NDR reader '{ndr_reader_type}' (class '{match['classname']}') is a "
+                "known but not-yet-implemented reader; it cannot read data. "
+                'It is marked "implemented": false in ndr_reader_types.json.'
+            )
+
         # Dynamically import and instantiate the reader class
         classname = match["classname"]
         parts = classname.rsplit(".", 1)
