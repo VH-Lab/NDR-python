@@ -1,5 +1,13 @@
 # NDR-python Audit Remediation — Results (2026-06-12)
 
+> **Context for a reviewer / next agent.** One of **9 coordinated PRs** in the 2026-06 NDI
+> ecosystem audit; **none are merged.** This repo's PR: **VH-Lab/NDR-python#6**.
+> What's done here is the fail-fast stub marking + alias reconciliation + LICENSE.
+> **Two readers are deliberately left unimplemented (`implemented:false`):** the
+> `spikegadgets_rec` binary sample reader (unresolved `.rec` byte-alignment — needs the
+> format spec or a MATLAB cross-check; config layer works) and `neo` (needs `python-neo`
+> + files; no MATLAB ref). Both are detailed below — that's the work to finish here.
+
 Branch `audit/ndr-python-2026-06`, off `origin/main` (`896ed63`). VH-Lab
 fork-and-PR (fork at review time).
 
