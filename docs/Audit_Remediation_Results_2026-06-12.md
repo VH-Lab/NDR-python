@@ -24,8 +24,10 @@ config-derived methods (`getchannelsepoch`/`samplerate`/`t0_t1`) are sound.
 The **binary sample reader** (`read_rec_trodeChannels`), however, has an
 unresolved block-layout ambiguity that I could not pin down without the SpikeGadgets
 `.rec` format spec or a MATLAB cross-check: the physical data block is 276 bytes
-(validated — the data region is an exact multiple, 60000 samples = 2.0 s at
-30 kHz), but the MATLAB reference's read layout implies `header(34) + timestamp(4)
+(the example file's data region is 60000 complete 276-byte blocks + a 39-byte
+partial tail — i.e. 60000 samples = 2.0 s at 30 kHz, the block size is right and a
+short partial final block is normal; it is NOT an exact multiple), but the MATLAB
+reference's read layout implies `header(34) + timestamp(4)
 + channels(240) = 278` (`blockSizeBytes = header + 2 + channels` in the
 reference disagrees with the +4-byte timestamp seek by 2 bytes). The per-sample
 **timestamps come out implausible** on the real file (≈25 s span for 3000 samples;
