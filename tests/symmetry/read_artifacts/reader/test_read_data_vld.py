@@ -27,7 +27,7 @@ def source_type(request):
 
 class TestReadDataVld:
     def _artifact_dir(self, source_type):
-        return SYMMETRY_BASE / source_type / "reader" / "readData" / "vldReadDataArtifacts"
+        return SYMMETRY_BASE / source_type / "reader" / "readData" / "testReadDataVldArtifacts"
 
     def _reader(self):
         from ndr.reader.vld import ndr_reader_vld

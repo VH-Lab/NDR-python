@@ -14,7 +14,7 @@ import pytest
 
 from tests.symmetry.conftest import PYTHON_ARTIFACTS
 
-ARTIFACT_DIR = PYTHON_ARTIFACTS / "reader" / "readData" / "vldReadDataArtifacts"
+ARTIFACT_DIR = PYTHON_ARTIFACTS / "reader" / "readData" / "testReadDataVldArtifacts"
 EXAMPLE_DATA = Path(__file__).parents[4] / "example_data"
 VLD = EXAMPLE_DATA / "vld_example.vld"
 
