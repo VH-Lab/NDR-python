@@ -48,5 +48,20 @@
     "type": ["neuropixelsGLX", "neuropixels", "spikeglx", "imec"],
     "classname": "ndr.reader.neuropixelsGLX.ndr_reader_neuropixelsGLX",
     "implemented": true
+  },
+  {
+    "type": ["vld", "vlh", "vhlv", "vhlabview", "labview"],
+    "classname": "ndr.reader.vld.ndr_reader_vld",
+    "implemented": true
+  },
+  {
+    "type": ["tiffstack", "tiff", "tif", "multipagetiff"],
+    "classname": "ndr.reader.tiffstack.ndr_reader_tiffstack",
+    "implemented": true
+  },
+  {
+    "type": ["prairieview", "prairie", "pv", "prairieview_pcf"],
+    "classname": "ndr.reader.prairieview.ndr_reader_prairieview",
+    "implemented": true
   }
 ]
