@@ -40,7 +40,6 @@ import os
 from typing import Any
 
 import numpy as np
-import tifffile
 
 from ndr.reader.base import ndr_reader_base
 from ndr.time.clocktype import ClockType
@@ -134,6 +133,8 @@ class ndr_reader_tiffstack(ndr_reader_base):
           nframes      total number of frames (pagesperfile * numfiles)
           firstinfo    tifffile.TiffFile pages/shape info for the first file
         """
+        import tifffile
+
         files = self.imagefiles(epochstreams)
         with tifffile.TiffFile(files[0]) as tf:
             pages = tf.pages
@@ -276,6 +277,8 @@ class ndr_reader_tiffstack(ndr_reader_base):
         (1-based) and returns them as an array in 'YXCZT' order:
         shape [Y, X, C, 1, numel(FRAMEIND)].
         """
+        import tifffile
+
         info = self.resolveepoch(epochstreams)
         if frameind is None:
             frameind = np.arange(1, info["nframes"] + 1)
