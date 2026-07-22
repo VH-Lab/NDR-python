@@ -75,8 +75,10 @@ def read_rec_analogChannels(
         for i in range(num_samples):
             ts_bytes = f.read(4)
             if len(ts_bytes) < 4:
-                timestamps = timestamps[:i]
-                break
+                raise EOFError(
+                    f"Requested {num_samples} samples starting at sample {s0} but "
+                    f"only {i} are available in {filename}."
+                )
             timestamps[i] = np.frombuffer(ts_bytes, dtype=np.dtype("<u4"))[0]
             if i < num_samples - 1:
                 f.seek(header_size_bytes + channel_size_bytes, 1)
@@ -91,7 +93,11 @@ def read_rec_analogChannels(
             for j in range(num_samples):
                 raw = f.read(2)
                 if len(raw) < 2:
-                    break
+                    raise EOFError(
+                        f"Requested {num_samples} samples starting at sample {s0} "
+                        f"but only {j} are available for channel byte-location "
+                        f"{byte_loc} in {filename}."
+                    )
                 rec_data[i, j] = np.frombuffer(raw, dtype=np.dtype("<i2"))[0]
                 if j < num_samples - 1:
                     f.seek(block_size_bytes - 2, 1)

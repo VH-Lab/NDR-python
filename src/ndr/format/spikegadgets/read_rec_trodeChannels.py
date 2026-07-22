@@ -71,8 +71,10 @@ def read_rec_trodeChannels(
         for i in range(num_samples):
             ts_bytes = f.read(4)
             if len(ts_bytes) < 4:
-                timestamps = timestamps[:i]
-                break
+                raise EOFError(
+                    f"Requested {num_samples} samples starting at sample {s0} but "
+                    f"only {i} are available in {filename}."
+                )
             timestamps[i] = np.frombuffer(ts_bytes, dtype=np.dtype("<u4"))[0]
             f.seek(header_size_bytes + channel_size_bytes, 1)
         timestamps /= samplingRate
@@ -88,8 +90,10 @@ def read_rec_trodeChannels(
             for j in range(s1 - s0 + 1):
                 raw = f.read(2)
                 if len(raw) < 2:
-                    col = col[:j]
-                    break
+                    raise EOFError(
+                        f"Requested {s1 - s0 + 1} samples starting at sample {s0} "
+                        f"but only {j} are available for channel {ch} in {filename}."
+                    )
                 col[j] = np.frombuffer(raw, dtype=np.dtype("<i2"))[0]
                 if j < s1 - s0:
                     f.seek(block_size_bytes - 2, 1)
