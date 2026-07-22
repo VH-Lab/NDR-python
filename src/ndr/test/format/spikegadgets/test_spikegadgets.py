@@ -42,7 +42,9 @@ def test_read_config(example_rec: Path) -> None:
     except ImportError:
         pytest.skip("ndr.format.spikegadgets.read_rec_config not yet available")
 
-    h = read_rec_config(str(example_rec))
+    result = read_rec_config(str(example_rec))
+    # read_rec_config returns (config_dict, channels_list); accept either form.
+    h = result[0] if isinstance(result, tuple) else result
     assert h is not None
     assert hasattr(h, "samplingRate") or "samplingRate" in h
 
@@ -59,14 +61,18 @@ def test_read_trode_channels(example_rec: Path) -> None:
     except ImportError:
         pytest.skip("ndr.format.spikegadgets read functions not yet available")
 
-    h = read_rec_config(str(example_rec))
+    result = read_rec_config(str(example_rec))
+    # read_rec_config returns (config_dict, channels_list); accept either form.
+    h = result[0] if isinstance(result, tuple) else result
     sampling_rate = int(h["samplingRate"]) if isinstance(h, dict) else int(h.samplingRate)
     num_channels = int(h["numChannels"]) if isinstance(h, dict) else int(h.numChannels)
     header_size = int(h["headerSize"]) if isinstance(h, dict) else int(h.headerSize)
 
     t1 = 1 * sampling_rate
+    # channels must be a list -- read_rec_trodeChannels iterates over it. Passing
+    # a bare int (1) raised TypeError (the documented pre-existing failure).
     data, time = read_rec_trodeChannels(
-        str(example_rec), num_channels, 1, sampling_rate, header_size, 1, t1
+        str(example_rec), num_channels, [1], sampling_rate, header_size, 1, t1
     )
 
     assert data is not None

@@ -40,7 +40,7 @@ allow-direct-references = true
 packages = ["src/ndr"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "src/ndr/test"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short --ignore=tests/symmetry"
 markers = [

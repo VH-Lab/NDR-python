@@ -24,14 +24,14 @@ def test_stub_reader_fails_fast(rtype):
 
 @pytest.mark.parametrize("rtype", IMPLEMENTED_TYPES)
 def test_implemented_reader_not_flagged_stub(rtype):
-    # Should not raise NotImplementedError (it may raise nothing, or something
-    # else if construction needs resources — we only assert it is not stubbed).
+    # Must not raise NotImplementedError. Any *other* construction error (e.g. a
+    # dropped optional dependency or a base-class signature change) is a real
+    # failure and must surface -- previously an `except Exception: pass` made this
+    # test unfailable on anything but NotImplementedError.
     try:
         ndr_reader(rtype)
     except NotImplementedError:
         pytest.fail(f"{rtype} should not be flagged as an unimplemented stub")
-    except Exception:
-        pass
 
 
 def test_matlab_aliases_resolve():
