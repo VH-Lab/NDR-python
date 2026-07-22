@@ -23,6 +23,7 @@ except ImportError:  # pragma: no cover
     CedRawIO = None  # type: ignore[assignment]
 
 from ndr.format.ced.read_SOMSMR_header import read_SOMSMR_header
+from ndr.time.fun.times2samples import matlab_round
 
 
 def read_SOMSMR_datafile(
@@ -115,8 +116,8 @@ def read_SOMSMR_datafile(
     if t1 > total_time:
         t1 = total_time
 
-    s0 = max(0, int(round(t0 * sr)))
-    s1 = min(n_samples, int(round(t1 * sr)) + 1)
+    s0 = max(0, int(matlab_round(t0 * sr)))
+    s1 = min(n_samples, int(matlab_round(t1 * sr)) + 1)
 
     raw = raw_reader.get_analogsignal_chunk(
         block_index=0,
