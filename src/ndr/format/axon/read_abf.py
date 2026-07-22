@@ -93,8 +93,16 @@ def read_abf(
         s0 = int(round(t0 / si_sec))
         s1_idx = int(round(t1 / si_sec)) + 1
 
-        columns = []
-        for ch_num in sorted(channel_numbers):
+        # Read in sorted channel order (mirroring MATLAB) but place each column
+        # back at its position in the caller's requested order. Returning the
+        # columns in sorted order silently permuted any non-ascending request
+        # (e.g. [3, 1]), swapping traces with no visible sign.
+        columns: list[np.ndarray] = [None] * len(channel_numbers)  # type: ignore[list-item]
+        sorted_positions = sorted(
+            range(len(channel_numbers)), key=lambda k: channel_numbers[k]
+        )
+        for pos in sorted_positions:
+            ch_num = channel_numbers[pos]
             ch_idx = ch_num - 1  # 0-based
             if abf.sweepCount == 1:
                 abf.setSweep(0, channel=ch_idx)
@@ -109,7 +117,7 @@ def read_abf(
                 times = np.arange(len(all_data)) * si_sec
                 mask = (times >= t0) & (times <= t1 + 0.5 * si_sec)
                 col = all_data[mask]
-            columns.append(col)
+            columns[pos] = col
 
         data = np.column_stack(columns) if columns else np.array([])
         return data
