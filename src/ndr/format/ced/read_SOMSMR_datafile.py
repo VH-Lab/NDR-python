@@ -84,9 +84,29 @@ def read_SOMSMR_datafile(
     if ch_idx is None:
         raise ValueError(f"Channel number {channel_number} not recorded in file {filename}.")
 
-    # Get sample rate for this channel
+    # Determine the stream index for this channel FIRST: sample count, rate and
+    # the sample-bound clamp must all come from the requested channel's own
+    # stream. Sizing against the default (stream 0) mixed a stream-0 length with
+    # a per-channel sample rate for any multi-stream (mixed-rate) file.
+    stream_id = sig_channels[ch_idx]["stream_id"]
+    streams = raw_reader.header["signal_streams"]
+    stream_idx = 0
+    for si, s in enumerate(streams):
+        if s["id"] == stream_id:
+            stream_idx = si
+            break
+
+    # channel_indexes for get_analogsignal_chunk are relative to the stream's own
+    # channel list, not the flat signal_channels array. Convert ch_idx to the
+    # channel's position within its stream.
+    stream_channel_positions = np.nonzero(sig_channels["stream_id"] == stream_id)[0]
+    stream_channel_index = int(np.nonzero(stream_channel_positions == ch_idx)[0][0])
+
+    # Get sample rate and size for this channel/stream
     sr = float(sig_channels[ch_idx]["sampling_rate"])
-    n_samples = raw_reader.get_signal_size(block_index=0, seg_index=0)
+    n_samples = raw_reader.get_signal_size(
+        block_index=0, seg_index=0, stream_index=stream_idx
+    )
     total_samples = n_samples
     total_time = n_samples / sr
 
@@ -98,25 +118,16 @@ def read_SOMSMR_datafile(
     s0 = max(0, int(round(t0 * sr)))
     s1 = min(n_samples, int(round(t1 * sr)) + 1)
 
-    # Determine stream index for this channel
-    stream_id = sig_channels[ch_idx]["stream_id"]
-    streams = raw_reader.header["signal_streams"]
-    stream_idx = 0
-    for si, s in enumerate(streams):
-        if s["id"] == stream_id:
-            stream_idx = si
-            break
-
     raw = raw_reader.get_analogsignal_chunk(
         block_index=0,
         seg_index=0,
         i_start=s0,
         i_stop=s1,
-        channel_indexes=[ch_idx],
+        channel_indexes=[stream_channel_index],
         stream_index=stream_idx,
     )
     data = raw_reader.rescale_signal_raw_to_float(
-        raw, channel_indexes=[ch_idx], stream_index=stream_idx
+        raw, channel_indexes=[stream_channel_index], stream_index=stream_idx
     )
     data = data.ravel()
 
