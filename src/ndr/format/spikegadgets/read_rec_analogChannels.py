@@ -52,7 +52,11 @@ def read_rec_analogChannels(
     num_channels = int(NumChannels)
     header_size_bytes = int(headerSize) * 2
     channel_size_bytes = num_channels * 2
-    block_size_bytes = header_size_bytes + 2 + channel_size_bytes
+    # True block stride: header + 4-byte uint32 timestamp + channel data. Using
+    # +2 here advanced 2 bytes per sample too few, so every sample after the
+    # first came from the wrong file offset (and, since the drift is not a
+    # multiple of the per-channel stride, from the wrong channel too).
+    block_size_bytes = header_size_bytes + 4 + channel_size_bytes
 
     configsize = 0
     if configExists:

@@ -51,7 +51,9 @@ def read_rec_trodeChannels(
 
     header_size_bytes = header_size_int16 * 2
     channel_size_bytes = num_channels * 2
-    block_size_bytes = header_size_bytes + 2 + channel_size_bytes  # +2 for padding/sync
+    # True block stride: header + 4-byte uint32 timestamp + channel data. Using
+    # +2 advanced 2 bytes per sample too few, drifting off the correct offset.
+    block_size_bytes = header_size_bytes + 4 + channel_size_bytes
 
     # Find config size
     with open(filename, "rb") as f:
