@@ -41,7 +41,12 @@ def Intan_RHD2000_blockinfo(
     num_dig_out = len(header.get("board_dig_out_channels", []))
     dc_amp_saved = header.get("dc_amplifier_data_saved", 0)
 
-    samples_per_block = 60  # Intan RHD uses 60 samples per data block
+    # Samples per data block depends on the file version: 60 for v1.x, 128 for
+    # v2.0+. The header parser already computes this correctly
+    # (read_Intan_RHD2000_header.py) and stores it in
+    # header["num_samples_per_data_block"]. Hardcoding 60 here decoded every
+    # v2.0+ file at the wrong block size (silent garbage).
+    samples_per_block = header["num_samples_per_data_block"]
 
     # Calculate bytes per data block
     # timestamp: 4 bytes * 60 samples
