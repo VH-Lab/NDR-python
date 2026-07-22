@@ -8,7 +8,7 @@ import pytest
 
 from tests.symmetry.conftest import SOURCE_TYPES, SYMMETRY_BASE
 
-EXAMPLE_DATA = Path(__file__).parents[4] / "example_data"
+EXAMPLE_DATA = Path(__file__).parents[4] / "src" / "ndr" / "example_data"
 
 
 @pytest.fixture(params=SOURCE_TYPES)
@@ -27,13 +27,13 @@ class TestReadData:
 
         metadata = json.loads((artifact_dir / "metadata.json").read_text())
 
-        rhd_file = EXAMPLE_DATA / "Intan_160317_125049_short.rhd"
+        rhd_file = EXAMPLE_DATA / "example.rhd"
         if not rhd_file.exists():
             pytest.skip("Example RHD file not available")
 
-        from ndr.reader.intan_rhd import IntanRHD
+        from ndr.reader.intan_rhd import ndr_reader_intan__rhd
 
-        reader = IntanRHD()
+        reader = ndr_reader_intan__rhd()
         epochfiles = [str(rhd_file)]
 
         actual_sr = reader.samplerate(epochfiles, 1, "ai", 1)
@@ -52,13 +52,13 @@ class TestReadData:
         read_data = json.loads((artifact_dir / "readData.json").read_text())
         expected = np.array(read_data["ai_channel_1_samples_1_100"])
 
-        rhd_file = EXAMPLE_DATA / "Intan_160317_125049_short.rhd"
+        rhd_file = EXAMPLE_DATA / "example.rhd"
         if not rhd_file.exists():
             pytest.skip("Example RHD file not available")
 
-        from ndr.reader.intan_rhd import IntanRHD
+        from ndr.reader.intan_rhd import ndr_reader_intan__rhd
 
-        reader = IntanRHD()
+        reader = ndr_reader_intan__rhd()
         actual = reader.readchannels_epochsamples("ai", [1], [str(rhd_file)], 1, 1, 100)
 
         assert np.allclose(
