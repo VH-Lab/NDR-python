@@ -39,6 +39,7 @@ def Intan_RHD2000_blockinfo(
     num_adc = len(header.get("board_adc_channels", []))
     num_dig_in = len(header.get("board_dig_in_channels", []))
     num_dig_out = len(header.get("board_dig_out_channels", []))
+    num_temp = header.get("num_temp_sensor_channels", 0)
     dc_amp_saved = header.get("dc_amplifier_data_saved", 0)
 
     # Samples per data block depends on the file version: 60 for v1.x, 128 for
@@ -67,8 +68,10 @@ def Intan_RHD2000_blockinfo(
     # supply voltage: 2 bytes * num_supply * 1 sample (sampled at 1/60 rate)
     bytes_per_block += 2 * num_supply
 
-    # temp sensor: 2 bytes * num_supply * 1 sample
-    bytes_per_block += 2 * num_supply
+    # temp sensor: one uint16 (2 bytes) total if any temp-sensor channel exists,
+    # else 0 -- NOT one per supply-voltage channel. Matches NDR-matlab
+    # Intan_RHD2000_blockinfo.m: 1*2*(num_temp_sensor_channels>0).
+    bytes_per_block += 2 * (num_temp > 0)
 
     # board ADC: 2 bytes * num_adc * 60 samples
     bytes_per_block += 2 * num_adc * samples_per_block
@@ -96,6 +99,7 @@ def Intan_RHD2000_blockinfo(
         "num_adc": num_adc,
         "num_dig_in": num_dig_in,
         "num_dig_out": num_dig_out,
+        "num_temp": num_temp,
         "dc_amp_saved": dc_amp_saved,
         "header_size": header_size,
     }
@@ -243,6 +247,7 @@ def read_Intan_RHD2000_datafile(
     num_adc = blockinfo["num_adc"]
     num_dig_in = blockinfo["num_dig_in"]
     num_dig_out = blockinfo["num_dig_out"]
+    num_temp = blockinfo["num_temp"]
     dc_amp_saved = blockinfo["dc_amp_saved"]
     header_size = blockinfo["header_size"]
 
@@ -312,9 +317,9 @@ def read_Intan_RHD2000_datafile(
             if num_supply > 0:
                 f.read(2 * num_supply)
 
-            # Temp sensor
-            if num_supply > 0:
-                f.read(2 * num_supply)
+            # Temp sensor: one uint16 total if any temp-sensor channel exists
+            if num_temp > 0:
+                f.read(2)
 
             # Board ADC: uint16 x num_adc x 60
             if num_adc > 0:
