@@ -355,6 +355,22 @@ def read_Intan_RHD2000_datafile(
     # Extract the requested time range and channels
     if channeltype == "time":
         return all_data[s0 : s1 + 1].reshape(-1, 1)
+    elif channeltype in ("din", "dout"):
+        # Digital channels: the requested channel number indexes the recorded
+        # digital-channel list, and that entry's native_order gives the bit
+        # position in the packed word (all_data has one column per bit). Sparsely
+        # enabled inputs (e.g. only DIGITAL-IN-05) must not be read as bit c-1.
+        key = "board_dig_in_channels" if channeltype == "din" else "board_dig_out_channels"
+        dig_channels = header.get(key, [])
+        ch_indices = []
+        for c in channel:
+            if c < 1 or c > len(dig_channels):
+                raise ValueError(
+                    f"Requested {channeltype} channel {c} exceeds the "
+                    f"{len(dig_channels)} recorded digital channel(s)."
+                )
+            ch_indices.append(dig_channels[c - 1]["native_order"])
+        return all_data[s0 : s1 + 1, :][:, ch_indices]
     else:
         # Convert 1-based channel numbers to 0-based indices
         ch_indices = [c - 1 for c in channel]
