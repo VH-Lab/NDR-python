@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
@@ -16,7 +16,7 @@ from ndr.format.prairieview.keyvalue import _str2double
 from ndr.format.prairieview.readxml import readxml
 
 
-def readconfig(filename: str) -> Dict[str, Any]:
+def readconfig(filename: str) -> dict[str, Any]:
     """Read values from a (legacy) Prairie View config file.
 
     Reads a legacy Prairie Technologies ``.pcf`` config file and returns a
@@ -57,7 +57,7 @@ def readconfig(filename: str) -> Dict[str, Any]:
     """
     filename = configfilename(filename)
 
-    v: Dict[str, Any] = {}
+    v: dict[str, Any] = {}
     ext = os.path.splitext(filename)[1]
     if ext.lower() == ".xml":
         v = readxml(filename)
@@ -65,7 +65,7 @@ def readconfig(filename: str) -> Dict[str, Any]:
         return v
     v["is_xml"] = False
 
-    with open(filename, "r") as f:
+    with open(filename) as f:
         txt = f.read()
     lines = re.split(r"\r\n|\r|\n", txt)
     N = len(lines)
@@ -105,7 +105,7 @@ def readconfig(filename: str) -> Dict[str, Any]:
             i += 1
         else:
             subname = _local_sanitize(secname)
-            field_struct: Dict[str, Any] = {}
+            field_struct: dict[str, Any] = {}
             i += 1
             while i < N:
                 ln = lines[i].strip()

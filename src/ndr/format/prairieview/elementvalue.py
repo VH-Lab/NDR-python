@@ -6,12 +6,11 @@ Port of +ndr/+format/+prairieview/elementvalue.m
 from __future__ import annotations
 
 import re
-from typing import Union
 
 from ndr.format.prairieview.keyvalue import _str2double
 
 
-def elementvalue(txt: str, tag: str) -> Union[float, str, None]:
+def elementvalue(txt: str, tag: str) -> float | str | None:
     """Read an element value from a legacy (MM-era) Prairie View XML.
 
     Given the text ``txt`` of a legacy Prairie View XML file, return the value

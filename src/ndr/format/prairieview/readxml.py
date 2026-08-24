@@ -6,7 +6,7 @@ Port of +ndr/+format/+prairieview/readxml.m
 from __future__ import annotations
 
 import re
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
@@ -15,7 +15,7 @@ from ndr.format.prairieview.elementvalue import elementvalue
 from ndr.format.prairieview.keyvalue import keyvalue
 
 
-def readxml(filename: str) -> Dict[str, Any]:
+def readxml(filename: str) -> dict[str, Any]:
     """Read a Prairie View XML parameter file.
 
     Reads a Prairie View XML parameter file and returns a dict ``v`` in the
@@ -52,7 +52,7 @@ def readxml(filename: str) -> Dict[str, Any]:
         live under key ``"Image_TimeStamp__us_"`` as a ``numpy.ndarray``.
     """
     filename = configfilename(filename)
-    with open(filename, "r") as f:
+    with open(filename) as f:
         txt = f.read()
 
     versiontok = re.search(r'<PVScan[^>]*version="([^"]+)"', txt)
@@ -64,9 +64,9 @@ def readxml(filename: str) -> Dict[str, Any]:
 # ----- modern PVScan (vers 3/4/5; ported from readprairieviewxml3) ---------
 
 
-def _local_read_modern(txt: str) -> Dict[str, Any]:
+def _local_read_modern(txt: str) -> dict[str, Any]:
     """Parse a modern PVScan (v3/4/5) Prairie View XML string."""
-    v: Dict[str, Any] = {}
+    v: dict[str, Any] = {}
     # per-frame absolute times (seconds) -> microseconds, in file order
     at = re.findall(r'<Frame[^>]*absoluteTime="([-+0-9.eE]+)"', txt)
     times = np.array([float(x) for x in at], dtype=float)
@@ -88,9 +88,9 @@ def _local_read_modern(txt: str) -> Dict[str, Any]:
 # ----- legacy MM-era XML (ported from readprairieviewxml) -------------------
 
 
-def _local_read_legacy(txt: str) -> Dict[str, Any]:
+def _local_read_legacy(txt: str) -> dict[str, Any]:
     """Parse a legacy MM-era ('.NET DataSet') Prairie View XML string."""
-    v: Dict[str, Any] = {}
+    v: dict[str, Any] = {}
 
     # Older Prairie XML (e.g. v2.2 '.NET DataSet' files) embeds an XSD schema
     # before the data; element names appear there as '<xs:element name="..."/>'

@@ -39,7 +39,8 @@ from __future__ import annotations
 import glob
 import os
 import re
-from typing import Any, Dict, List, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
@@ -62,21 +63,21 @@ class ndr_reader_prairieview(ndr_reader_base):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _tiffsindir(folder: str) -> List[str]:
+    def _tiffsindir(folder: str) -> list[str]:
         """Return the full-path .tif/.tiff files in a folder.
 
         Port of ndr.reader.tiffstack.tiffsindir.
         """
         if not folder:
             folder = "."
-        files: List[str] = []
+        files: list[str] = []
         for pat in ("*.tif", "*.tiff"):
             for f in glob.glob(os.path.join(folder, pat)):
                 if not os.path.isdir(f):
                     files.append(f)
         return files
 
-    def imagefiles(self, epochstreams: Sequence[str] | str) -> List[str]:
+    def imagefiles(self, epochstreams: Sequence[str] | str) -> list[str]:
         """Return the ordered list of TIFF files for an epoch.
 
         Port of ndr.reader.tiffstack.imagefiles.
@@ -93,8 +94,8 @@ class ndr_reader_prairieview(ndr_reader_base):
         if isinstance(epochstreams, str):
             epochstreams = [epochstreams]
 
-        files: List[str] = []  # TIFFs listed directly or expanded from dirs
-        anchors: List[str] = []  # non-image files that could anchor a directory
+        files: list[str] = []  # TIFFs listed directly or expanded from dirs
+        anchors: list[str] = []  # non-image files that could anchor a directory
         for entry in epochstreams:
             if os.path.isdir(entry):
                 files.extend(self._tiffsindir(entry))
@@ -129,7 +130,7 @@ class ndr_reader_prairieview(ndr_reader_base):
         """
         return np.dtype(dtype).name
 
-    def framelayout(self, epochstreams: Sequence[str] | str) -> Dict[str, Any]:
+    def framelayout(self, epochstreams: Sequence[str] | str) -> dict[str, Any]:
         """Resolve the epoch's frames, grouping channels onto the C axis.
 
         Port of ndr.reader.prairieview.framelayout.
@@ -183,7 +184,7 @@ class ndr_reader_prairieview(ndr_reader_base):
         nT = keys.shape[0]
         nC = channels.size
 
-        grid: List[List[Any]] = [[None for _ in range(nC)] for _ in range(nT)]
+        grid: list[list[Any]] = [[None for _ in range(nC)] for _ in range(nT)]
         # index maps for fast lookup
         key_index = {(int(keys[t, 0]), int(keys[t, 1])): t for t in range(nT)}
         chan_index = {int(channels[c]): c for c in range(nC)}
@@ -229,7 +230,7 @@ class ndr_reader_prairieview(ndr_reader_base):
         L = self.framelayout(epochstreams)
         return int(L["nframes"])
 
-    def framesize(self, epochstreams: Sequence[str] | str, epoch_select: int = 1) -> List[int]:
+    def framesize(self, epochstreams: Sequence[str] | str, epoch_select: int = 1) -> list[int]:
         """[Y X C Z T] extent, with C = number of channels.
 
         Port of ndr.reader.prairieview.framesize.
@@ -304,7 +305,7 @@ class ndr_reader_prairieview(ndr_reader_base):
     # Config access + timing
     # ------------------------------------------------------------------
 
-    def config(self, epochstreams: Sequence[str] | str) -> Dict[str, Any]:
+    def config(self, epochstreams: Sequence[str] | str) -> dict[str, Any]:
         """Read the Prairie config dict for an epoch.
 
         Resolves the recording directory from ``epochstreams`` and reads its
@@ -365,7 +366,7 @@ class ndr_reader_prairieview(ndr_reader_base):
 
     def epochclock(
         self, epochstreams: Sequence[str] | str, epoch_select: int = 1
-    ) -> List[ClockType]:
+    ) -> list[ClockType]:
         """Clock type(s) for the epoch.
 
         Returns ``[ClockType('dev_local_time')]`` when the config provides
@@ -377,7 +378,7 @@ class ndr_reader_prairieview(ndr_reader_base):
             return [ClockType("dev_local_time")]
         return [ClockType("no_time")]
 
-    def t0_t1(self, epochstreams: Sequence[str] | str, epoch_select: int = 1) -> List[List[float]]:
+    def t0_t1(self, epochstreams: Sequence[str] | str, epoch_select: int = 1) -> list[list[float]]:
         """[t0 t1] begin/end times for the epoch.
 
         From the config timestamps when present; otherwise ``[[NaN, NaN]]``
@@ -391,7 +392,7 @@ class ndr_reader_prairieview(ndr_reader_base):
 
     def getchannelsepoch(
         self, epochstreams: Sequence[str] | str, epoch_select: int = 1
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """List the channels available for an image epoch.
 
         Returns a single 'image' channel named 'image1'. Multi-channel frames
@@ -408,8 +409,8 @@ class ndr_reader_prairieview(ndr_reader_base):
     def readchannels_epochsamples(
         self,
         channeltype: str,
-        channel: int | List[int],
-        epochstreams: List[str],
+        channel: int | list[int],
+        epochstreams: list[str],
         epoch_select: int,
         s0: int,
         s1: int,
@@ -429,8 +430,8 @@ class ndr_reader_prairieview(ndr_reader_base):
     def readevents_epochsamples_native(
         self,
         channeltype: str,
-        channel: int | List[int],
-        epochstreams: List[str],
+        channel: int | list[int],
+        epochstreams: list[str],
         epoch_select: int,
         t0: float,
         t1: float,

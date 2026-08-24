@@ -6,10 +6,9 @@ Port of +ndr/+format/+prairieview/keyvalue.m
 from __future__ import annotations
 
 import re
-from typing import Union
 
 
-def keyvalue(txt: str, keyname: str) -> Union[float, str, None]:
+def keyvalue(txt: str, keyname: str) -> float | str | None:
     """Read a Prairie View (modern PVScan) XML key/value parameter.
 
     Given the text ``txt`` of a modern (PVScan) Prairie View XML file, return
@@ -50,7 +49,7 @@ def keyvalue(txt: str, keyname: str) -> Union[float, str, None]:
     return val
 
 
-def _str2double(s: str) -> Union[float, None]:
+def _str2double(s: str) -> float | None:
     """Mimic MATLAB ``str2double``: parse a scalar number or return ``None``.
 
     Returns ``None`` when the (trimmed) string does not parse as a single real

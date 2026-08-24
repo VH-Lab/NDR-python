@@ -98,23 +98,23 @@ def _write_pvscan_xml(path, y: int, x: int, times_sec) -> None:
     for i in range(len(times_sec)):
         lines.append(f'  <Sequence type="TSeries Timed Element" cycle="{i + 1}">')
         lines.append(
-            '    <Frame relativeTime="0" absoluteTime="%.12g" index="1" '
-            'label="CurrentSettings">' % times_sec[i]
+            f'    <Frame relativeTime="0" absoluteTime="{times_sec[i]:.12g}" index="1" '
+            'label="CurrentSettings">'
         )
         lines.append(
             '      <File channel="1" channelName="Ch1" '
-            'filename="t00004-001_Cycle%03d_CurrentSettings_Ch1_000001.tif" />' % (i + 1)
+            f'filename="t00004-001_Cycle{i + 1:03d}_CurrentSettings_Ch1_000001.tif" />'
         )
         lines.append(
             '      <File channel="2" channelName="Ch2" '
-            'filename="t00004-001_Cycle%03d_CurrentSettings_Ch2_000001.tif" />' % (i + 1)
+            f'filename="t00004-001_Cycle{i + 1:03d}_CurrentSettings_Ch2_000001.tif" />'
         )
         lines.append("      <PVStateShard>")
         lines.append(
-            '        <Key key="linesPerFrame" permissions="Read, Write, Save" ' 'value="%d" />' % y
+            f'        <Key key="linesPerFrame" permissions="Read, Write, Save" value="{y:d}" />'
         )
         lines.append(
-            '        <Key key="pixelsPerLine" permissions="Read, Write, Save" ' 'value="%d" />' % x
+            f'        <Key key="pixelsPerLine" permissions="Read, Write, Save" value="{x:d}" />'
         )
         lines.append(
             '        <Key key="framePeriod" permissions="Read, Write, Save" ' 'value="1.4819328" />'
@@ -150,15 +150,15 @@ def _write_v2_xml(path, y: int, x: int, times_ms) -> None:
     for i in range(len(times_ms)):
         lines.append("  <Dataset_x0020_2>")
         lines.append(
-            "    <Channel_1_Filename>t00001-001_Cycle%03d_Ch1_000001.tif"
-            "</Channel_1_Filename>" % (i + 1)
+            f"    <Channel_1_Filename>t00001-001_Cycle{i + 1:03d}_Ch1_000001.tif"
+            "</Channel_1_Filename>"
         )
         lines.append(
-            "    <Channel_2_Filename>t00001-001_Cycle%03d_Ch2_000001.tif"
-            "</Channel_2_Filename>" % (i + 1)
+            f"    <Channel_2_Filename>t00001-001_Cycle{i + 1:03d}_Ch2_000001.tif"
+            "</Channel_2_Filename>"
         )
         lines.append("    <Frame>1</Frame>")
-        lines.append("    <Time>%.15g</Time>" % times_ms[i])
+        lines.append(f"    <Time>{times_ms[i]:.15g}</Time>")
         lines.append("  </Dataset_x0020_2>")
     lines.append("</Acquisition>")
     with open(path, "w") as f:
@@ -192,7 +192,7 @@ def single_pcf(tmp_path_factory):
     truth = np.zeros((Y, X, 1, 1, T), dtype=np.uint16)
     for i in range(T):
         truth[:, :, 0, 0, i] = _base_plane(i * 100)
-        fn = d / ("Recording_Cycle001_Ch2_%06d.tif" % (i + 1))
+        fn = d / f"Recording_Cycle001_Ch2_{i + 1:06d}.tif"
         _write_tiff(fn, truth[:, :, 0, 0, i])
     cfg = d / "Recording_Main.pcf"
     _write_pcf(cfg, Y, X, T, TIMES_US)
@@ -207,7 +207,7 @@ def multi_pcf(tmp_path_factory):
     for c in range(MULTI_C):  # c = 0,1 -> channel 1,2
         for i in range(T):
             mtruth[:, :, c, 0, i] = _base_plane(i * 100 + (c + 1) * 10000)
-            fn = d / ("Rec_Cycle001_Ch%d_%06d.tif" % (c + 1, i + 1))
+            fn = d / f"Rec_Cycle001_Ch{c + 1:d}_{i + 1:06d}.tif"
             _write_tiff(fn, mtruth[:, :, c, 0, i])
     _write_pcf(d / "Rec_Main.pcf", Y, X, T, MULTI_TIMES_US)
     return {"dir": str(d), "truth": mtruth}
@@ -222,7 +222,7 @@ def xml_pvscan(tmp_path_factory):
     for c in range(XML_C):
         for i in range(txml):
             xtruth[:, :, c, 0, i] = _base_plane(i * 100 + (c + 1) * 5000)
-            fn = d / ("t00004-001_Cycle%03d_CurrentSettings_Ch%d_000001.tif" % (i + 1, c + 1))
+            fn = d / f"t00004-001_Cycle{i + 1:03d}_CurrentSettings_Ch{c + 1:d}_000001.tif"
             _write_tiff(fn, xtruth[:, :, c, 0, i])
     _write_pvscan_xml(d / "t00004-001.xml", Y, X, XML_TIMES_SEC)
     return {"dir": str(d), "truth": xtruth}
@@ -237,7 +237,7 @@ def xml_v2(tmp_path_factory):
     for c in range(V2_C):
         for i in range(tv2):
             v2truth[:, :, c, 0, i] = _base_plane(i * 100 + (c + 1) * 3000)
-            fn = d / ("t00001-001_Cycle%03d_Ch%d_000001.tif" % (i + 1, c + 1))
+            fn = d / f"t00001-001_Cycle{i + 1:03d}_Ch{c + 1:d}_000001.tif"
             _write_tiff(fn, v2truth[:, :, c, 0, i])
     _write_v2_xml(d / "t00001-001.xml", Y, X, V2_TIMES_MS)
     return {"dir": str(d), "truth": v2truth}
@@ -253,7 +253,7 @@ def multicycle_pcf(tmp_path_factory):
     for cyc in range(len(CYC_COUNTS)):
         for fr in range(CYC_COUNTS[cyc]):
             cyctruth[:, :, 0, 0, tp] = _base_plane(tp * 100)
-            fn = d / ("t00012-001_Cycle%03d_CurrentSettings_Ch1_%06d.tif" % (cyc + 1, fr + 1))
+            fn = d / f"t00012-001_Cycle{cyc + 1:03d}_CurrentSettings_Ch1_{fr + 1:06d}.tif"
             _write_tiff(fn, cyctruth[:, :, 0, 0, tp])
             tp += 1
     times_us = np.arange(tcyc, dtype=float) * 1486848.0
