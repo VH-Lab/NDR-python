@@ -19,9 +19,7 @@ import pytest
 
 from tests.symmetry.conftest import PYTHON_ARTIFACTS
 
-ARTIFACT_DIR = (
-    PYTHON_ARTIFACTS / "reader" / "readData" / "testReadDataPrairieviewArtifacts"
-)
+ARTIFACT_DIR = PYTHON_ARTIFACTS / "reader" / "readData" / "testReadDataPrairieviewArtifacts"
 EXAMPLE_DATA = Path(__file__).parents[4] / "example_data"
 PV_DIR = EXAMPLE_DATA / "prairieview_example"
 
@@ -57,9 +55,7 @@ class TestMakePrairieview:
             "t0_t1": t0t1,
             "epochclock": [str(c) for c in ec],
         }
-        (ARTIFACT_DIR / "metadata.json").write_text(
-            json.dumps(metadata, indent=2, default=str)
-        )
+        (ARTIFACT_DIR / "metadata.json").write_text(json.dumps(metadata, indent=2, default=str))
 
         # frame 1 (1-based), all channels, pixels flattened
         frame1 = self.reader.readframes(self.epochfiles, 1, 1)

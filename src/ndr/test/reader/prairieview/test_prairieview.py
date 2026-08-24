@@ -103,30 +103,24 @@ def _write_pvscan_xml(path, y: int, x: int, times_sec) -> None:
         )
         lines.append(
             '      <File channel="1" channelName="Ch1" '
-            'filename="t00004-001_Cycle%03d_CurrentSettings_Ch1_000001.tif" />'
-            % (i + 1)
+            'filename="t00004-001_Cycle%03d_CurrentSettings_Ch1_000001.tif" />' % (i + 1)
         )
         lines.append(
             '      <File channel="2" channelName="Ch2" '
-            'filename="t00004-001_Cycle%03d_CurrentSettings_Ch2_000001.tif" />'
-            % (i + 1)
+            'filename="t00004-001_Cycle%03d_CurrentSettings_Ch2_000001.tif" />' % (i + 1)
         )
         lines.append("      <PVStateShard>")
         lines.append(
-            '        <Key key="linesPerFrame" permissions="Read, Write, Save" '
-            'value="%d" />' % y
+            '        <Key key="linesPerFrame" permissions="Read, Write, Save" ' 'value="%d" />' % y
         )
         lines.append(
-            '        <Key key="pixelsPerLine" permissions="Read, Write, Save" '
-            'value="%d" />' % x
+            '        <Key key="pixelsPerLine" permissions="Read, Write, Save" ' 'value="%d" />' % x
         )
         lines.append(
-            '        <Key key="framePeriod" permissions="Read, Write, Save" '
-            'value="1.4819328" />'
+            '        <Key key="framePeriod" permissions="Read, Write, Save" ' 'value="1.4819328" />'
         )
         lines.append(
-            '        <Key key="dwellTime" permissions="Read, Write, Save" '
-            'value="3.6" />'
+            '        <Key key="dwellTime" permissions="Read, Write, Save" ' 'value="3.6" />'
         )
         lines.append("      </PVStateShard>")
         lines.append("    </Frame>")
@@ -141,19 +135,10 @@ def _write_v2_xml(path, y: int, x: int, times_ms) -> None:
     lines = []
     lines.append('<?xml version="1.0" standalone="yes"?>')
     lines.append("<Acquisition>")
-    lines.append(
-        '  <xs:schema id="Acquisition" '
-        'xmlns:xs="http://www.w3.org/2001/XMLSchema">'
-    )
-    lines.append(
-        '    <xs:element name="Lines_Per_Frame" type="xs:double" minOccurs="0" />'
-    )
-    lines.append(
-        '    <xs:element name="Pixels_Per_Line" type="xs:double" minOccurs="0" />'
-    )
-    lines.append(
-        '    <xs:element name="Framerate" type="xs:double" minOccurs="0" />'
-    )
+    lines.append('  <xs:schema id="Acquisition" ' 'xmlns:xs="http://www.w3.org/2001/XMLSchema">')
+    lines.append('    <xs:element name="Lines_Per_Frame" type="xs:double" minOccurs="0" />')
+    lines.append('    <xs:element name="Pixels_Per_Line" type="xs:double" minOccurs="0" />')
+    lines.append('    <xs:element name="Framerate" type="xs:double" minOccurs="0" />')
     lines.append('    <xs:element name="Time" type="xs:double" minOccurs="0" />')
     lines.append("  </xs:schema>")
     lines.append("  <Acquisition_Header>")
@@ -237,10 +222,7 @@ def xml_pvscan(tmp_path_factory):
     for c in range(XML_C):
         for i in range(txml):
             xtruth[:, :, c, 0, i] = _base_plane(i * 100 + (c + 1) * 5000)
-            fn = d / (
-                "t00004-001_Cycle%03d_CurrentSettings_Ch%d_000001.tif"
-                % (i + 1, c + 1)
-            )
+            fn = d / ("t00004-001_Cycle%03d_CurrentSettings_Ch%d_000001.tif" % (i + 1, c + 1))
             _write_tiff(fn, xtruth[:, :, c, 0, i])
     _write_pvscan_xml(d / "t00004-001.xml", Y, X, XML_TIMES_SEC)
     return {"dir": str(d), "truth": xtruth}
@@ -271,10 +253,7 @@ def multicycle_pcf(tmp_path_factory):
     for cyc in range(len(CYC_COUNTS)):
         for fr in range(CYC_COUNTS[cyc]):
             cyctruth[:, :, 0, 0, tp] = _base_plane(tp * 100)
-            fn = d / (
-                "t00012-001_Cycle%03d_CurrentSettings_Ch1_%06d.tif"
-                % (cyc + 1, fr + 1)
-            )
+            fn = d / ("t00012-001_Cycle%03d_CurrentSettings_Ch1_%06d.tif" % (cyc + 1, fr + 1))
             _write_tiff(fn, cyctruth[:, :, 0, 0, tp])
             tp += 1
     times_us = np.arange(tcyc, dtype=float) * 1486848.0
@@ -321,13 +300,9 @@ def test_timestamps_from_config(reader, single_pcf):
     ec = reader.epochclock(ef, 1)
     assert ec[0].type == "dev_local_time"
     ft = reader.frametimes(ef, 1)
-    np.testing.assert_allclose(
-        ft.ravel(), np.asarray(TIMES_US, float) / 1e6, atol=1e-12
-    )
+    np.testing.assert_allclose(ft.ravel(), np.asarray(TIMES_US, float) / 1e6, atol=1e-12)
     t0t1 = reader.t0_t1(ef, 1)
-    np.testing.assert_allclose(
-        t0t1[0], [TIMES_US[0] / 1e6, TIMES_US[-1] / 1e6], atol=1e-12
-    )
+    np.testing.assert_allclose(t0t1[0], [TIMES_US[0] / 1e6, TIMES_US[-1] / 1e6], atol=1e-12)
     # subset request (1-based [2, 4] -> values at those frame indices)
     ftsub = reader.frametimes(ef, 1, [2, 4])
     np.testing.assert_allclose(
@@ -342,9 +317,7 @@ def test_anchor_on_config_file(reader, single_pcf):
     by_dir = reader.readframes([single_pcf["dir"]], 1)
     np.testing.assert_array_equal(by_cfg, by_dir)
     ft_cfg = reader.frametimes([single_pcf["config"]], 1)
-    np.testing.assert_allclose(
-        ft_cfg.ravel(), np.asarray(TIMES_US, float) / 1e6, atol=1e-12
-    )
+    np.testing.assert_allclose(ft_cfg.ravel(), np.asarray(TIMES_US, float) / 1e6, atol=1e-12)
 
 
 # ----------------------------------------------------------------------
@@ -371,9 +344,7 @@ def test_multichannel_times_per_timepoint(reader, multi_pcf):
     ef = [multi_pcf["dir"]]
     ft = reader.frametimes(ef, 1)
     assert ft.size == T
-    np.testing.assert_allclose(
-        ft.ravel(), np.asarray(MULTI_TIMES_US, float) / 1e6, atol=1e-12
-    )
+    np.testing.assert_allclose(ft.ravel(), np.asarray(MULTI_TIMES_US, float) / 1e6, atol=1e-12)
     ec = reader.epochclock(ef, 1)
     assert ec[0].type == "dev_local_time"
 
@@ -408,9 +379,7 @@ def test_xml_timestamps(reader, xml_pvscan):
     ec = reader.epochclock(ef, 1)
     assert ec[0].type == "dev_local_time"
     ft = reader.frametimes(ef, 1)
-    np.testing.assert_allclose(
-        ft.ravel(), np.asarray(XML_TIMES_SEC, float), atol=1e-9
-    )
+    np.testing.assert_allclose(ft.ravel(), np.asarray(XML_TIMES_SEC, float), atol=1e-9)
 
 
 # ----------------------------------------------------------------------
@@ -440,9 +409,7 @@ def test_v2_geometry_and_times(reader, xml_v2):
     ec = reader.epochclock(ef, 1)
     assert ec[0].type == "dev_local_time"
     ft = reader.frametimes(ef, 1)
-    np.testing.assert_allclose(
-        ft.ravel(), np.asarray(V2_TIMES_MS, float) / 1e3, atol=1e-9
-    )
+    np.testing.assert_allclose(ft.ravel(), np.asarray(V2_TIMES_MS, float) / 1e3, atol=1e-9)
 
 
 # ----------------------------------------------------------------------
@@ -470,6 +437,4 @@ def test_multicycle_epoch_spans_cycles(reader, multicycle_pcf):
     frames = reader.readframes(ef, 1)
     np.testing.assert_array_equal(frames, multicycle_pcf["truth"])
     ft = reader.frametimes(ef, 1)
-    np.testing.assert_allclose(
-        ft.ravel(), multicycle_pcf["times_us"] / 1e6, atol=1e-9
-    )
+    np.testing.assert_allclose(ft.ravel(), multicycle_pcf["times_us"] / 1e6, atol=1e-9)

@@ -95,17 +95,13 @@ def test_readchannels_byte_exact(reader):
     scale = float(h["Scale"])
 
     # Reader read: samples 1..10000 (1-based inclusive) of ai1, ai16, ai32.
-    data = reader.readchannels_epochsamples(
-        "ai", [1, 16, 32], [VLD], 1, 1, 10000
-    )
+    data = reader.readchannels_epochsamples("ai", [1, 16, 32], [VLD], 1, 1, 10000)
     assert data.shape == (10000, 3)
 
     # Independent numpy decode computed IN the test.
-    expected = (
-        np.fromfile(VLD, dtype=">i2", count=num_chans * 10000)
-        .reshape(-1, num_chans)[:10000, [0, 15, 31]]
-        * (scale / 32767)
-    )
+    expected = np.fromfile(VLD, dtype=">i2", count=num_chans * 10000).reshape(-1, num_chans)[
+        :10000, [0, 15, 31]
+    ] * (scale / 32767)
     assert expected.shape == (10000, 3)
     assert np.allclose(data, expected, atol=1e-9)
 

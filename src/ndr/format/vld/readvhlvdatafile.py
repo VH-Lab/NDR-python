@@ -228,9 +228,7 @@ def _read_chunked(
             hit_eof = False
             for ch in channelnums:
                 # seek to the start of channel `ch` within chunk `i`
-                offset = (i - 1) * binary_samples_per_chunk + (
-                    int(ch) - 1
-                ) * spc * unit_size
+                offset = (i - 1) * binary_samples_per_chunk + (int(ch) - 1) * spc * unit_size
                 fid.seek(offset)
                 raw = fid.read(spc * unit_size)
                 vals = np.frombuffer(raw, dtype=np_dtype)

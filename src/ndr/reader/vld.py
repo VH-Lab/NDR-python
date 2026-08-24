@@ -40,9 +40,7 @@ class ndr_reader_vld(ndr_reader_base):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _filenamefromepochfiles(
-        epochstreams: list[str], epoch_select: int = 1
-    ) -> str:
+    def _filenamefromepochfiles(epochstreams: list[str], epoch_select: int = 1) -> str:
         """Return the ``.vld`` data filename from a list of epoch files.
 
         Port of ndr.reader.vld.filenamefromepochfiles.
@@ -50,9 +48,7 @@ class ndr_reader_vld(ndr_reader_base):
         pattern = re.compile(r".*\.vld$", re.IGNORECASE)
         vld_files = [f for f in epochstreams if pattern.match(f)]
         if len(vld_files) == 0:
-            raise ValueError(
-                'No file ending with ".vld" found in the provided list for the epoch.'
-            )
+            raise ValueError('No file ending with ".vld" found in the provided list for the epoch.')
         if len(vld_files) < epoch_select:
             raise ValueError(
                 f'There are only {len(vld_files)} ".vld" files found in the '
@@ -60,9 +56,7 @@ class ndr_reader_vld(ndr_reader_base):
             )
         return vld_files[epoch_select - 1]
 
-    def readheader(
-        self, epochstreams: list[str], epoch_select: int = 1
-    ) -> dict[str, Any]:
+    def readheader(self, epochstreams: list[str], epoch_select: int = 1) -> dict[str, Any]:
         """Read the VHLV header structure for an epoch.
 
         Locates the ``.vld`` data file, derives the matching ``.vlh`` header
@@ -79,9 +73,7 @@ class ndr_reader_vld(ndr_reader_base):
     # Clock / timing
     # ------------------------------------------------------------------
 
-    def epochclock(
-        self, epochstreams: list[str], epoch_select: int = 1
-    ) -> list[ClockType]:
+    def epochclock(self, epochstreams: list[str], epoch_select: int = 1) -> list[ClockType]:
         """Return the clock types available for this epoch.
 
         VHLV files record time relative to the beginning of the recording, so a
@@ -89,9 +81,7 @@ class ndr_reader_vld(ndr_reader_base):
         """
         return [ClockType("dev_local_time")]
 
-    def t0_t1(
-        self, epochstreams: list[str], epoch_select: int = 1
-    ) -> list[list[float]]:
+    def t0_t1(self, epochstreams: list[str], epoch_select: int = 1) -> list[list[float]]:
         """Return the beginning and end epoch times.
 
         Sample 1 occurs at ``t==0``, so ``t0`` is 0 and ``t1`` is
@@ -120,13 +110,9 @@ class ndr_reader_vld(ndr_reader_base):
         Each returned dict has keys ``name``, ``type``, ``time_channel``.
         """
         header = self.readheader(epochstreams, epoch_select)
-        channels: list[dict[str, Any]] = [
-            {"name": "t1", "type": "time", "time_channel": 1}
-        ]
+        channels: list[dict[str, Any]] = [{"name": "t1", "type": "time", "time_channel": 1}]
         for i in range(1, int(header["NumChans"]) + 1):
-            channels.append(
-                {"name": f"ai{i}", "type": "analog_in", "time_channel": 1}
-            )
+            channels.append({"name": f"ai{i}", "type": "analog_in", "time_channel": 1})
         return channels
 
     def underlying_datatype(
@@ -162,9 +148,7 @@ class ndr_reader_vld(ndr_reader_base):
                 scale = 1.0
             p = np.tile([0.0, scale], (n_channels, 1))
         else:
-            return super().underlying_datatype(
-                epochstreams, epoch_select, channeltype, channel
-            )
+            return super().underlying_datatype(epochstreams, epoch_select, channeltype, channel)
 
         return datatype, p, datasize
 

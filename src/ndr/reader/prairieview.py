@@ -111,9 +111,7 @@ class ndr_reader_prairieview(ndr_reader_base):
                 files.extend(self._tiffsindir(os.path.dirname(a)))
         files = sorted(set(files))  # unique also sorts lexically
         if not files:
-            raise FileNotFoundError(
-                "No .tif/.tiff file found in epoch files or directories."
-            )
+            raise FileNotFoundError("No .tif/.tiff file found in epoch files or directories.")
         return files
 
     # ------------------------------------------------------------------
@@ -222,9 +220,7 @@ class ndr_reader_prairieview(ndr_reader_base):
     # Geometry
     # ------------------------------------------------------------------
 
-    def numframes(
-        self, epochstreams: Sequence[str] | str, epoch_select: int = 1
-    ) -> int:
+    def numframes(self, epochstreams: Sequence[str] | str, epoch_select: int = 1) -> int:
         """Number of timepoints (frames) in the recording.
 
         A frame is one timepoint; multiple channels of a timepoint count once.
@@ -233,9 +229,7 @@ class ndr_reader_prairieview(ndr_reader_base):
         L = self.framelayout(epochstreams)
         return int(L["nframes"])
 
-    def framesize(
-        self, epochstreams: Sequence[str] | str, epoch_select: int = 1
-    ) -> List[int]:
+    def framesize(self, epochstreams: Sequence[str] | str, epoch_select: int = 1) -> List[int]:
         """[Y X C Z T] extent, with C = number of channels.
 
         Port of ndr.reader.prairieview.framesize.
@@ -243,18 +237,14 @@ class ndr_reader_prairieview(ndr_reader_base):
         L = self.framelayout(epochstreams)
         return [int(L["Y"]), int(L["X"]), int(L["C"]), 1, int(L["nframes"])]
 
-    def dimensionorder(
-        self, epochstreams: Sequence[str] | str, epoch_select: int = 1
-    ) -> str:
+    def dimensionorder(self, epochstreams: Sequence[str] | str, epoch_select: int = 1) -> str:
         """The dimension order of returned frames ('YXCZT').
 
         Port of ndr.reader.tiffstack.dimensionorder (inherited by prairieview).
         """
         return "YXCZT"
 
-    def datatype(
-        self, epochstreams: Sequence[str] | str, epoch_select: int = 1
-    ) -> str:
+    def datatype(self, epochstreams: Sequence[str] | str, epoch_select: int = 1) -> str:
         """Underlying numeric class of the pixel data (numpy dtype name).
 
         Port of ndr.reader.prairieview.datatype.
@@ -387,9 +377,7 @@ class ndr_reader_prairieview(ndr_reader_base):
             return [ClockType("dev_local_time")]
         return [ClockType("no_time")]
 
-    def t0_t1(
-        self, epochstreams: Sequence[str] | str, epoch_select: int = 1
-    ) -> List[List[float]]:
+    def t0_t1(self, epochstreams: Sequence[str] | str, epoch_select: int = 1) -> List[List[float]]:
         """[t0 t1] begin/end times for the epoch.
 
         From the config timestamps when present; otherwise ``[[NaN, NaN]]``

@@ -105,9 +105,7 @@ def read_SOMSMR_datafile(
 
     # Get sample rate and size for this channel/stream
     sr = float(sig_channels[ch_idx]["sampling_rate"])
-    n_samples = raw_reader.get_signal_size(
-        block_index=0, seg_index=0, stream_index=stream_idx
-    )
+    n_samples = raw_reader.get_signal_size(block_index=0, seg_index=0, stream_index=stream_idx)
     total_samples = n_samples
     total_time = n_samples / sr
 

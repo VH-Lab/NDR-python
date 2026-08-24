@@ -99,18 +99,13 @@ def _local_read_legacy(txt: str) -> Dict[str, Any]:
     schema_marker = "</xs:schema>"
     idx = txt.rfind(schema_marker)
     if idx != -1:
-        txt = txt[idx + len(schema_marker):]
+        txt = txt[idx + len(schema_marker) :]
 
     v.setdefault("Main", {})
     v["Main"]["Lines_per_frame"] = elementvalue(txt, "Lines_Per_Frame")
     v["Main"]["Pixels_per_line"] = elementvalue(txt, "Pixels_Per_Line")
     fr = elementvalue(txt, "Framerate")
-    if (
-        fr is not None
-        and isinstance(fr, (int, float))
-        and not isinstance(fr, bool)
-        and fr != 0
-    ):
+    if fr is not None and isinstance(fr, (int, float)) and not isinstance(fr, bool) and fr != 0:
         v["Main"]["Frame_period__us_"] = (1.0 / fr) * 1e6
 
     # one '<...Time...>VALUE<...>' (milliseconds) per '<Dataset_x0020_N>' frame

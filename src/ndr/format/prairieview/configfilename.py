@@ -57,8 +57,7 @@ def configfilename(dirname: str) -> str:
             include.append(x)
         if not include:
             raise FileNotFoundError(
-                "Could not find a Prairie config file (*_Main.pcf or *.xml) "
-                f"for {dirname}."
+                "Could not find a Prairie config file (*_Main.pcf or *.xml) " f"for {dirname}."
             )
         return include[-1]
     return pcfile[-1]

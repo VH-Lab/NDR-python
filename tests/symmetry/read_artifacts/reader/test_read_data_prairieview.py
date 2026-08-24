@@ -32,11 +32,7 @@ def source_type(request):
 class TestReadDataPrairieview:
     def _artifact_dir(self, source_type):
         return (
-            SYMMETRY_BASE
-            / source_type
-            / "reader"
-            / "readData"
-            / "testReadDataPrairieviewArtifacts"
+            SYMMETRY_BASE / source_type / "reader" / "readData" / "testReadDataPrairieviewArtifacts"
         )
 
     def _reader(self):
@@ -58,9 +54,7 @@ class TestReadDataPrairieview:
         assert [int(x) for x in reader.framesize(ef, 1)] == meta["framesize"]
         assert str(reader.datatype(ef, 1)) == meta["datatype"]
         assert str(reader.dimensionorder(ef, 1)) == meta["dimensionorder"]
-        assert np.allclose(
-            reader.frametimes(ef, 1).ravel(), meta["frametimes"], atol=1e-9
-        )
+        assert np.allclose(reader.frametimes(ef, 1).ravel(), meta["frametimes"], atol=1e-9)
         assert np.allclose(reader.t0_t1(ef, 1)[0], meta["t0_t1"], atol=1e-9)
 
     def test_frame_pixels(self, source_type):
@@ -75,6 +69,6 @@ class TestReadDataPrairieview:
         )
         reader, ef = self._reader()
         actual = reader.readframes(ef, 1, 1).flatten()
-        assert np.array_equal(actual, expected), (
-            f"prairieview frame-1 pixel mismatch vs {source_type}"
-        )
+        assert np.array_equal(
+            actual, expected
+        ), f"prairieview frame-1 pixel mismatch vs {source_type}"

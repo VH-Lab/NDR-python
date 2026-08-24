@@ -99,7 +99,7 @@ def readconfig(filename: str) -> Dict[str, Any]:
                 ln = lines[i]
                 eqi = ln.find("=")
                 if eqi != -1:
-                    parsed = _str2double(ln[eqi + 1:].strip())
+                    parsed = _str2double(ln[eqi + 1 :].strip())
                     ts[k] = np.nan if parsed is None else parsed
             v["Image_TimeStamp__us_"] = ts
             i += 1
@@ -114,13 +114,12 @@ def readconfig(filename: str) -> Dict[str, Any]:
                 positions = [m.start() for m in re.finditer("=", ln)]
                 if len(positions) > 1:
                     raise ValueError(
-                        "Found more than one equal sign on a line in config "
-                        f"{filename}."
+                        "Found more than one equal sign on a line in config " f"{filename}."
                     )
                 if positions:
                     eqi = positions[0]
                     field = _local_sanitize(ln[:eqi].strip())
-                    rawval = ln[eqi + 1:].strip()
+                    rawval = ln[eqi + 1 :].strip()
                     val = _str2double(rawval)
                     if val is None:  # not a number; keep the string
                         val = rawval

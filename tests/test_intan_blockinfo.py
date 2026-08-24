@@ -54,9 +54,7 @@ def test_v2_block_is_128_samples_and_8704_bytes(tmp_path, monkeypatch):
     f = tmp_path / "fake.rhd"
     f.write_bytes(b"\x00" * (8704 * 3))
     header = _synthetic_header(main_version=2, num_amp=32)
-    blockinfo, bytes_per_block, _bytes_present, num_data_blocks = Intan_RHD2000_blockinfo(
-        f, header
-    )
+    blockinfo, bytes_per_block, _bytes_present, num_data_blocks = Intan_RHD2000_blockinfo(f, header)
     assert blockinfo["samples_per_block"] == 128
     # 128*4 timestamps + 128*2*32 amplifier = 512 + 8192 = 8704
     assert bytes_per_block == 8704

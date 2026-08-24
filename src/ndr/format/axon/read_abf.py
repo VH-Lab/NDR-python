@@ -99,9 +99,7 @@ def read_abf(
         # columns in sorted order silently permuted any non-ascending request
         # (e.g. [3, 1]), swapping traces with no visible sign.
         columns: list[np.ndarray] = [None] * len(channel_numbers)  # type: ignore[list-item]
-        sorted_positions = sorted(
-            range(len(channel_numbers)), key=lambda k: channel_numbers[k]
-        )
+        sorted_positions = sorted(range(len(channel_numbers)), key=lambda k: channel_numbers[k])
         for pos in sorted_positions:
             ch_num = channel_numbers[pos]
             ch_idx = ch_num - 1  # 0-based

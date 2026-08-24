@@ -118,9 +118,7 @@ class ndr_reader_tiffstack(ndr_reader_base):
         files = sorted(set(files))
 
         if not files:
-            raise FileNotFoundError(
-                "No .tif/.tiff file found in epoch files or directories."
-            )
+            raise FileNotFoundError("No .tif/.tiff file found in epoch files or directories.")
         return files
 
     def resolveepoch(self, epochstreams: list[str] | str) -> dict[str, Any]:
@@ -188,9 +186,7 @@ class ndr_reader_tiffstack(ndr_reader_base):
         """
         return self.resolveepoch(epochstreams)["nframes"]
 
-    def framesize(
-        self, epochstreams: list[str] | str, epoch_select: int = 1
-    ) -> list[int]:
+    def framesize(self, epochstreams: list[str] | str, epoch_select: int = 1) -> list[int]:
         """The [Y X C Z T] extent of the stack, without reading pixels.
 
         Port of tiffstack.framesize. Y=height, X=width, C=samples per pixel,
@@ -200,9 +196,7 @@ class ndr_reader_tiffstack(ndr_reader_base):
         fi = info["firstinfo"]
         return [fi["height"], fi["width"], fi["samplesperpixel"], 1, info["nframes"]]
 
-    def dimensionorder(
-        self, epochstreams: list[str] | str, epoch_select: int = 1
-    ) -> str:
+    def dimensionorder(self, epochstreams: list[str] | str, epoch_select: int = 1) -> str:
         """The dimension order of returned frames ('YXCZT').
 
         Port of tiffstack.dimensionorder.
@@ -295,9 +289,7 @@ class ndr_reader_tiffstack(ndr_reader_base):
             frames[:, :, :, 0, i] = np.asarray(im, dtype=dt).reshape(Y, X, C)
         return frames
 
-    def epochclock(
-        self, epochstreams: list[str] | str, epoch_select: int = 1
-    ) -> list[ClockType]:
+    def epochclock(self, epochstreams: list[str] | str, epoch_select: int = 1) -> list[ClockType]:
         """Return the clock type(s) for an image epoch.
 
         Port of tiffstack.epochclock. Returns ['dev_local_time'] when a
@@ -308,9 +300,7 @@ class ndr_reader_tiffstack(ndr_reader_base):
             return [ClockType("dev_local_time")]
         return [ClockType("no_time")]
 
-    def t0_t1(
-        self, epochstreams: list[str] | str, epoch_select: int = 1
-    ) -> list[list[float]]:
+    def t0_t1(self, epochstreams: list[str] | str, epoch_select: int = 1) -> list[list[float]]:
         """Return the [t0 t1] begin/end times of an image epoch.
 
         Port of tiffstack.t0_t1. For a movie (frame-times sidecar present)

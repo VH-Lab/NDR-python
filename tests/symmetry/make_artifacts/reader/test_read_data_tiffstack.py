@@ -18,9 +18,7 @@ import pytest
 
 from tests.symmetry.conftest import PYTHON_ARTIFACTS
 
-ARTIFACT_DIR = (
-    PYTHON_ARTIFACTS / "reader" / "readData" / "testReadDataTiffstackArtifacts"
-)
+ARTIFACT_DIR = PYTHON_ARTIFACTS / "reader" / "readData" / "testReadDataTiffstackArtifacts"
 EXAMPLE_DATA = Path(__file__).parents[4] / "example_data"
 TIFF = EXAMPLE_DATA / "tiffstack_example.tif"
 
@@ -55,9 +53,7 @@ class TestMakeTiffstack:
             "epochclock": [str(c) for c in ec],
             "t0_t1": t0t1[0],
         }
-        (ARTIFACT_DIR / "metadata.json").write_text(
-            json.dumps(metadata, indent=2, default=str)
-        )
+        (ARTIFACT_DIR / "metadata.json").write_text(json.dumps(metadata, indent=2, default=str))
 
         # frame 1 (1-based), flattened to a JSON list.
         frame1 = self.reader.readframes(ef, 1, [1])

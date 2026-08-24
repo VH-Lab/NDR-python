@@ -31,11 +31,7 @@ def source_type(request):
 class TestReadDataTiffstack:
     def _artifact_dir(self, source_type):
         return (
-            SYMMETRY_BASE
-            / source_type
-            / "reader"
-            / "readData"
-            / "testReadDataTiffstackArtifacts"
+            SYMMETRY_BASE / source_type / "reader" / "readData" / "testReadDataTiffstackArtifacts"
         )
 
     def _reader(self):
@@ -69,6 +65,6 @@ class TestReadDataTiffstack:
         )
         reader, ef = self._reader()
         actual = reader.readframes(ef, 1, [1]).flatten()
-        assert np.array_equal(actual, expected), (
-            f"tiffstack frame-1 pixel mismatch vs {source_type}"
-        )
+        assert np.array_equal(
+            actual, expected
+        ), f"tiffstack frame-1 pixel mismatch vs {source_type}"

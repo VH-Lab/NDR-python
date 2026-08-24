@@ -56,7 +56,9 @@ class TestReadDataVld:
         if not VLD.exists():
             pytest.skip("example_data/vld_example.vld not available")
 
-        expected = np.array(json.loads((artifact_dir / "readData.json").read_text())["ai_channel_1_samples_1_100"])
+        expected = np.array(
+            json.loads((artifact_dir / "readData.json").read_text())["ai_channel_1_samples_1_100"]
+        )
         reader, ef = self._reader()
         actual = reader.readchannels_epochsamples("ai", [1], ef, 1, 1, 100).flatten()
         assert np.allclose(actual, expected, atol=1e-9), f"vld sample mismatch vs {source_type}"
