@@ -129,12 +129,56 @@ class ndr_reader_base(ABC):
         epoch_select : int
             Which epoch to access.
 
+        The way ``name`` is constructed depends on the reader's labeling
+        convention for that channel type. See ``channelLabelingConvention``
+        for the contract.
+
         Returns
         -------
         list of dict
             Each dict has keys: name, type, time_channel.
         """
         return []
+
+    def channelLabelingConvention(self, channeltype: str) -> str:
+        """Describe how this reader names channels of a given type.
+
+        Returns a string declaring the naming convention this reader uses for
+        channels of type ``channeltype`` in ``getchannelsepoch`` and as input
+        to ``daqchannels2internalchannels``. One of:
+
+        ``'indexed'``
+            Names use NDR-standard prefixes (e.g. ``'ai'``, ``'ao'``, ``'ax'``,
+            ``'di'``, ``'do'``, ``'t'``) followed by a 1-based count of
+            recorded channels of that type. The first recorded analog input is
+            ``'ai1'``, the second ``'ai2'``, and so on, regardless of any
+            hardware-channel gaps in the underlying file. This is the
+            convention NDI users typically expect; it is the default and the
+            only one for which the trailing number is safe to interpret as a
+            position.
+
+        ``'physical'``
+            Names use NDR-standard prefixes followed by the manufacturer's
+            hardware channel number, in the manufacturer's own indexing base
+            (which may be 0-based, 1-based, or per-type). The number is a
+            hardware identity and may have gaps.
+
+        ``'native'``
+            The device-native string verbatim, which is opaque. The channel
+            type must be taken from the ``'type'`` field of the
+            ``getchannelsepoch`` entry, not parsed out of the name.
+
+        Parameters
+        ----------
+        channeltype : str
+            The channel type to describe.
+
+        Returns
+        -------
+        str
+            One of ``'indexed'``, ``'physical'``, or ``'native'``.
+        """
+        return "indexed"
 
     def underlying_datatype(
         self,

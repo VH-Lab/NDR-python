@@ -23,6 +23,17 @@ class ndr_reader_neo(ndr_reader_base):
     def __init__(self) -> None:
         super().__init__()
 
+    def channelLabelingConvention(self, channeltype: str) -> str:
+        """Return the channel naming convention for this reader.
+
+        The Neo backend returns the underlying format's own channel name verbatim
+        (e.g. ``'A-000'``, ``'AUX1'``); the exact string depends on the concrete
+        Neo IO class.
+
+        See ``ndr.reader.base.ndr_reader_base.channelLabelingConvention``.
+        """
+        return "native"
+
     def daqchannels2internalchannels(
         self,
         channelprefix: list[str],

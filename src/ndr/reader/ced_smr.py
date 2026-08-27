@@ -22,6 +22,16 @@ class ndr_reader_ced__smr(ndr_reader_base):
     def __init__(self) -> None:
         super().__init__()
 
+    def channelLabelingConvention(self, channeltype: str) -> str:
+        """Return the channel naming convention for this reader.
+
+        Names use the Spike2 channel number from ``header.channelinfo(k).number``,
+        which is the manufacturer's hardware channel identity.
+
+        See ``ndr.reader.base.ndr_reader_base.channelLabelingConvention``.
+        """
+        return "physical"
+
     @staticmethod
     def _load_segment(epochstreams: list[str], epoch_select: int = 1):
         """Load a Neo segment from SMR file."""

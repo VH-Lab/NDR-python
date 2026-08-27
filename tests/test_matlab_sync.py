@@ -1,0 +1,129 @@
+"""Tests for behaviors synchronized from NDR-matlab.
+
+Each test names the NDR-matlab commit whose behavior it pins, so a future
+sync can trace the requirement back to the MATLAB source of truth.
+"""
+
+import math
+
+import numpy as np
+import pytest
+
+from ndr.format.intan.read_Intan_RHD2000_datafile import read_Intan_RHD2000_datafile
+from ndr.fun.ndrpath import ndrpath
+from ndr.reader.base import ndr_reader_base
+from ndr.reader.ced_smr import ndr_reader_ced__smr
+from ndr.reader.intan_rhd import ndr_reader_intan__rhd
+from ndr.reader.neo import ndr_reader_neo
+from ndr.reader.spikegadgets_rec import ndr_reader_spikegadgets__rec
+from ndr.reader.tdt_sev import ndr_reader_tdt__sev
+
+EXAMPLE_RHD = str(ndrpath() / "example_data" / "example.rhd")
+
+
+class TestChannelLabelingConvention:
+    """MATLAB b2e9d95 + 3974d59: readers declare their channel-naming contract."""
+
+    def test_base_default_is_indexed(self):
+        class _Concrete(ndr_reader_base):
+            def readchannels_epochsamples(self, *args, **kwargs):
+                raise NotImplementedError
+
+            def readevents_epochsamples_native(self, *args, **kwargs):
+                raise NotImplementedError
+
+        assert _Concrete().channelLabelingConvention("analog_in") == "indexed"
+
+    def test_intan_rhd_inherits_indexed(self):
+        assert ndr_reader_intan__rhd().channelLabelingConvention("analog_in") == "indexed"
+
+    @pytest.mark.parametrize(
+        "cls",
+        [ndr_reader_ced__smr, ndr_reader_spikegadgets__rec, ndr_reader_tdt__sev],
+    )
+    def test_physical_readers(self, cls):
+        assert cls().channelLabelingConvention("analog_in") == "physical"
+
+    def test_neo_is_native(self):
+        assert ndr_reader_neo().channelLabelingConvention("analog_in") == "native"
+
+
+class TestIntanSamplerateNaN:
+    """MATLAB 67addc7: event/marker/text channels have no scalar sample rate."""
+
+    @pytest.mark.parametrize(
+        "channeltype", ["event", "e", "marker", "mk", "text", "tx", "eventmarktext"]
+    )
+    def test_event_types_return_nan(self, channeltype):
+        reader = ndr_reader_intan__rhd()
+        sr = reader.samplerate([EXAMPLE_RHD], 1, channeltype, 1)
+        assert math.isnan(sr)
+
+    def test_analog_still_returns_real_rate(self):
+        reader = ndr_reader_intan__rhd()
+        sr = reader.samplerate([EXAMPLE_RHD], 1, "analog_in", 1)
+        assert sr > 0 and not math.isnan(sr)
+
+
+class TestIntanPositionalNaming:
+    """MATLAB d878687: getchannelsepoch names channels by 1-based position."""
+
+    def test_names_are_positional(self):
+        reader = ndr_reader_intan__rhd()
+        channels = reader.getchannelsepoch([EXAMPLE_RHD], 1)
+
+        by_type: dict[str, list[str]] = {}
+        for ch in channels:
+            by_type.setdefault(ch["type"], []).append(ch["name"])
+
+        assert by_type["analog_in"] == [f"ai{i}" for i in range(1, 33)]
+        assert by_type["auxiliary_in"] == [f"ax{i}" for i in range(1, 4)]
+        assert by_type["digital_in"] == ["di1"]
+
+    def test_trailing_number_is_a_position_not_a_chip_channel(self):
+        """The first recorded channel of a type is always numbered 1."""
+        reader = ndr_reader_intan__rhd()
+        channels = reader.getchannelsepoch([EXAMPLE_RHD], 1)
+        first_analog = next(c for c in channels if c["type"] == "analog_in")
+        assert first_analog["name"] == "ai1"
+
+
+class TestIntanDigitalNormalization:
+    """MATLAB cae4b00: digital reads are 0/1, indexed via native_order."""
+
+    def test_digital_read_is_zero_or_one(self):
+        data = read_Intan_RHD2000_datafile(EXAMPLE_RHD, "", "din", 1, 0.0, 0.1)
+        assert data.shape[1] == 1
+        assert np.all(np.isin(data, [0.0, 1.0]))
+
+    def test_channel_number_indexes_recorded_list_not_bit_position(self):
+        """Channel 1 is the first *recorded* digital channel, whatever its bit."""
+        data = read_Intan_RHD2000_datafile(EXAMPLE_RHD, "", "din", 1, 0.0, 0.1)
+        assert data.shape[1] == 1
+
+    def test_out_of_range_digital_channel_raises(self):
+        with pytest.raises(ValueError, match="out of range"):
+            read_Intan_RHD2000_datafile(EXAMPLE_RHD, "", "din", 99, 0.0, 0.1)
+
+    def test_absent_digital_type_raises(self):
+        with pytest.raises(ValueError, match="No digital"):
+            read_Intan_RHD2000_datafile(EXAMPLE_RHD, "", "dout", 1, 0.0, 0.1)
+
+
+class TestIntanUniformChannelTypeList:
+    """MATLAB dc1ee9a: accept a uniform list of channel-type strings."""
+
+    def test_uniform_list_matches_scalar(self):
+        reader = ndr_reader_intan__rhd()
+        scalar = reader.readchannels_epochsamples("analog_in", [1, 2], [EXAMPLE_RHD], 1, 1, 100)
+        as_list = reader.readchannels_epochsamples(
+            ["analog_in", "analog_in"], [1, 2], [EXAMPLE_RHD], 1, 1, 100
+        )
+        np.testing.assert_array_equal(scalar, as_list)
+
+    def test_heterogeneous_list_raises(self):
+        reader = ndr_reader_intan__rhd()
+        with pytest.raises(ValueError, match="uniform"):
+            reader.readchannels_epochsamples(
+                ["analog_in", "digital_in"], [1, 2], [EXAMPLE_RHD], 1, 1, 100
+            )
