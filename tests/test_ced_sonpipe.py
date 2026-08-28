@@ -58,14 +58,50 @@ class TestExecutableDiscovery:
         assert sonpipe.executable() == ["/opt/venv/bin/sonpipe"]
 
     def test_not_found_raises(self, monkeypatch):
+        """Every candidate failing must raise, with the remedy in the message.
+
+        Clearing SONPIPE and PATH is not enough to force that: the
+        `sys.executable -m sonpipe` candidate uses an absolute interpreter path,
+        so wherever sonpipe is installed alongside the running Python -- as in
+        the ced-integration job -- discovery still succeeds. That is correct
+        behaviour, and it made this test pass only where sonpipe was absent.
+        Failing the probe itself is what the not-found path actually depends on.
+        """
+        import importlib
+
+        executable_mod = importlib.import_module("ndr.format.ced.sonpipe.executable")
         sonpipe.reset_cache()
-        monkeypatch.setenv("SONPIPE", "/nonexistent/sonpipe")
-        monkeypatch.setenv("PATH", "")
+        monkeypatch.setattr(executable_mod, "_works", lambda argv: False)
         try:
             with pytest.raises(sonpipe.SonpipeNotFoundError, match="Could not locate"):
                 sonpipe.executable()
         finally:
             sonpipe.reset_cache()
+
+    def test_every_candidate_is_probed_before_giving_up(self, monkeypatch):
+        """The documented lookup order must actually be tried, in order."""
+        import importlib
+
+        executable_mod = importlib.import_module("ndr.format.ced.sonpipe.executable")
+        sonpipe.reset_cache()
+        monkeypatch.setenv("SONPIPE", "/nonexistent/sonpipe")
+        tried = []
+
+        def record(argv):
+            tried.append(argv)
+            return False
+
+        monkeypatch.setattr(executable_mod, "_works", record)
+        try:
+            with pytest.raises(sonpipe.SonpipeNotFoundError):
+                sonpipe.executable()
+        finally:
+            sonpipe.reset_cache()
+
+        assert tried[0] == ["/nonexistent/sonpipe"], "SONPIPE must be tried first"
+        assert ["sonpipe"] in tried, "the bare command must be tried"
+        assert [sys.executable, "-m", "sonpipe"] in tried
+        assert tried[-1] == ["python", "-m", "sonpipe"], "python -m is the last resort"
 
     def test_a_path_with_spaces_needs_no_escaping(self, monkeypatch, tmp_path):
         """argv is a list, so the shell never sees the path."""
