@@ -9,7 +9,11 @@ import math
 import numpy as np
 import pytest
 
-from ndr.format.intan.read_Intan_RHD2000_datafile import read_Intan_RHD2000_datafile
+from ndr.format.intan.read_Intan_RHD2000_datafile import (
+    Intan_RHD2000_blockinfo,
+    read_Intan_RHD2000_datafile,
+)
+from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
 from ndr.fun.ndrpath import ndrpath
 from ndr.reader.base import ndr_reader_base
 from ndr.reader.ced_smr import ndr_reader_ced__smr
@@ -127,3 +131,62 @@ class TestIntanUniformChannelTypeList:
             reader.readchannels_epochsamples(
                 ["analog_in", "digital_in"], [1, 2], [EXAMPLE_RHD], 1, 1, 100
             )
+
+
+class TestIntanBlockAccounting:
+    """The data block must be measured exactly, or every later block shifts.
+
+    Caught by the cross-language symmetry test once it was actually running:
+    the temp-sensor section was sized from the supply-voltage channel count,
+    so a recording with supply voltage but no temp sensor got a block 2 bytes
+    too long. That truncated the epoch by a whole block and desynchronized
+    the sequential read from the first block boundary onward.
+    """
+
+    def test_block_size_divides_the_data_exactly(self):
+        header = read_Intan_RHD2000_header(EXAMPLE_RHD)
+        _bi, bytes_per_block, bytes_present, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        assert (
+            bytes_present % bytes_per_block == 0
+        ), "data section is not a whole number of blocks; bytes_per_block is wrong"
+
+    def test_temp_bytes_follow_the_temp_channel_count(self):
+        """Supply-voltage channels must not imply a temp-sensor sample."""
+        header = read_Intan_RHD2000_header(EXAMPLE_RHD)
+        blockinfo, bytes_per_block, _bp, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        # This fixture is the interesting case: supply present, temp absent.
+        assert blockinfo["num_supply"] > 0
+        assert blockinfo["num_temp"] == 0
+
+        expected = (
+            4 * 60
+            + 2 * blockinfo["num_amplifier"] * 60
+            + 2 * blockinfo["num_aux"] * 15
+            + 2 * blockinfo["num_supply"]
+            + 2 * (blockinfo["num_temp"] > 0)
+            + 2 * blockinfo["num_adc"] * 60
+            + (2 * 60 if blockinfo["num_dig_in"] else 0)
+            + (2 * 60 if blockinfo["num_dig_out"] else 0)
+        )
+        assert bytes_per_block == expected
+
+    def test_epoch_covers_every_block(self):
+        """t0_t1 must span all blocks, not lose the last partial-looking one."""
+        reader = ndr_reader_intan__rhd()
+        header = read_Intan_RHD2000_header(EXAMPLE_RHD)
+        _bi, _bpb, bytes_present, num_blocks = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        sr = header["frequency_parameters"]["amplifier_sample_rate"]
+        t0t1 = reader.t0_t1([EXAMPLE_RHD], 1)
+        assert t0t1[0][1] == pytest.approx((60 * num_blocks) / sr - 1 / sr)
+
+    def test_read_is_continuous_across_a_block_boundary(self):
+        """A 2-byte block error drops a sample at each boundary; check none is."""
+        reader = ndr_reader_intan__rhd()
+        # Samples 1..120 span the first block boundary at sample 61.
+        data = reader.readchannels_epochsamples("analog_in", [1], [EXAMPLE_RHD], 1, 1, 120).ravel()
+        # Reading the second block alone must agree with the tail of the
+        # combined read; a desynchronized reader disagrees here.
+        second = reader.readchannels_epochsamples(
+            "analog_in", [1], [EXAMPLE_RHD], 1, 61, 120
+        ).ravel()
+        np.testing.assert_allclose(data[60 : 60 + len(second)], second)
