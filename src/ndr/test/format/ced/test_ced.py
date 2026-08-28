@@ -96,8 +96,11 @@ def test_read_datafile(example_smr: Path) -> None:
     assert data.shape == time.shape
     assert total_samples == waveform["num_samples"]
     assert blockinfo is None
-    # One second of data at this channel's rate, within a sample.
-    assert abs(data.shape[0] - waveform["samplerate"]) <= 1
+    # One second of data at this channel's rate -- or the whole channel, if it
+    # holds less than a second. Sample 0 and sample sr both fall inside [0, 1],
+    # hence sr + 1.
+    expected = min(waveform["samplerate"] + 1, waveform["num_samples"])
+    assert abs(data.shape[0] - expected) <= 1
 
 
 def test_read_sampleinterval(example_smr: Path) -> None:

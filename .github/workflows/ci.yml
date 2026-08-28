@@ -73,8 +73,15 @@ jobs:
         # install of this package behind a second repository.
         run: pip install "sonpipe @ git+https://github.com/VH-Lab/sonpipe.git"
 
-      - name: Verify sonpy actually loaded
-        run: python -c "from sonpy import lib; print('sonpy OK', hasattr(lib, 'SonFile'))"
+      - name: Verify sonpipe and sonpy are usable
+        # Ask sonpipe where SonFile lives rather than hardcoding a layout. CED
+        # packages sonpy three different ways depending on wheel and version --
+        # sonpy.SonFile, sonpy.sonpy.SonFile, sonpy.lib.SonFile -- and
+        # sonpipe.sonfile.load_sonpy already resolves all three. Naming one
+        # directly here is how this step failed the first time.
+        run: |
+          sonpipe --version
+          python -c "from sonpipe.sonfile import load_sonpy; m = load_sonpy(); assert hasattr(m, 'SonFile'); print('sonpy OK via', m.__name__)"
 
       - name: Run the CED format tests against the real CLI
         # NDR_REQUIRE_SONPIPE turns the usual skip into a failure, so this job
