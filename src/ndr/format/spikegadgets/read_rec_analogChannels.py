@@ -9,6 +9,8 @@ from pathlib import Path
 
 import numpy as np
 
+from ndr.format.spikegadgets.read_rec_configsize import read_rec_configsize
+
 
 def read_rec_analogChannels(
     filename: str | Path,
@@ -62,12 +64,11 @@ def read_rec_analogChannels(
     # per-channel stride, onto the wrong channel).
     block_size_bytes = header_size_bytes + 4 + channel_size_bytes
 
-    configsize = 0
-    if configExists:
-        with open(filename, "rb") as f:
-            junk = f.read(30000)
-        config_end = junk.find(b"</Configuration>")
-        configsize = config_end + 16 if config_end >= 0 else 0
+    # MATLAB's strfind is 1-based, so its `+ 16` lands on the first packet
+    # byte; this port applied the same `+ 16` to 0-based bytes.find and
+    # landed on the line terminator, shifting every read by one byte.
+    # See read_rec_configsize.
+    configsize = read_rec_configsize(filename) if configExists else 0
 
     num_samples = s1 - s0 + 1
 
