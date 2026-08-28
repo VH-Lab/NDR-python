@@ -3,7 +3,8 @@
     "type": [
       "intan_rhd",
       "intan",
-      "rhd"
+      "rhd",
+      "intanRHD"
     ],
     "classname": "ndr.reader.intan_rhd.ndr_reader_intan__rhd"
   },
@@ -19,7 +20,11 @@
     "type": [
       "ced_smr",
       "ced",
-      "smr"
+      "smr",
+      "ced-smr",
+      "son",
+      "smrx",
+      "ced-smrx"
     ],
     "classname": "ndr.reader.ced_smr.ndr_reader_ced__smr"
   },
@@ -27,7 +32,8 @@
     "type": [
       "spikegadgets_rec",
       "spikegadgets",
-      "rec"
+      "rec",
+      "SpikeGadgetsREC"
     ],
     "classname": "ndr.reader.spikegadgets_rec.ndr_reader_spikegadgets__rec"
   },
@@ -47,19 +53,22 @@
   },
   {
     "type": [
-      "whitematter"
+      "whitematter",
+      "WMHS"
     ],
     "classname": "ndr.reader.whitematter.ndr_reader_whitematter"
   },
   {
     "type": [
-      "bjg"
+      "bjg",
+      "bjg_bin"
     ],
     "classname": "ndr.reader.bjg.ndr_reader_bjg"
   },
   {
     "type": [
-      "dabrowska"
+      "dabrowska",
+      "dabrowska_mat"
     ],
     "classname": "ndr.reader.dabrowska.ndr_reader_dabrowska"
   },
