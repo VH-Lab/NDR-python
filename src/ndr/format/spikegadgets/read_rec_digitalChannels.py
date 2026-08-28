@@ -53,7 +53,15 @@ def read_rec_digitalChannels(
     num_channels = int(NumChannels)
     header_size_bytes = int(headerSize) * 2
     channel_size_bytes = num_channels * 2
-    block_size_bytes = header_size_bytes + 2 + channel_size_bytes
+    # One sample occupies: [header][4-byte uint32 timestamp][channel data].
+    # MATLAB's `blockSizeBytes` (headerSizeBytes + 2 + channelSizeBytes) is NOT
+    # this stride -- it is the skip argument to fread, which advances *after*
+    # reading, so MATLAB's true stride is header + 2(read) + 2 + channel =
+    # header + 4 + channel. Porting the MATLAB expression verbatim as a total
+    # stride left every read 2 bytes short per sample, drifting steadily off
+    # the correct offset (and, since the drift is not a multiple of the
+    # per-channel stride, onto the wrong channel).
+    block_size_bytes = header_size_bytes + 4 + channel_size_bytes
 
     configsize = 0
     if configExists:
@@ -72,8 +80,10 @@ def read_rec_digitalChannels(
         for i in range(num_samples):
             ts_bytes = f.read(4)
             if len(ts_bytes) < 4:
-                timestamps = timestamps[:i]
-                break
+                raise EOFError(
+                    f"Requested samples {s0}..{s1} but {filename} holds only {i} "
+                    "timestamps from that offset."
+                )
             timestamps[i] = np.frombuffer(ts_bytes, dtype=np.dtype("<u4"))[0]
             if i < num_samples - 1:
                 f.seek(header_size_bytes + channel_size_bytes, 1)
@@ -88,11 +98,19 @@ def read_rec_digitalChannels(
             f.seek(configsize + int(byte_loc) - 1)
             f.seek((s0 - 1) * block_size_bytes, 1)
             tmp = np.empty(num_samples, dtype=np.uint8)
-            skip = header_size_bytes + 3 + channel_size_bytes
+            # One byte is read per sample, so the skip is the stride less
+            # that byte: block_size_bytes - 1. Spelled out to mirror the
+            # MATLAB fread skip argument (headerSizeBytes+3+channelSizeBytes).
+            skip = block_size_bytes - 1
             for j in range(num_samples):
                 raw = f.read(1)
                 if len(raw) < 1:
-                    break
+                    # tmp came from np.empty; the bits unpacked from its
+                    # uninitialized tail would look like real digital states.
+                    raise EOFError(
+                        f"Requested samples {s0}..{s1} but {filename} holds only "
+                        f"{j} samples for the byte at location {int(byte_loc)}."
+                    )
                 tmp[j] = raw[0]
                 if j < num_samples - 1:
                     f.seek(skip, 1)
