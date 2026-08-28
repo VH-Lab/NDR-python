@@ -158,15 +158,16 @@ class TestIntanBlockAccounting:
         assert blockinfo["num_supply"] > 0
         assert blockinfo["num_temp"] == 0
 
+        spb = blockinfo["samples_per_block"]
         expected = (
-            4 * 60
-            + 2 * blockinfo["num_amplifier"] * 60
-            + 2 * blockinfo["num_aux"] * 15
+            4 * spb
+            + 2 * blockinfo["num_amplifier"] * spb
+            + 2 * blockinfo["num_aux"] * (spb // 4)
             + 2 * blockinfo["num_supply"]
             + 2 * (blockinfo["num_temp"] > 0)
-            + 2 * blockinfo["num_adc"] * 60
-            + (2 * 60 if blockinfo["num_dig_in"] else 0)
-            + (2 * 60 if blockinfo["num_dig_out"] else 0)
+            + 2 * blockinfo["num_adc"] * spb
+            + (2 * spb if blockinfo["num_dig_in"] else 0)
+            + (2 * spb if blockinfo["num_dig_out"] else 0)
         )
         assert bytes_per_block == expected
 
@@ -176,8 +177,9 @@ class TestIntanBlockAccounting:
         header = read_Intan_RHD2000_header(EXAMPLE_RHD)
         _bi, _bpb, bytes_present, num_blocks = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
         sr = header["frequency_parameters"]["amplifier_sample_rate"]
+        spb = header["num_samples_per_data_block"]
         t0t1 = reader.t0_t1([EXAMPLE_RHD], 1)
-        assert t0t1[0][1] == pytest.approx((60 * num_blocks) / sr - 1 / sr)
+        assert t0t1[0][1] == pytest.approx((spb * num_blocks) / sr - 1 / sr)
 
     def test_read_is_continuous_across_a_block_boundary(self):
         """A 2-byte block error drops a sample at each boundary; check none is."""
@@ -190,3 +192,36 @@ class TestIntanBlockAccounting:
             "analog_in", [1], [EXAMPLE_RHD], 1, 61, 120
         ).ravel()
         np.testing.assert_allclose(data[60 : 60 + len(second)], second)
+
+
+class TestIntanSamplesPerDataBlockVersion:
+    """MATLAB Intan_RHD2000_blockinfo.m:45-49: 60 samples/block for v1, 128 for v2+.
+
+    read_Intan_RHD2000_header already derived this correctly, but the block
+    sizer ignored it and hardcoded 60, so every v2.0+ file was decoded at less
+    than half its true block length. Nothing short-read, so the corruption was
+    silent. The bundled fixture is v1, which is why no existing test caught it.
+    """
+
+    def test_blockinfo_uses_the_header_value(self):
+        header = read_Intan_RHD2000_header(EXAMPLE_RHD)
+        blockinfo, _bpb, _bp, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        assert blockinfo["samples_per_block"] == header["num_samples_per_data_block"]
+
+    @pytest.mark.parametrize("main_version,expected", [(1, 60), (2, 128), (3, 128)])
+    def test_v2_plus_blocks_hold_128_samples(self, main_version, expected):
+        """Pin the version->block-size rule directly; the fixture is v1 only."""
+        header = read_Intan_RHD2000_header(EXAMPLE_RHD)
+        header = dict(header)
+        header["data_file_main_version_number"] = main_version
+        header["num_samples_per_data_block"] = 60 if main_version == 1 else 128
+
+        blockinfo, bytes_per_block, _bp, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        assert blockinfo["samples_per_block"] == expected
+
+        # The block must grow with the sample count, not stay pinned at the
+        # v1 size: that was the whole failure mode.
+        per_sample_sections = (
+            4 + 2 * blockinfo["num_amplifier"] + 2 * blockinfo["num_adc"]
+        )
+        assert bytes_per_block >= per_sample_sections * expected

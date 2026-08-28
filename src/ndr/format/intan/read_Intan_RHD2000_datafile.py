@@ -42,16 +42,22 @@ def Intan_RHD2000_blockinfo(
     num_dig_out = len(header.get("board_dig_out_channels", []))
     dc_amp_saved = header.get("dc_amplifier_data_saved", 0)
 
-    samples_per_block = 60  # Intan RHD uses 60 samples per data block
+    # Samples per data block depends on the file version: 60 for v1.x, 128 for
+    # v2.0+. read_Intan_RHD2000_header already derives this and stores it in
+    # header["num_samples_per_data_block"] (mirroring
+    # Intan_RHD2000_blockinfo.m). Hardcoding 60 sized every v2.0+ block at
+    # less than half its true length, so the whole data section decoded at the
+    # wrong offsets -- silently, with no short read to give it away.
+    samples_per_block = int(header["num_samples_per_data_block"])
 
     # Calculate bytes per data block
-    # timestamp: 4 bytes * 60 samples
+    # timestamp: 4 bytes * samples_per_block
     bytes_per_block = 4 * samples_per_block
 
-    # amplifier data: 2 bytes * num_channels * 60 samples
+    # amplifier data: 2 bytes * num_channels * samples_per_block
     bytes_per_block += 2 * num_amplifier * samples_per_block
 
-    # DC amplifier data (if saved): 2 bytes * num_channels * 60 samples
+    # DC amplifier data (if saved): 2 bytes * num_channels * samples_per_block
     if dc_amp_saved:
         bytes_per_block += 2 * num_amplifier * samples_per_block
 
@@ -60,7 +66,7 @@ def Intan_RHD2000_blockinfo(
     # aux data: 2 bytes * num_aux * 15 samples (sampled at 1/4 rate)
     bytes_per_block += 2 * num_aux * (samples_per_block // 4)
 
-    # supply voltage: 2 bytes * num_supply * 1 sample (sampled at 1/60 rate)
+    # supply voltage: 2 bytes * num_supply * 1 sample (one per block)
     bytes_per_block += 2 * num_supply
 
     # temp sensor: 2 bytes * 1 sample per block, present only when the
@@ -70,14 +76,14 @@ def Intan_RHD2000_blockinfo(
     # 2 bytes, which desynchronizes every block after the first.
     bytes_per_block += 2 * (num_temp > 0)
 
-    # board ADC: 2 bytes * num_adc * 60 samples
+    # board ADC: 2 bytes * num_adc * samples_per_block
     bytes_per_block += 2 * num_adc * samples_per_block
 
-    # board digital in: 2 bytes * 60 samples (one uint16 per sample for all channels)
+    # board digital in: 2 bytes * samples_per_block (one uint16 per sample, all channels)
     if num_dig_in > 0:
         bytes_per_block += 2 * samples_per_block
 
-    # board digital out: 2 bytes * 60 samples
+    # board digital out: 2 bytes * samples_per_block
     if num_dig_out > 0:
         bytes_per_block += 2 * samples_per_block
 
@@ -269,13 +275,13 @@ def read_Intan_RHD2000_datafile(
         for block in range(num_data_blocks):
             block_start = block * samples_per_block
 
-            # Timestamps: int32 x 60
+            # Timestamps: int32 x samples_per_block
             ts_raw = np.frombuffer(f.read(4 * samples_per_block), dtype=np.int32)
 
             if channeltype == "time":
                 all_data[block_start : block_start + samples_per_block] = ts_raw / sr
 
-            # Amplifier data: int16 x num_amplifier x 60
+            # Amplifier data: int16 x num_amplifier x samples_per_block
             if num_amplifier > 0:
                 amp_raw = (
                     np.frombuffer(f.read(2 * num_amplifier * samples_per_block), dtype=np.uint16)
@@ -319,7 +325,7 @@ def read_Intan_RHD2000_datafile(
             if num_temp > 0:
                 f.read(2)
 
-            # Board ADC: uint16 x num_adc x 60
+            # Board ADC: uint16 x num_adc x samples_per_block
             if num_adc > 0:
                 adc_raw = (
                     np.frombuffer(f.read(2 * num_adc * samples_per_block), dtype=np.uint16)
@@ -332,7 +338,7 @@ def read_Intan_RHD2000_datafile(
                         np.float64
                     )
 
-            # Board digital inputs: uint16 x 60
+            # Board digital inputs: uint16 x samples_per_block
             if num_dig_in > 0:
                 dig_in_raw = np.frombuffer(f.read(2 * samples_per_block), dtype=np.uint16)
                 if channeltype == "din":
@@ -341,7 +347,7 @@ def read_Intan_RHD2000_datafile(
                             (dig_in_raw >> bit) & 1
                         ).astype(np.float64)
 
-            # Board digital outputs: uint16 x 60
+            # Board digital outputs: uint16 x samples_per_block
             if num_dig_out > 0:
                 dig_out_raw = np.frombuffer(f.read(2 * samples_per_block), dtype=np.uint16)
                 if channeltype == "dout":
