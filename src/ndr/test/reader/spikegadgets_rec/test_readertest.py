@@ -41,7 +41,6 @@ def rec_reader():
     return ndr_reader_spikegadgets__rec()
 
 
-@pytest.mark.xfail(reason="SpikeGadgets reader not yet fully implemented")
 def test_readertest(rec_reader, example_rec: Path) -> None:
     """Test the SpikeGadgets rec reader.read convenience function.
 

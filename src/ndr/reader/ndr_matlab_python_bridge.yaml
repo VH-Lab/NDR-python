@@ -714,9 +714,30 @@ classes:
     python_class: "ndr_reader_spikegadgets__rec"
     inherits: base
     decision_log: >-
-      Contract recorded 2026-08-27. The Python class is a stub: the
-      ndr.format.spikegadgets parsers are ported but not yet wired up, so
-      readchannels_epochsamples raises NotImplementedError.
+      Fully implemented on top of ndr.format.spikegadgets. Two deliberate
+      divergences, both because the MATLAB method is broken rather than
+      because the port differs in style.
+
+      t0_t1: MATLAB sizes the packet as headerSize + 2 + channels and
+      subtracts only headerSize from the file length. The packet is
+      headerSize + 4 + channels -- the + 2 is fread's skip argument, not a
+      width -- and what precedes the packet stream is the whole configuration
+      block. On example.rec that gives 60090.7 packets, a fractional sample
+      count, and an epoch about 17 ms too long. Python uses the corrected
+      arithmetic, consistent with the format layer it calls; mirroring the
+      MATLAB result would contradict the offset and stride fixes already
+      landed there.
+
+      readchannels_epochsamples: MATLAB's auxiliary and digital branches read
+      startbyte, bit and number off the result of getchannelsepoch, which
+      strips exactly those three fields, so those branches raise before
+      reading anything. Python keeps the addressing in an internal channel
+      table and still strips those fields from the public output, so the
+      branches work and getchannelsepoch's result matches MATLAB's.
+
+      Python also accepts the short channel-type prefixes (ai, ax, di, t) via
+      ndr_reader_base.mfdaq_prefix, where MATLAB compares the long strings
+      directly. A superset, and the convention elsewhere in this port.
     methods:
       - name: channelLabelingConvention
         input_arguments:
