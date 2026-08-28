@@ -31,6 +31,11 @@ from ndr.time.clocktype import ClockType
 
 _TIFF_SUFFIXES = (".tif", ".tiff")
 
+# datatype()/tiffclass() report the MATLAB numeric class name so the string is
+# identical across the two ports. Only the float names differ from numpy's.
+_MATLAB_CLASS = {"float32": "single", "float64": "double"}
+_NUMPY_DTYPE = {"single": "float32", "double": "float64"}
+
 
 def _tifffile():
     """Import tifffile lazily so it is only required when a TIFF is read."""
@@ -161,9 +166,9 @@ class ndr_reader_tiffstack(ndr_reader_base):
     def datatype(self, epochstreams: list[str], epoch_select: int = 1) -> str:
         """Return the underlying numeric class of the image pixels.
 
-        Returns a numpy dtype name (e.g. ``'uint16'``, ``'float32'``) where
-        MATLAB's ``tiffclass`` returns the MATLAB class name; ``'single'`` and
-        ``'double'`` map to ``'float32'`` and ``'float64'`` respectively.
+        Returns the MATLAB class name (e.g. ``'uint16'``, ``'single'``), so the
+        string matches ``ndr.reader.tiffstack/datatype`` exactly across the two
+        ports. Use :func:`numpy_dtype` to get the corresponding numpy dtype.
         """
         return ndr_reader_tiffstack.tiffclass(self.resolveepoch(epochstreams)["firstinfo"])
 
@@ -206,7 +211,7 @@ class ndr_reader_tiffstack(ndr_reader_base):
         frameind = [int(f) for f in np.asarray(frameind).ravel()]
 
         Y, X, C, _Z, _T = self.framesize(epochstreams, epoch_select)
-        dt = np.dtype(self.datatype(epochstreams, epoch_select))
+        dt = ndr_reader_tiffstack.numpy_dtype(self.datatype(epochstreams, epoch_select))
 
         frames = np.zeros((Y, X, C, 1, len(frameind)), dtype=dt)
 
@@ -313,11 +318,22 @@ class ndr_reader_tiffstack(ndr_reader_base):
 
     @staticmethod
     def tiffclass(fi: dict[str, Any]) -> str:
-        """Return the numpy dtype name for a resolved TIFF page description.
+        """Return the MATLAB numeric class name for a resolved TIFF page.
 
-        MATLAB derives this from ``BitsPerSample`` plus ``SampleFormat`` and
-        returns a MATLAB class name; tifffile already resolves the page to a
-        numpy dtype, so this returns that dtype's name (``'float32'`` and
-        ``'float64'`` where MATLAB says ``'single'`` and ``'double'``).
+        MATLAB derives this from ``BitsPerSample`` plus ``SampleFormat``;
+        tifffile already resolves the page to a numpy dtype, so this maps that
+        dtype to the MATLAB class name it corresponds to. The names are
+        identical for the integer types and differ only for floats, where
+        MATLAB says ``'single'``/``'double'`` for numpy's
+        ``float32``/``float64``.
         """
-        return np.dtype(fi["dtype"]).name
+        return _MATLAB_CLASS.get(np.dtype(fi["dtype"]).name, np.dtype(fi["dtype"]).name)
+
+    @staticmethod
+    def numpy_dtype(matlab_class: str) -> np.dtype:
+        """Return the numpy dtype for a MATLAB numeric class name.
+
+        The inverse of :meth:`tiffclass`, for callers that need to allocate
+        arrays from what ``datatype`` reports.
+        """
+        return np.dtype(_NUMPY_DTYPE.get(matlab_class, matlab_class))

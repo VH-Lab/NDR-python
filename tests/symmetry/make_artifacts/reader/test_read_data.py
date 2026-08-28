@@ -8,26 +8,24 @@ Reads example data files using NDR readers and exports:
 
 import json
 import shutil
-from pathlib import Path
 
 import pytest
 
-from tests.symmetry.conftest import PYTHON_ARTIFACTS
+from tests.symmetry.conftest import EXAMPLE_DATA, PYTHON_ARTIFACTS
 
 ARTIFACT_DIR = PYTHON_ARTIFACTS / "reader" / "readData" / "testReadDataArtifacts"
-EXAMPLE_DATA = Path(__file__).parents[4] / "example_data"
 
 
 class TestReadData:
     @pytest.fixture(autouse=True)
     def _setup(self):
-        rhd_file = EXAMPLE_DATA / "Intan_160317_125049_short.rhd"
+        rhd_file = EXAMPLE_DATA / "example.rhd"
         if not rhd_file.exists():
             pytest.skip("Example RHD file not available")
 
-        from ndr.reader.intan_rhd import IntanRHD
+        from ndr.reader.intan_rhd import ndr_reader_intan__rhd
 
-        self.reader = IntanRHD()
+        self.reader = ndr_reader_intan__rhd()
         self.epochfiles = [str(rhd_file)]
 
     def test_read_data_artifacts(self):

@@ -23,7 +23,7 @@ import numpy as np
 
 from ndr.format.prairieview.readconfig import readconfig
 from ndr.reader.base import ndr_reader_base
-from ndr.reader.tiffstack import _tifffile, ndr_reader_tiffstack
+from ndr.reader.tiffstack import _MATLAB_CLASS, _tifffile, ndr_reader_tiffstack
 from ndr.time.clocktype import ClockType
 
 
@@ -107,7 +107,7 @@ class ndr_reader_prairieview(ndr_reader_tiffstack):
             "X": X,
             "C": nC,
             "nframes": nT,
-            "datatype": dtype.name,
+            "datatype": _MATLAB_CLASS.get(dtype.name, dtype.name),
         }
 
     # ------------------------------------------------------------------
@@ -124,7 +124,11 @@ class ndr_reader_prairieview(ndr_reader_tiffstack):
         return [L["Y"], L["X"], L["C"], 1, L["nframes"]]
 
     def datatype(self, epochstreams: list[str], epoch_select: int = 1) -> str:
-        """Return the underlying numeric class of the image pixels."""
+        """Return the underlying numeric class of the image pixels.
+
+        Reports the MATLAB class name, matching
+        ``ndr.reader.tiffstack/datatype``.
+        """
         return self.framelayout(epochstreams)["datatype"]
 
     def readframes(
@@ -153,7 +157,7 @@ class ndr_reader_prairieview(ndr_reader_tiffstack):
         else:
             cidx = [int(c) for c in np.asarray(SelectC).ravel()]
 
-        dt = np.dtype(L["datatype"])
+        dt = ndr_reader_tiffstack.numpy_dtype(L["datatype"])
         frames = np.zeros((L["Y"], L["X"], len(cidx), 1, len(frameind)), dtype=dt)
 
         for i, ti in enumerate(frameind):

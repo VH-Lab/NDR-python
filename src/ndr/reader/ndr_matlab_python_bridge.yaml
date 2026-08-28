@@ -108,9 +108,10 @@ classes:
             type_matlab: "char"
             type_python: "str"
         decision_log: >-
-          MATLAB returns a MATLAB class name ('single'/'double'); the Python
-          port returns the numpy dtype name ('float32'/'float64'). Integer
-          types ('uint16', 'int16') are spelled identically in both.
+          Strict string parity: both ports return the MATLAB numeric class
+          name, so 'single'/'double' (not numpy's 'float32'/'float64') and the
+          integer names, which are spelled identically. Python callers convert
+          with ndr_reader_tiffstack.numpy_dtype().
       - name: frametimes
         input_arguments:
           - name: epochstreams
@@ -1177,7 +1178,21 @@ classes:
             type_python: "dict[str, Any]"
         output_arguments:
           - name: dt
+            type_matlab: "char"
             type_python: "str"
+        decision_log: "Returns the MATLAB class name in both ports."
+      - name: numpy_dtype
+        input_arguments:
+          - name: matlab_class
+            type_python: "str"
+        output_arguments:
+          - name: dtype
+            type_python: "numpy.dtype"
+        decision_log: >-
+          Python-only inverse of tiffclass, converting the reported MATLAB
+          class name into the numpy dtype used to allocate frame arrays. No
+          MATLAB counterpart is needed because MATLAB's class names are
+          already its allocation types.
 
   - name: prairieview
     type: class

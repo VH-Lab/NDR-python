@@ -130,8 +130,11 @@ defaults.
 
 Static helpers `emptyimagemetadata` and `selectframeCZ` are ported too.
 Frame indices and `SelectC`/`SelectZ` are 1-based, per the bridge's Semantic
-Parity policy. `datatype` returns a numpy dtype name (`'float32'`) where MATLAB
-returns a MATLAB class name (`'single'`); integer type names match.
+Parity policy. `datatype` holds **strict string parity** with MATLAB: both
+ports return the MATLAB numeric class name, so `'single'`/`'double'` rather
+than numpy's `'float32'`/`'float64'`, and the integer names match already.
+Python callers that need the numpy dtype use
+`ndr_reader_tiffstack.numpy_dtype()`.
 
 ### Image readers
 

@@ -156,6 +156,30 @@ class TestTiffstack:
         channels = ndr_reader_tiffstack().getchannelsepoch([str(tmp_path / "movie.tif")])
         assert channels == [{"name": "image1", "type": "image", "time_channel": None}]
 
+    @pytest.mark.parametrize(
+        ("np_dtype", "matlab_class"),
+        [
+            (np.uint8, "uint8"),
+            (np.uint16, "uint16"),
+            (np.int16, "int16"),
+            (np.float32, "single"),
+            (np.float64, "double"),
+        ],
+    )
+    def test_datatype_uses_matlab_class_names(self, tmp_path, np_dtype, matlab_class):
+        """datatype() reports the MATLAB class name, for exact string parity."""
+        tifffile.imwrite(tmp_path / "d.tif", np.zeros((3, 3), dtype=np_dtype))
+        r = ndr_reader_tiffstack()
+        assert r.datatype([str(tmp_path / "d.tif")]) == matlab_class
+        # readframes still allocates the right numpy dtype from that name.
+        assert r.readframes([str(tmp_path / "d.tif")]).dtype == np.dtype(np_dtype)
+
+    def test_numpy_dtype_round_trips(self):
+        for name in ("uint8", "uint16", "int16", "single", "double"):
+            assert ndr_reader_tiffstack.numpy_dtype(name).itemsize > 0
+        assert ndr_reader_tiffstack.numpy_dtype("single") == np.dtype(np.float32)
+        assert ndr_reader_tiffstack.numpy_dtype("double") == np.dtype(np.float64)
+
 
 class TestPrairieview:
     def test_channel_grouping(self, prairie):
@@ -232,6 +256,17 @@ class TestPrairieview:
         assert m["bidirectional"] is True
         # scanLinePeriod is used directly rather than derived
         assert m["line_period"] == pytest.approx(0.015)
+
+    def test_datatype_uses_matlab_class_names(self, tmp_path):
+        """prairieview reports the same MATLAB class names as tiffstack."""
+        for c in (1, 2):
+            tifffile.imwrite(
+                tmp_path / f"f_Cycle001_Ch{c}_000001.tif",
+                np.zeros((3, 3), dtype=np.float32),
+            )
+        r = ndr_reader_prairieview()
+        assert r.datatype([str(tmp_path)]) == "single"
+        assert r.readframes([str(tmp_path)]).dtype == np.dtype(np.float32)
 
     def test_legacy_mm_xml(self, tmp_path):
         for f in range(1, 3):
