@@ -3,6 +3,25 @@ project_metadata:
   naming_policy: "Strict MATLAB Mirror"
   indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
 
+
+  # Index-base note, and one deliberate divergence.
+  #
+  # The .rec packet stream starts on the line after '</Configuration>'.
+  # NDR-matlab finds that offset with strfind(...) + 16; strfind is 1-based, so
+  # it lands on the first packet byte and has always been correct. The Python
+  # port applied the same + 16 to bytes.find, which is 0-based, and landed on
+  # the line terminator -- shifting every read one byte and assembling each
+  # int16 from two different samples. Fixed in
+  # ndr/format/spikegadgets/read_rec_configsize.py, which has no MATLAB
+  # counterpart because MATLAB needs no fix.
+  #
+  # Divergence: that helper consumes the terminator explicitly (LF, CRLF, or
+  # none) rather than assuming a single byte. It agrees with MATLAB on every
+  # file Trodes writes; it additionally stays correct on a CRLF-terminated or
+  # unterminated header, where MATLAB's fixed offset would be off by one.
+  # Deliberately not mirrored into MATLAB: no such file is known to exist, and
+  # that reader is long-standing production code.
+
 functions:
   - name: copy_rec_files
     matlab_path: "+ndr/+format/+spikegadgets/copy_rec_files.m"
