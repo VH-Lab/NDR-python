@@ -77,17 +77,17 @@ def _lookup(name):
 def test_matlab_alias_resolves(alias, module):
     entry = _lookup(alias)
     assert entry is not None, f"alias '{alias}' works in NDR-matlab but not here"
-    assert entry["classname"].startswith(module + "."), (
-        f"alias '{alias}' resolves to {entry['classname']}, expected a {module} reader"
-    )
+    assert entry["classname"].startswith(
+        module + "."
+    ), f"alias '{alias}' resolves to {entry['classname']}, expected a {module} reader"
 
 
 def test_unported_readers_are_not_registered():
     """Registering a name whose class does not exist trades one error for a worse one."""
     for alias in KNOWN_UNPORTED:
-        assert _lookup(alias) is None, (
-            f"'{alias}' is registered but ndr.reader.imagestack has no Python port"
-        )
+        assert (
+            _lookup(alias) is None
+        ), f"'{alias}' is registered but ndr.reader.imagestack has no Python port"
 
 
 def test_every_registered_class_is_importable():

@@ -106,9 +106,9 @@ class TestAxonChannelOrderSynthetic:
         data = stub_abf("stub.abf", channel_type="ai", channel_numbers=requested, t0=0.0, t1=1.0)
         assert data.shape[1] == len(requested)
         for col, ch in enumerate(requested):
-            assert set(np.unique(data[:, col])) == {float(ch)}, (
-                f"column {col} holds channel {int(data[0, col])}, expected {ch}"
-            )
+            assert set(np.unique(data[:, col])) == {
+                float(ch)
+            }, f"column {col} holds channel {int(data[0, col])}, expected {ch}"
 
 
 class TestCedStreamResolution:

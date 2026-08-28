@@ -146,9 +146,9 @@ class TestIntanBlockAccounting:
     def test_block_size_divides_the_data_exactly(self):
         header = read_Intan_RHD2000_header(EXAMPLE_RHD)
         _bi, bytes_per_block, bytes_present, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
-        assert bytes_present % bytes_per_block == 0, (
-            "data section is not a whole number of blocks; bytes_per_block is wrong"
-        )
+        assert (
+            bytes_present % bytes_per_block == 0
+        ), "data section is not a whole number of blocks; bytes_per_block is wrong"
 
     def test_temp_bytes_follow_the_temp_channel_count(self):
         """Supply-voltage channels must not imply a temp-sensor sample."""
