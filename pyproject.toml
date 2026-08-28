@@ -7,7 +7,7 @@ name = "ndr"
 version = "0.1.0"
 description = "Neuroscience Data Reader - Python implementation"
 readme = "README.md"
-license = {text = "CC-BY-NC-SA-4.0"}
+license = {text = "MIT"}
 authors = [{name = "VH-Lab", email = "vhlab@brandeis.edu"}]
 maintainers = [{name = "Waltham Data Science"}]
 requires-python = ">=3.10"
