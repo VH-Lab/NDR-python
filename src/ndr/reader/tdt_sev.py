@@ -20,6 +20,15 @@ class ndr_reader_tdt__sev(ndr_reader_base):
     def __init__(self) -> None:
         super().__init__()
 
+    def channelLabelingConvention(self, channeltype: str) -> str:
+        """Return the channel naming convention for this reader.
+
+        Names use ``header(i).chan``, the TDT hardware channel number.
+
+        See ``ndr.reader.base.ndr_reader_base.channelLabelingConvention``.
+        """
+        return "physical"
+
     def readchannels_epochsamples(
         self,
         channeltype: str,

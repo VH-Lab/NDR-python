@@ -1,0 +1,220 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+# Contract recorded 2026-08-27 for the top-level ndr namespace. The Python
+# implementations predated this bridge file.
+#
+# Not ported (MATLAB-only tooling, no Python counterpart is meaningful):
+#   +ndr/+docs/build.m        - builds MATLAB markdown docs
+#   +ndr/+setup/sonpipe.m     - installs the external sonpipe binary
+#   +ndr/+fun/python_detect.m - locates a Python interpreter for MATLAB's py.*
+
+classes:
+  - name: reader
+    type: class
+    matlab_path: "+ndr/reader.m"
+    python_path: "ndr/reader_wrapper.py"
+    matlab_last_sync_hash: "64d06e4"
+    python_class: "ndr_reader"
+    decision_log: >-
+      Module is reader_wrapper.py rather than reader.py because ndr/reader/ is
+      already a package mirroring +ndr/+reader/; the class name still follows
+      the Mirror Rule for ndr.reader. NOTE: MATLAB 64d06e4 added an image-frame
+      API (readframes, framesize, numframes, dimensionorder, datatype,
+      frametimes) to this class that is NOT yet ported - see docs/PORT_STATUS.md.
+    properties:
+      - name: ndr_reader_base
+        type_matlab: "ndr.reader.base"
+        type_python: "ndr_reader_base"
+    methods:
+      - name: read
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: channelstring
+            type_python: "str"
+          - name: options
+            type_python: "dict | None"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+          - name: time
+            type_python: "numpy.ndarray"
+      - name: epochclock
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: ec
+            type_python: "list[ClockType]"
+      - name: t0_t1
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: t0t1
+            type_python: "list[list[float]]"
+      - name: getchannelsepoch
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: channels
+            type_python: "list[dict]"
+      - name: underlying_datatype
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+        output_arguments:
+          - name: datatype
+            type_python: "str"
+          - name: p
+            type_python: "numpy.ndarray"
+          - name: datasize
+            type_python: "int"
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str | list[str]"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+        decision_log: >-
+          Includes the derived event types (dep, den, dimp, dimn) computed
+          from digital channels, matching MATLAB.
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str | list[str]"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: samplerate
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+        output_arguments:
+          - name: sr
+            type_python: "float | numpy.ndarray"
+      - name: samples2times
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s
+            type_python: "numpy.ndarray | int"
+        output_arguments:
+          - name: t
+            type_python: "numpy.ndarray"
+      - name: times2samples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t
+            type_python: "numpy.ndarray | float"
+        output_arguments:
+          - name: s
+            type_python: "numpy.ndarray"
+
+functions:
+  - name: known_readers
+    type: function
+    matlab_path: "+ndr/known_readers.m"
+    python_path: "ndr/known_readers.py"
+    matlab_last_sync_hash: "20743f7"
+    input_arguments: []
+    output_arguments:
+      - name: str
+        type_matlab: "cell array of char"
+        type_python: "list[list[str]]"
+    decision_log: >-
+      Reads resource/ndr_reader_types.json, as MATLAB does. NOTE: the Python
+      copy of that JSON currently lists fewer readers than the MATLAB one -
+      see docs/PORT_STATUS.md.
+
+  - name: globals
+    type: function
+    matlab_path: "+ndr/globals.m"
+    python_path: "ndr/globals.py"
+    matlab_last_sync_hash: "20743f7"
+    input_arguments: []
+    output_arguments:
+      - name: ndr_globals
+        type_matlab: "struct"
+        type_python: "NDRGlobals"
+    decision_log: >-
+      MATLAB declares a global struct; Python exposes a module-level
+      NDRGlobals instance named ndr_globals rather than a callable that
+      installs a global.

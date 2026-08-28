@@ -19,6 +19,18 @@ class ndr_reader_spikegadgets__rec(ndr_reader_base):
     def __init__(self) -> None:
         super().__init__()
 
+    def channelLabelingConvention(self, channeltype: str) -> str:
+        """Return the channel naming convention for this reader.
+
+        Names use the integer parsed out of the native ``'Ain%d'``/``'Din%d'``
+        identifiers. Whether SpikeGadgets numbering is dense in practice has not
+        been confirmed; if it always is, this could later be relaxed to
+        ``'indexed'``.
+
+        See ``ndr.reader.base.ndr_reader_base.channelLabelingConvention``.
+        """
+        return "physical"
+
     def readchannels_epochsamples(
         self,
         channeltype: str,

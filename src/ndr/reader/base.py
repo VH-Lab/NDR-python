@@ -129,12 +129,56 @@ class ndr_reader_base(ABC):
         epoch_select : int
             Which epoch to access.
 
+        The way ``name`` is constructed depends on the reader's labeling
+        convention for that channel type. See ``channelLabelingConvention``
+        for the contract.
+
         Returns
         -------
         list of dict
             Each dict has keys: name, type, time_channel.
         """
         return []
+
+    def channelLabelingConvention(self, channeltype: str) -> str:
+        """Describe how this reader names channels of a given type.
+
+        Returns a string declaring the naming convention this reader uses for
+        channels of type ``channeltype`` in ``getchannelsepoch`` and as input
+        to ``daqchannels2internalchannels``. One of:
+
+        ``'indexed'``
+            Names use NDR-standard prefixes (e.g. ``'ai'``, ``'ao'``, ``'ax'``,
+            ``'di'``, ``'do'``, ``'t'``) followed by a 1-based count of
+            recorded channels of that type. The first recorded analog input is
+            ``'ai1'``, the second ``'ai2'``, and so on, regardless of any
+            hardware-channel gaps in the underlying file. This is the
+            convention NDI users typically expect; it is the default and the
+            only one for which the trailing number is safe to interpret as a
+            position.
+
+        ``'physical'``
+            Names use NDR-standard prefixes followed by the manufacturer's
+            hardware channel number, in the manufacturer's own indexing base
+            (which may be 0-based, 1-based, or per-type). The number is a
+            hardware identity and may have gaps.
+
+        ``'native'``
+            The device-native string verbatim, which is opaque. The channel
+            type must be taken from the ``'type'`` field of the
+            ``getchannelsepoch`` entry, not parsed out of the name.
+
+        Parameters
+        ----------
+        channeltype : str
+            The channel type to describe.
+
+        Returns
+        -------
+        str
+            One of ``'indexed'``, ``'physical'``, or ``'native'``.
+        """
+        return "indexed"
 
     def underlying_datatype(
         self,
@@ -438,8 +482,190 @@ class ndr_reader_base(ABC):
         return _times2samples(t, t0t1[0], sr_unique[0])
 
     # ------------------------------------------------------------------
+    # Image / frame reading API
+    # ------------------------------------------------------------------
+    # The methods below define the frame-based reading interface used by
+    # image-series readers (movies, z-stacks, slide scans). It is the imaging
+    # counterpart of the regularly-sampled channel API above; the two families
+    # are siblings, not subclasses. A reader that handles images implements
+    # ONLY the frame API (not readchannels_epochsamples and friends); readers
+    # that do not handle images inherit these no-op defaults.
+    #
+    # The frame API design is modeled on nansen.stack.ImageStack (VervaekeLab,
+    # https://github.com/VervaekeLab/NANSEN). Only the design (method names,
+    # dimension model) is adapted; no NANSEN source is used, so no NANSEN
+    # dependency is introduced.
+    #
+    # Every method takes (epochstreams, epoch_select, ...) like the rest of the
+    # reader API. A "frame" is one image plane along the ordering axes (T, and
+    # Z when present). frameind indexes those ordering axes, 1-based, matching
+    # the bridge's Semantic Parity policy for user-facing indices.
+
+    def numframes(self, epochstreams: list[str], epoch_select: int = 1) -> int:
+        """Return the number of frames in an image epoch.
+
+        Modeled on ``nansen.stack.ImageStack`` NumTimepoints/NumPlanes.
+        The abstract class returns 0.
+        """
+        return 0
+
+    def framesize(self, epochstreams: list[str], epoch_select: int = 1) -> list[int]:
+        """Return the ``[Y X C Z T]`` extent of an image epoch without reading pixels.
+
+        Height, width, channels, z-planes, timepoints. Keeping the channel
+        axis (C) separate from the spatial (Y, X) and ordering (Z, T) axes
+        matches the V_delta axes+channels split.
+
+        Modeled on ``nansen.stack.ImageStack/getFrameSetSize``. The abstract
+        class returns zeros.
+        """
+        return [0, 0, 0, 0, 0]
+
+    def dimensionorder(self, epochstreams: list[str], epoch_select: int = 1) -> str:
+        """Return the dimension order of arrays returned by ``readframes``.
+
+        A string over ``{Y, X, C, Z, T}``; the default is ``'YXCZT'``.
+
+        Modeled on ``nansen.stack.ImageStack`` DimensionOrder/DataDimensionOrder.
+        """
+        return "YXCZT"
+
+    def datatype(self, epochstreams: list[str], epoch_select: int = 1) -> str:
+        """Return the underlying numeric class of the image pixels (e.g. ``'uint16'``).
+
+        Modeled on ``nansen.stack.ImageStack`` DataType. The abstract class
+        returns ``''``.
+        """
+        return ""
+
+    def frametimes(
+        self,
+        epochstreams: list[str],
+        epoch_select: int = 1,
+        frameind: list[int] | np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Return the time of each requested frame, in ``epochclock`` units.
+
+        For a movie this is device-local time (seconds from the start of the
+        epoch); for a clockless slide scan / z-stack the epoch clock is
+        ``'no_time'`` and these are NaN.
+
+        Modeled on ``nansen.stack.ImageStack/getFrameTimes``. The values
+        returned here feed ``epochclock`` and ``t0_t1``. The abstract class
+        returns an empty array.
+        """
+        return np.array([])
+
+    def readframes(
+        self,
+        epochstreams: list[str],
+        epoch_select: int = 1,
+        frameind: list[int] | np.ndarray | None = None,
+        *,
+        SelectC: list[int] | np.ndarray | None = None,
+        SelectZ: list[int] | np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Read image frames from an epoch.
+
+        Reads the timepoints indexed by ``frameind`` (1-based indices along
+        the T axis) and returns them laid out in ``dimensionorder`` (default
+        ``'YXCZT'``).
+
+        ``SelectC`` and ``SelectZ`` select a subset of the channel (C) and
+        plane (Z) axes, so the returned array is
+        ``[Y, X, len(SelectC), len(SelectZ), len(frameind)]``. ``None`` keeps
+        all of that axis. A reader may honor these by not reading the
+        unselected data (e.g. skipping channel files); readers that cannot
+        must post-select with ``selectframeCZ`` so the result is identical.
+
+        Modeled on ``nansen.stack.ImageStack/getFrameSet``. The abstract class
+        returns an empty array.
+        """
+        return np.array([])
+
+    def metadata(self, epochstreams: list[str], epoch_select: int = 1) -> dict[str, Any]:
+        """Return standardized image-acquisition metadata for an epoch.
+
+        Describes HOW the frames were acquired — in particular the raster-scan
+        timing that lets one compute when each line/pixel was sampled —
+        separately from the pixel data itself. ALL TIME FIELDS ARE IN SECONDS.
+        See ``emptyimagemetadata`` for the field set.
+
+        A raster scan does not acquire a frame instantaneously: it sweeps line
+        by line, so at slow frame rates the top of a frame is acquired well
+        before the bottom. ``line_period`` (plus ``frametimes``) is what lets a
+        caller reconstruct the acquisition time of each line/pixel.
+
+        The abstract class returns the "empty" struct (``israster=False``, NaN
+        timing). Raster readers override this and fill in the fields they can
+        determine; fields that cannot be determined stay NaN.
+        """
+        return ndr_reader_base.emptyimagemetadata()
+
+    # ------------------------------------------------------------------
     # Static methods
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def emptyimagemetadata() -> dict[str, Any]:
+        """Return the standardized image-metadata dict with default (unknown) values.
+
+        Every field at its "unknown" default: ``israster=False``,
+        ``bidirectional=False``, and NaN for each timing/geometry value. A
+        reader fills in the fields it can supply and leaves the rest at these
+        defaults, so consumers always see the same field set. ALL TIME FIELDS
+        ARE IN SECONDS.
+
+        Fields
+        ------
+        israster : bool
+            True if this epoch is a raster scan with known line/frame timing.
+        frame_period : float
+            Time to acquire one frame (s).
+        line_period : float
+            Time to acquire one scanned line/row (s).
+        dwell_time : float
+            Per-pixel dwell time (s).
+        lines_per_frame : float
+            Number of scanned lines (rows) per frame.
+        pixels_per_line : float
+            Number of pixels (columns) per line.
+        bidirectional : bool
+            True if alternate lines are scanned in the reverse direction.
+        """
+        return {
+            "israster": False,
+            "frame_period": float("nan"),
+            "line_period": float("nan"),
+            "dwell_time": float("nan"),
+            "lines_per_frame": float("nan"),
+            "pixels_per_line": float("nan"),
+            "bidirectional": False,
+        }
+
+    @staticmethod
+    def selectframeCZ(
+        frames: np.ndarray,
+        SelectC: list[int] | np.ndarray | None = None,
+        SelectZ: list[int] | np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Post-select the channel (C) and plane (Z) axes of a frame array.
+
+        Given a frame array in ``'YXCZT'`` order, returns the subset with
+        channels ``SelectC`` (axis 2) and Z-planes ``SelectZ`` (axis 3).
+        ``None`` keeps all of that axis. This is the shared helper readers use
+        to honor ``readframes``' ``SelectC``/``SelectZ`` options when they
+        cannot avoid reading the unselected data at the source.
+
+        Selection indices are 1-based, matching ``readframes``.
+        """
+        if SelectC is not None and len(SelectC) > 0:
+            idx = np.asarray(SelectC, dtype=int) - 1
+            frames = frames[:, :, idx, :, :]
+        if SelectZ is not None and len(SelectZ) > 0:
+            idx = np.asarray(SelectZ, dtype=int) - 1
+            frames = frames[:, :, :, idx, :]
+        return frames
 
     @staticmethod
     def mfdaq_channeltypes() -> list[str]:

@@ -36,6 +36,7 @@ def Intan_RHD2000_blockinfo(
     num_amplifier = len(header.get("amplifier_channels", []))
     num_aux = len(header.get("aux_input_channels", []))
     num_supply = len(header.get("supply_voltage_channels", []))
+    num_temp = int(header.get("num_temp_sensor_channels", 0) or 0)
     num_adc = len(header.get("board_adc_channels", []))
     num_dig_in = len(header.get("board_dig_in_channels", []))
     num_dig_out = len(header.get("board_dig_out_channels", []))
@@ -62,8 +63,12 @@ def Intan_RHD2000_blockinfo(
     # supply voltage: 2 bytes * num_supply * 1 sample (sampled at 1/60 rate)
     bytes_per_block += 2 * num_supply
 
-    # temp sensor: 2 bytes * num_supply * 1 sample
-    bytes_per_block += 2 * num_supply
+    # temp sensor: 2 bytes * 1 sample per block, present only when the
+    # recording actually has temp-sensor channels. This is a distinct count
+    # from the supply-voltage channels: a file can have supply voltage saved
+    # with no temp sensor, and using num_supply here overstates the block by
+    # 2 bytes, which desynchronizes every block after the first.
+    bytes_per_block += 2 * (num_temp > 0)
 
     # board ADC: 2 bytes * num_adc * 60 samples
     bytes_per_block += 2 * num_adc * samples_per_block
@@ -88,6 +93,7 @@ def Intan_RHD2000_blockinfo(
         "num_amplifier": num_amplifier,
         "num_aux": num_aux,
         "num_supply": num_supply,
+        "num_temp": num_temp,
         "num_adc": num_adc,
         "num_dig_in": num_dig_in,
         "num_dig_out": num_dig_out,
@@ -238,6 +244,7 @@ def read_Intan_RHD2000_datafile(
     num_adc = blockinfo["num_adc"]
     num_dig_in = blockinfo["num_dig_in"]
     num_dig_out = blockinfo["num_dig_out"]
+    num_temp = blockinfo["num_temp"]
     dc_amp_saved = blockinfo["dc_amp_saved"]
     header_size = blockinfo["header_size"]
 
@@ -307,9 +314,10 @@ def read_Intan_RHD2000_datafile(
             if num_supply > 0:
                 f.read(2 * num_supply)
 
-            # Temp sensor
-            if num_supply > 0:
-                f.read(2 * num_supply)
+            # Temp sensor: one sample per block, only when the recording has
+            # temp-sensor channels (see Intan_RHD2000_blockinfo).
+            if num_temp > 0:
+                f.read(2)
 
             # Board ADC: uint16 x num_adc x 60
             if num_adc > 0:
@@ -345,6 +353,23 @@ def read_Intan_RHD2000_datafile(
     # Extract the requested time range and channels
     if channeltype == "time":
         return all_data[s0 : s1 + 1].reshape(-1, 1)
+    elif channeltype in ("din", "dout"):
+        # Digital channels are stored as a single packed 16-bit word per
+        # sample, already unpacked above into one 0/1 column per bit. The
+        # caller's channel numbers index into the recorded digital channel
+        # list (1-based, matching header['board_dig_in_channels'] /
+        # ['board_dig_out_channels']), and each requested channel's bit
+        # position within the word is that channel's native_order.
+        dig_key = "board_dig_in_channels" if channeltype == "din" else "board_dig_out_channels"
+        dig_hinfo = header.get(dig_key) or []
+        if not dig_hinfo:
+            raise ValueError(f"No digital {channeltype} channels are present in this recording.")
+        if any(c < 1 or c > len(dig_hinfo) for c in channel):
+            raise ValueError(
+                f"Requested digital channel(s) {channel} out of range 1..{len(dig_hinfo)}."
+            )
+        bit_indices = [int(dig_hinfo[c - 1]["native_order"]) for c in channel]
+        return all_data[s0 : s1 + 1, :][:, bit_indices]
     else:
         # Convert 1-based channel numbers to 0-based indices
         ch_indices = [c - 1 for c in channel]

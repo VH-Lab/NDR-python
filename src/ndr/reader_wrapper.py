@@ -333,3 +333,62 @@ class ndr_reader:
     def MightHaveTimeGaps(self) -> bool:
         """Whether the underlying reader might have time gaps."""
         return self.ndr_reader_base.MightHaveTimeGaps
+
+    # ------------------------------------------------------------------
+    # Image / frame reading API
+    # ------------------------------------------------------------------
+    # These methods delegate frame reads to the underlying ndr_reader_base
+    # object, mirroring the regularly-sampled channel API. See
+    # ndr.reader.base for the method-by-method documentation and
+    # ndr.reader.tiffstack for a concrete implementation.
+
+    def numframes(self, epochstreams: list[str], epoch_select: int = 1) -> int:
+        """Return the number of frames in an image epoch."""
+        return self.ndr_reader_base.numframes(epochstreams, epoch_select)
+
+    def framesize(self, epochstreams: list[str], epoch_select: int = 1) -> list[int]:
+        """Return the [Y X C Z T] extent of an image epoch, without reading pixels."""
+        return self.ndr_reader_base.framesize(epochstreams, epoch_select)
+
+    def dimensionorder(self, epochstreams: list[str], epoch_select: int = 1) -> str:
+        """Return the dimension order of returned frames (default 'YXCZT')."""
+        return self.ndr_reader_base.dimensionorder(epochstreams, epoch_select)
+
+    def datatype(self, epochstreams: list[str], epoch_select: int = 1) -> str:
+        """Return the underlying numeric class of the image data."""
+        return self.ndr_reader_base.datatype(epochstreams, epoch_select)
+
+    def frametimes(
+        self,
+        epochstreams: list[str],
+        epoch_select: int = 1,
+        frameind: list[int] | np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Return the time of each requested frame, in epochclock units."""
+        if frameind is None:
+            frameind = list(range(1, self.numframes(epochstreams, epoch_select) + 1))
+        return self.ndr_reader_base.frametimes(epochstreams, epoch_select, frameind)
+
+    def readframes(
+        self,
+        epochstreams: list[str],
+        epoch_select: int = 1,
+        frameind: list[int] | np.ndarray | None = None,
+        *,
+        SelectC: list[int] | np.ndarray | None = None,
+        SelectZ: list[int] | np.ndarray | None = None,
+    ) -> np.ndarray:
+        """Read image frames from an epoch.
+
+        ``frameind`` defaults to every frame in the epoch. ``SelectC`` and
+        ``SelectZ`` restrict the returned channels/planes (``None`` = all).
+        """
+        if frameind is None:
+            frameind = list(range(1, self.numframes(epochstreams, epoch_select) + 1))
+        return self.ndr_reader_base.readframes(
+            epochstreams, epoch_select, frameind, SelectC=SelectC, SelectZ=SelectZ
+        )
+
+    def metadata(self, epochstreams: list[str], epoch_select: int = 1) -> dict[str, Any]:
+        """Return standardized image-acquisition metadata for an epoch."""
+        return self.ndr_reader_base.metadata(epochstreams, epoch_select)

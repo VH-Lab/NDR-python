@@ -1,0 +1,101 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+# Ported 2026-08-28 from NDR-matlab bda24e6 and follow-ups (legacy Prairie
+# View reader). These functions are themselves revised ports of
+# VH-Lab/vhlab-TwoPhoton-matlab (Platforms/PrairieView); see each MATLAB file
+# for the original attribution.
+
+functions:
+  - name: configfilename
+    type: function
+    matlab_path: "+ndr/+format/+prairieview/configfilename.m"
+    python_path: "ndr/format/prairieview/configfilename.py"
+    matlab_last_sync_hash: "bda24e6"
+    input_arguments:
+      - name: dirname
+        type_matlab: "char"
+        type_python: "str | Path"
+    output_arguments:
+      - name: fname
+        type_matlab: "char"
+        type_python: "str"
+
+  - name: elementvalue
+    type: function
+    matlab_path: "+ndr/+format/+prairieview/elementvalue.m"
+    python_path: "ndr/format/prairieview/elementvalue.py"
+    matlab_last_sync_hash: "60ddbe2"
+    input_arguments:
+      - name: txt
+        type_matlab: "char"
+        type_python: "str"
+      - name: tag
+        type_matlab: "char"
+        type_python: "str"
+    output_arguments:
+      - name: val
+        type_matlab: "double | char | []"
+        type_python: "float | str | None"
+    decision_log: >-
+      MATLAB returns [] when the tag is absent; Python returns None, the
+      idiomatic equivalent of an absent value.
+
+  - name: keyvalue
+    type: function
+    matlab_path: "+ndr/+format/+prairieview/keyvalue.m"
+    python_path: "ndr/format/prairieview/keyvalue.py"
+    matlab_last_sync_hash: "8997947"
+    input_arguments:
+      - name: txt
+        type_matlab: "char"
+        type_python: "str"
+      - name: keyname
+        type_matlab: "char"
+        type_python: "str"
+    output_arguments:
+      - name: val
+        type_matlab: "double | char | []"
+        type_python: "float | str | None"
+    decision_log: "Absent key returns None where MATLAB returns []."
+
+  - name: readxml
+    type: function
+    matlab_path: "+ndr/+format/+prairieview/readxml.m"
+    python_path: "ndr/format/prairieview/readxml.py"
+    matlab_last_sync_hash: "848442b"
+    input_arguments:
+      - name: filename
+        type_matlab: "char"
+        type_python: "str | Path"
+    output_arguments:
+      - name: v
+        type_matlab: "struct"
+        type_python: "dict[str, Any]"
+    decision_log: >-
+      Handles both modern PVScan XML (per-frame absoluteTime, seconds -> us)
+      and legacy MM-era XML (per-frame Time, ms -> us, after stripping any
+      embedded XSD schema). Returns the same shape as readconfig so the two
+      config formats are interchangeable.
+
+  - name: readconfig
+    type: function
+    matlab_path: "+ndr/+format/+prairieview/readconfig.m"
+    python_path: "ndr/format/prairieview/readconfig.py"
+    matlab_last_sync_hash: "60ddbe2"
+    input_arguments:
+      - name: filename
+        type_matlab: "char"
+        type_python: "str | Path"
+    output_arguments:
+      - name: v
+        type_matlab: "struct"
+        type_python: "dict[str, Any]"
+    decision_log: >-
+      Section and parameter names keep MATLAB's sanitization (space and
+      parentheses become underscores, so 'Frame period (us)' ->
+      'Frame_period__us_') even though Python dict keys have no such
+      restriction, so both ports expose identically-named fields. Delegates
+      to readxml with v['is_xml'] = True for .xml configs.

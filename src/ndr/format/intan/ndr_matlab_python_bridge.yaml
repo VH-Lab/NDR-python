@@ -7,6 +7,7 @@ functions:
   - name: read_Intan_RHD2000_header
     matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_header.m"
     python_path: "ndr/format/intan/read_Intan_RHD2000_header.py"
+    matlab_last_sync_hash: "a938988"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -17,6 +18,7 @@ functions:
   - name: read_Intan_RHD2000_datafile
     matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_datafile.m"
     python_path: "ndr/format/intan/read_Intan_RHD2000_datafile.py"
+    matlab_last_sync_hash: "cae4b00"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -37,6 +39,7 @@ functions:
   - name: Intan_RHD2000_blockinfo
     matlab_path: "+ndr/+format/+intan/Intan_RHD2000_blockinfo.m"
     python_path: "ndr/format/intan/read_Intan_RHD2000_datafile.py"
+    matlab_last_sync_hash: "a938988"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -55,6 +58,7 @@ functions:
   - name: fread_QString
     matlab_path: "+ndr/+format/+intan/fread_QString.m"
     python_path: "ndr/format/intan/fread_QString.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: fid
         type_python: "file-like"
@@ -65,6 +69,7 @@ functions:
   - name: read_Intan_RHD2000_directory
     matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_directory.m"
     python_path: "ndr/format/intan/read_Intan_RHD2000_directory.py"
+    matlab_last_sync_hash: "cae4b00"
     input_arguments:
       - name: directoryname
         type_python: "str | Path"
@@ -89,6 +94,7 @@ functions:
   - name: cat_Intan_RHD2000_files
     matlab_path: "+ndr/+format/+intan/cat_Intan_RHD2000_files.m"
     python_path: "ndr/format/intan/cat_Intan_RHD2000_files.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: filenames
         type_python: "str | Path (variadic)"
@@ -99,6 +105,7 @@ functions:
   - name: concat_rhd_files
     matlab_path: "+ndr/+format/+intan/concat_rhd_files.m"
     python_path: "ndr/format/intan/concat_rhd_files.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: dirname
         type_python: "str | Path"
@@ -107,6 +114,7 @@ functions:
   - name: copy_Intan_RHD2000_blocks
     matlab_path: "+ndr/+format/+intan/copy_Intan_RHD2000_blocks.m"
     python_path: "ndr/format/intan/copy_Intan_RHD2000_blocks.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: filename_in
         type_python: "str | Path"

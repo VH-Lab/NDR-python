@@ -7,18 +7,22 @@ functions:
   - name: bitDepth
     matlab_path: "+ndr/+fun/bitDepth.m"
     python_path: "ndr/fun/bitDepth.py"
+    matlab_last_sync_hash: "20743f7"
 
   - name: getDataTypeString
     matlab_path: "+ndr/+fun/getDataTypeString.m"
     python_path: "ndr/fun/getDataTypeString.py"
+    matlab_last_sync_hash: "20743f7"
 
   - name: ndrpath
     matlab_path: "+ndr/+fun/ndrpath.m"
     python_path: "ndr/fun/ndrpath.py"
+    matlab_last_sync_hash: "20743f7"
 
   - name: ndrresource
     matlab_path: "+ndr/+fun/ndrresource.m"
     python_path: "ndr/fun/ndrresource.py"
+    matlab_last_sync_hash: "20743f7"
 
 notes:
   - "python_detect.m is MATLAB-only (detects Python from MATLAB); not applicable in Python."

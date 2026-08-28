@@ -197,7 +197,13 @@ def read_Intan_RHD2000_directory(
             raw_f = raw.astype(np.float64)
             if shift != 0:
                 raw_f -= shift
-            raw_f *= scale
+            if channel_type_int in (7, 8):
+                # Per-channel files store the 16-bit packed word with only the
+                # corresponding native_order bit potentially set; normalize
+                # to 0/1 rather than applying the analog conversion scale.
+                raw_f = (raw_f != 0).astype(np.float64)
+            else:
+                raw_f *= scale
             columns.append(raw_f)
 
         data = np.column_stack(columns) if columns else np.empty((num_samples, 0))

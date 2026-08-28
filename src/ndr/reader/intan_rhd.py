@@ -157,7 +157,13 @@ class ndr_reader_intan__rhd(ndr_reader_base):
     def getchannelsepoch(
         self, epochstreams: list[str], epoch_select: int = 1
     ) -> list[dict[str, Any]]:
-        """List channels available for a given epoch."""
+        """List channels available for a given epoch.
+
+        Channels are named with the NDR-standard prefix followed by the
+        1-based position of the channel within the recorded set of that type,
+        matching this reader's ``'indexed'`` labeling convention. The name does
+        not encode the Intan chip channel number, which may have gaps.
+        """
         intan_channel_types = [
             "amplifier_channels",
             "aux_input_channels",
@@ -182,8 +188,9 @@ class ndr_reader_intan__rhd(ndr_reader_base):
                 channel_type_entry = ndr_reader_intan__rhd.intanheadertype2mfdaqchanneltype(
                     intan_type
                 )
-                for ch in header[intan_type]:
-                    name = ndr_reader_intan__rhd.intanname2mfdaqname(channel_type_entry, ch)
+                prefix = ndr_reader_base.mfdaq_prefix(channel_type_entry)
+                for p in range(1, len(header[intan_type]) + 1):
+                    name = f"{prefix}{p}"
                     time_channel = 2 if channel_type_entry == "auxiliary_in" else 1
                     channels.append(
                         {
@@ -218,15 +225,28 @@ class ndr_reader_intan__rhd(ndr_reader_base):
 
     def readchannels_epochsamples(
         self,
-        channeltype: str,
+        channeltype: str | list[str],
         channel: int | list[int],
         epochstreams: list[str],
         epoch_select: int,
         s0: int,
         s1: int,
     ) -> np.ndarray:
-        """Read data from specified channels."""
+        """Read data from specified channels.
+
+        ``channeltype`` may be a single string or a uniform list of identical
+        channel-type strings (one per entry of ``channel``), which is what the
+        other readers and ``ndr.reader.readevents_epochsamples`` pass down.
+        This reader reads one channel type per call.
+        """
         filename, parentdir, isdirectory = self.filenamefromepochfiles(epochstreams)
+
+        if isinstance(channeltype, list):
+            if not all(ct == channeltype[0] for ct in channeltype):
+                raise ValueError(
+                    "channeltype list must be uniform; " "intan_rhd reads one type per call."
+                )
+            channeltype = channeltype[0]
 
         intanchanneltype = ndr_reader_intan__rhd.mfdaqchanneltype2intanchanneltype(channeltype)
 
@@ -291,8 +311,22 @@ class ndr_reader_intan__rhd(ndr_reader_base):
             else:
                 ct = channeltype
 
-            freq_field = ndr_reader_intan__rhd.mfdaqchanneltype2intanfreqheader(ct)
-            sr_list.append(header["frequency_parameters"][freq_field])
+            if ct.lower() in (
+                "event",
+                "e",
+                "marker",
+                "mk",
+                "text",
+                "tx",
+                "eventmarktext",
+            ):
+                # Timestamped event channels have no scalar sample rate. The
+                # Intan RHD format has no frequency header for them, so report
+                # NaN rather than looking up a nonexistent field.
+                sr_list.append(float("nan"))
+            else:
+                freq_field = ndr_reader_intan__rhd.mfdaqchanneltype2intanfreqheader(ct)
+                sr_list.append(header["frequency_parameters"][freq_field])
 
         if len(sr_list) == 1:
             return sr_list[0]
