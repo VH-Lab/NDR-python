@@ -85,9 +85,30 @@ def read_SOMSMR_datafile(
     if ch_idx is None:
         raise ValueError(f"Channel number {channel_number} not recorded in file {filename}.")
 
-    # Get sample rate for this channel
+    # Resolve the channel's stream BEFORE sizing anything. A Spike2 file mixes
+    # sample rates, and neo groups equally-sampled channels into streams, so
+    # the length, the rate and the sample clamp must all come from the
+    # requested channel's own stream. get_signal_size with no stream_index
+    # returns stream 0's length, which was then paired with this channel's
+    # rate -- a nonsense duration for any channel outside stream 0.
+    stream_id = sig_channels[ch_idx]["stream_id"]
+    streams = raw_reader.header["signal_streams"]
+    stream_idx = 0
+    for si, st in enumerate(streams):
+        if st["id"] == stream_id:
+            stream_idx = si
+            break
+
+    # get_analogsignal_chunk indexes channels within the stream, not within the
+    # flat signal_channels array. Passing the flat index reads whichever channel
+    # happens to sit at that position in the stream.
+    stream_channel_positions = np.nonzero(sig_channels["stream_id"] == stream_id)[0]
+    stream_channel_index = int(np.nonzero(stream_channel_positions == ch_idx)[0][0])
+
     sr = float(sig_channels[ch_idx]["sampling_rate"])
-    n_samples = raw_reader.get_signal_size(block_index=0, seg_index=0)
+    n_samples = raw_reader.get_signal_size(
+        block_index=0, seg_index=0, stream_index=stream_idx
+    )
     total_samples = n_samples
     total_time = n_samples / sr
 
@@ -99,25 +120,16 @@ def read_SOMSMR_datafile(
     s0 = max(0, int(matlab_round(t0 * sr)))
     s1 = min(n_samples, int(matlab_round(t1 * sr)) + 1)
 
-    # Determine stream index for this channel
-    stream_id = sig_channels[ch_idx]["stream_id"]
-    streams = raw_reader.header["signal_streams"]
-    stream_idx = 0
-    for si, s in enumerate(streams):
-        if s["id"] == stream_id:
-            stream_idx = si
-            break
-
     raw = raw_reader.get_analogsignal_chunk(
         block_index=0,
         seg_index=0,
         i_start=s0,
         i_stop=s1,
-        channel_indexes=[ch_idx],
+        channel_indexes=[stream_channel_index],
         stream_index=stream_idx,
     )
     data = raw_reader.rescale_signal_raw_to_float(
-        raw, channel_indexes=[ch_idx], stream_index=stream_idx
+        raw, channel_indexes=[stream_channel_index], stream_index=stream_idx
     )
     data = data.ravel()
 
