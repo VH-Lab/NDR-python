@@ -8,6 +8,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/base.m"
     python_path: "ndr/reader/base.py"
+    matlab_last_sync_hash: "64d06e4"
     python_class: "ndr_reader_base"
     properties:
       - name: MightHaveTimeGaps
@@ -53,6 +54,20 @@ classes:
         output_arguments:
           - name: channels
             type_python: "list[dict]"
+      - name: channelLabelingConvention
+        input_arguments:
+          - name: channeltype
+            type_matlab: "char"
+            type_python: "str"
+        output_arguments:
+          - name: convention
+            type_matlab: "char"
+            type_python: "str"
+        decision_log: >-
+          Ported from MATLAB b2e9d95/3974d59 on 2026-08-27. Declares how a
+          reader names channels: 'indexed' (base default), 'physical', or
+          'native'. MATLAB name kept verbatim per Strict MATLAB Mirror, so
+          this method is camelCase where the rest of the API is lowercase.
       - name: underlying_datatype
         input_arguments:
           - name: epochstreams
@@ -182,6 +197,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/intan_rhd.m"
     python_path: "ndr/reader/intan_rhd.py"
+    matlab_last_sync_hash: "67addc7"
     python_class: "ndr_reader_intan__rhd"
     inherits: base
     methods:
@@ -215,6 +231,634 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/somecompany_someformat.m"
     python_path: "ndr/reader/somecompany_someformat.py"
+    matlab_last_sync_hash: "20743f7"
     python_class: "ndr_reader_somecompany__someformat"
     inherits: base
     notes: "Template/example reader class for creating new format readers."
+
+  - name: axon_abf
+    type: class
+    matlab_path: "+ndr/+reader/axon_abf.m"
+    python_path: "ndr/reader/axon_abf.py"
+    matlab_last_sync_hash: "0e42d97"
+    python_class: "ndr_reader_axon__abf"
+    inherits: base
+    decision_log: >-
+      Contract recorded 2026-08-27; the Python implementation predated the
+      bridge entry. Inherits the base 'indexed' channelLabelingConvention.
+    methods:
+      - name: getchannelsepoch
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: channels
+            type_python: "list[dict]"
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: samplerate
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+        output_arguments:
+          - name: sr
+            type_python: "float | numpy.ndarray"
+      - name: t0_t1
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: t0t1
+            type_python: "list[list[float]]"
+
+  - name: ced_smr
+    type: class
+    matlab_path: "+ndr/+reader/ced_smr.m"
+    python_path: "ndr/reader/ced_smr.py"
+    matlab_last_sync_hash: "7745c1b"
+    python_class: "ndr_reader_ced__smr"
+    inherits: base
+    decision_log: >-
+      Contract recorded 2026-08-27; the Python implementation predated the
+      bridge entry. The MATLAB reader at this hash also carries 64-bit .smrx
+      support via ndr.format.ced.sonpipe, which shells out to an external
+      binary and is not ported; the Python reader handles .smr only.
+    methods:
+      - name: channelLabelingConvention
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+        output_arguments:
+          - name: convention
+            type_python: "str"
+        decision_log: "Returns 'physical'; names carry the Spike2 hardware channel number."
+      - name: getchannelsepoch
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: channels
+            type_python: "list[dict]"
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: samplerate
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+        output_arguments:
+          - name: sr
+            type_python: "float | numpy.ndarray"
+      - name: t0_t1
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: t0t1
+            type_python: "list[list[float]]"
+
+  - name: neo
+    type: class
+    matlab_path: "+ndr/+reader/neo.m"
+    python_path: "ndr/reader/neo.py"
+    matlab_last_sync_hash: "3974d59"
+    python_class: "ndr_reader_neo"
+    inherits: base
+    decision_log: >-
+      Contract recorded 2026-08-27. In MATLAB this reader calls into the
+      Python neo library through +ndr/+format/+neo/neo_python.py; in Python
+      the same module is imported directly, so the MATLAB-side py.* bridge
+      methods (reload_python, insert_python_path) have no Python counterpart.
+    methods:
+      - name: channelLabelingConvention
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+        output_arguments:
+          - name: convention
+            type_python: "str"
+        decision_log: "Returns 'native'; neo reports the format's own channel name verbatim."
+      - name: daqchannels2internalchannels
+        input_arguments:
+          - name: channelprefix
+            type_python: "list[str]"
+          - name: channelstring
+            type_python: "str | list[str]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: channelstruct
+            type_python: "list[dict]"
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+
+  - name: neuropixelsGLX
+    type: class
+    matlab_path: "+ndr/+reader/neuropixelsGLX.m"
+    python_path: "ndr/reader/neuropixelsGLX.py"
+    matlab_last_sync_hash: "c17191a"
+    python_class: "ndr_reader_neuropixelsGLX"
+    inherits: base
+    decision_log: >-
+      Contract recorded 2026-08-27; the Python implementation predated the
+      bridge entry. Inherits the base 'indexed' channelLabelingConvention.
+      Class name has no underscore in MATLAB, so the Mirror Rule leaves it
+      unchanged.
+    methods:
+      - name: epochclock
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: ec
+            type_python: "list[ClockType]"
+      - name: t0_t1
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: t0t1
+            type_python: "list[list[float]]"
+      - name: getchannelsepoch
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: channels
+            type_python: "list[dict]"
+      - name: underlying_datatype
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+        output_arguments:
+          - name: datatype
+            type_python: "str"
+          - name: p
+            type_python: "numpy.ndarray"
+          - name: datasize
+            type_python: "int"
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: samplerate
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: channeltype
+            type_python: "str | list[str]"
+          - name: channel
+            type_python: "int | list[int]"
+        output_arguments:
+          - name: sr
+            type_python: "float | numpy.ndarray"
+      - name: daqchannels2internalchannels
+        input_arguments:
+          - name: channelprefix
+            type_python: "list[str]"
+          - name: channelnumber
+            type_python: "list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: channelstruct
+            type_python: "list[dict]"
+      - name: filenamefromepochfiles
+        input_arguments:
+          - name: filename_array
+            type_python: "list[str]"
+        output_arguments:
+          - name: filename
+            type_python: "str"
+
+  - name: spikegadgets_rec
+    type: class
+    matlab_path: "+ndr/+reader/spikegadgets_rec.m"
+    python_path: "ndr/reader/spikegadgets_rec.py"
+    matlab_last_sync_hash: "3974d59"
+    python_class: "ndr_reader_spikegadgets__rec"
+    inherits: base
+    decision_log: >-
+      Contract recorded 2026-08-27. The Python class is a stub: the
+      ndr.format.spikegadgets parsers are ported but not yet wired up, so
+      readchannels_epochsamples raises NotImplementedError.
+    methods:
+      - name: channelLabelingConvention
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+        output_arguments:
+          - name: convention
+            type_python: "str"
+        decision_log: "Returns 'physical'; names carry the integer from the native 'Ain%d'/'Din%d' identifiers."
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+
+  - name: tdt_sev
+    type: class
+    matlab_path: "+ndr/+reader/tdt_sev.m"
+    python_path: "ndr/reader/tdt_sev.py"
+    matlab_last_sync_hash: "3974d59"
+    python_class: "ndr_reader_tdt__sev"
+    inherits: base
+    decision_log: >-
+      Contract recorded 2026-08-27. The Python class is a stub: the
+      ndr.format.tdt parsers are ported but not yet wired up, so
+      readchannels_epochsamples raises NotImplementedError.
+    methods:
+      - name: channelLabelingConvention
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+        output_arguments:
+          - name: convention
+            type_python: "str"
+        decision_log: "Returns 'physical'; names carry header(i).chan, the TDT hardware channel number."
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+
+  - name: bjg
+    type: class
+    matlab_path: "+ndr/+reader/bjg.m"
+    python_path: "ndr/reader/bjg.py"
+    matlab_last_sync_hash: "20743f7"
+    python_class: "ndr_reader_bjg"
+    inherits: base
+    decision_log: >-
+      Contract recorded 2026-08-27. The Python class is a stub: the
+      ndr.format.bjg parsers are ported but not yet wired up. Inherits the
+      base 'indexed' channelLabelingConvention.
+    methods:
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+
+  - name: dabrowska
+    type: class
+    matlab_path: "+ndr/+reader/dabrowska.m"
+    python_path: "ndr/reader/dabrowska.py"
+    matlab_last_sync_hash: "20743f7"
+    python_class: "ndr_reader_dabrowska"
+    inherits: base
+    decision_log: >-
+      Contract recorded 2026-08-27. The Python class is a stub: the
+      ndr.format.dabrowska parsers are ported but not yet wired up. Inherits
+      the base 'indexed' channelLabelingConvention.
+    methods:
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"
+
+  - name: whitematter
+    type: class
+    matlab_path: "+ndr/+reader/whitematter.m"
+    python_path: "ndr/reader/whitematter.py"
+    matlab_last_sync_hash: "20743f7"
+    python_class: "ndr_reader_whitematter"
+    inherits: base
+    decision_log: >-
+      Contract recorded 2026-08-27. The Python class is a stub: the
+      ndr.format.whitematter parsers are ported but not yet wired up.
+      Inherits the base 'indexed' channelLabelingConvention.
+    methods:
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int"
+          - name: s1
+            type_python: "int"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: readevents_epochsamples_native
+        input_arguments:
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: t0
+            type_python: "float"
+          - name: t1
+            type_python: "float"
+        output_arguments:
+          - name: timestamps
+            type_python: "numpy.ndarray"
+          - name: data
+            type_python: "numpy.ndarray"

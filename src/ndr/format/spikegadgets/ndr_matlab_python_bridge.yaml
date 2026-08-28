@@ -7,6 +7,7 @@ functions:
   - name: copy_rec_files
     matlab_path: "+ndr/+format/+spikegadgets/copy_rec_files.m"
     python_path: "ndr/format/spikegadgets/copy_rec_files.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: filename_in
         type_python: "str | Path"
@@ -21,6 +22,7 @@ functions:
   - name: read_rec_analogChannels
     matlab_path: "+ndr/+format/+spikegadgets/read_rec_analogChannels.m"
     python_path: "ndr/format/spikegadgets/read_rec_analogChannels.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -47,6 +49,7 @@ functions:
   - name: read_rec_config
     matlab_path: "+ndr/+format/+spikegadgets/read_rec_config.m"
     python_path: "ndr/format/spikegadgets/read_rec_config.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -59,6 +62,7 @@ functions:
   - name: read_rec_digitalChannels
     matlab_path: "+ndr/+format/+spikegadgets/read_rec_digitalChannels.m"
     python_path: "ndr/format/spikegadgets/read_rec_digitalChannels.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -85,6 +89,7 @@ functions:
   - name: read_rec_trodeChannels
     matlab_path: "+ndr/+format/+spikegadgets/read_rec_trodeChannels.m"
     python_path: "ndr/format/spikegadgets/read_rec_trodeChannels.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: filename
         type_python: "str | Path"

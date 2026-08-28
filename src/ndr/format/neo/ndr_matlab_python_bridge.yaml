@@ -7,6 +7,7 @@ functions:
   - name: Utils
     matlab_path: "+ndr/+format/+neo/Utils.py"
     python_path: "ndr/format/neo/Utils.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments: []
     output_arguments: []
     notes: "Utility module already written in Python in the MATLAB repo. Contains helper functions: get_header_channels, get_channels_from_segment, from_channel_names_to_stream_index, from_channel_name_to_event_channel_index, from_channel_name_to_marker_channel_index, channel_to_sample_rate, channel_type_from_neo_to_ndr, get_sample_rates, get_reader, get_raw_reader."
@@ -14,6 +15,7 @@ functions:
   - name: neo_python
     matlab_path: "+ndr/+format/+neo/neo_python.py"
     python_path: "ndr/format/neo/neo_python.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments: []
     output_arguments: []
     notes: "Main Neo interface module already written in Python in the MATLAB repo. Contains functions: getchannelsepoch, readchannels_epochsamples, daqchannels2internalchannels, canbereadtogether, samplerate, t0_t1, readevents_epochsamples_native."

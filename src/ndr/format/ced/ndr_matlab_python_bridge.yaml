@@ -7,6 +7,7 @@ functions:
   - name: read_SOMSMR_datafile
     matlab_path: "+ndr/+format/+ced/read_SOMSMR_datafile.m"
     python_path: "ndr/format/ced/read_SOMSMR_datafile.py"
+    matlab_last_sync_hash: "7745c1b"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -33,6 +34,7 @@ functions:
   - name: read_SOMSMR_header
     matlab_path: "+ndr/+format/+ced/read_SOMSMR_header.m"
     python_path: "ndr/format/ced/read_SOMSMR_header.py"
+    matlab_last_sync_hash: "7745c1b"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -43,6 +45,7 @@ functions:
   - name: read_SOMSMR_sampleinterval
     matlab_path: "+ndr/+format/+ced/read_SOMSMR_sampleinterval.m"
     python_path: "ndr/format/ced/read_SOMSMR_sampleinterval.py"
+    matlab_last_sync_hash: "7745c1b"
     input_arguments:
       - name: filename
         type_python: "str | Path"

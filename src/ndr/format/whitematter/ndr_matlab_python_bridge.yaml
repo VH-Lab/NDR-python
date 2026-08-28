@@ -7,6 +7,7 @@ functions:
   - name: header
     matlab_path: "+ndr/+format/+whitematter/header.m"
     python_path: "ndr/format/whitematter/header.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -17,6 +18,7 @@ functions:
   - name: read
     matlab_path: "+ndr/+format/+whitematter/read.m"
     python_path: "ndr/format/whitematter/read.py"
+    matlab_last_sync_hash: "20743f7"
     input_arguments:
       - name: fname
         type_python: "str | Path"

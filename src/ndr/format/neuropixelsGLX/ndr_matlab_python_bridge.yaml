@@ -1,0 +1,113 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+# Contract recorded 2026-08-27. The Python implementation of this sub-package
+# predated its bridge file; these entries document the interface as ported.
+# Private helpers prefixed with an underscore (e.g. _parse_snsGeomMap) are
+# Python-side implementation detail with no MATLAB counterpart and are
+# deliberately not part of the contract.
+
+functions:
+  - name: readmeta
+    type: function
+    matlab_path: "+ndr/+format/+neuropixelsGLX/readmeta.m"
+    python_path: "ndr/format/neuropixelsGLX/readmeta.py"
+    matlab_last_sync_hash: "9b4e1f5"
+    input_arguments:
+      - name: metafilename
+        type_matlab: "char"
+        type_python: "str | Path"
+    output_arguments:
+      - name: meta
+        type_matlab: "struct"
+        type_python: "dict[str, str]"
+    decision_log: >-
+      Returns the raw SpikeGLX .meta key/value pairs as strings; callers do
+      their own numeric conversion, matching the MATLAB struct-of-char return.
+
+  - name: header
+    type: function
+    matlab_path: "+ndr/+format/+neuropixelsGLX/header.m"
+    python_path: "ndr/format/neuropixelsGLX/header.py"
+    matlab_last_sync_hash: "c17191a"
+    input_arguments:
+      - name: metafilename
+        type_matlab: "char"
+        type_python: "str | Path"
+    output_arguments:
+      - name: header
+        type_matlab: "struct"
+        type_python: "dict[str, Any]"
+
+  - name: probeGeometry
+    type: function
+    matlab_path: "+ndr/+format/+neuropixelsGLX/probeGeometry.m"
+    python_path: "ndr/format/neuropixelsGLX/probeGeometry.py"
+    matlab_last_sync_hash: "b64d1c7"
+    input_arguments:
+      - name: metafilename
+        type_matlab: "char"
+        type_python: "str | Path"
+    output_arguments:
+      - name: geometry
+        type_matlab: "struct"
+        type_python: "dict[str, Any]"
+
+  - name: samples2volts
+    type: function
+    matlab_path: "+ndr/+format/+neuropixelsGLX/samples2volts.m"
+    python_path: "ndr/format/neuropixelsGLX/samples2volts.py"
+    matlab_last_sync_hash: "b3e4e84"
+    input_arguments:
+      - name: data
+        type_matlab: "numeric"
+        type_python: "numpy.ndarray"
+      - name: info
+        type_matlab: "struct"
+        type_python: "dict[str, Any]"
+    output_arguments:
+      - name: data
+        type_matlab: "double"
+        type_python: "numpy.ndarray"
+
+  - name: read
+    type: function
+    matlab_path: "+ndr/+format/+neuropixelsGLX/read.m"
+    python_path: "ndr/format/neuropixelsGLX/read.py"
+    matlab_last_sync_hash: "c3fa512"
+    input_arguments:
+      - name: binfilename
+        type_matlab: "char"
+        type_python: "str | Path"
+      - name: t0
+        type_matlab: "double"
+        type_python: "float"
+      - name: t1
+        type_matlab: "double"
+        type_python: "float"
+      - name: numChans
+        type_matlab: "double"
+        type_python: "int"
+        decision_log: "MATLAB name/value pair; Python keyword-only argument."
+      - name: SR
+        type_matlab: "double"
+        type_python: "float"
+        decision_log: "MATLAB name/value pair; Python keyword-only argument."
+      - name: channels
+        type_matlab: "numeric"
+        type_python: "list[int] | numpy.ndarray | None"
+        decision_log: >-
+          MATLAB name/value pair; Python keyword-only argument. Semantic
+          Parity: channel numbers are 1-based on the way in.
+    output_arguments:
+      - name: data
+        type_matlab: "int16 | double"
+        type_python: "numpy.ndarray"
+      - name: time
+        type_matlab: "double"
+        type_python: "numpy.ndarray"
+      - name: t0t1
+        type_matlab: "double"
+        type_python: "list[float]"
