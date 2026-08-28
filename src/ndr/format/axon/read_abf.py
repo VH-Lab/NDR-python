@@ -18,6 +18,7 @@ except ImportError:  # pragma: no cover
     pyabf = None  # type: ignore[assignment]
 
 from ndr.format.axon.read_abf_header import read_abf_header
+from ndr.time.fun.times2samples import matlab_round
 
 
 def read_abf(
@@ -90,8 +91,8 @@ def read_abf(
     elif channel_type_lower in ("ai", "analog_in"):
         abf = pyabf.ABF(filename)
 
-        s0 = int(round(t0 / si_sec))
-        s1_idx = int(round(t1 / si_sec)) + 1
+        s0 = int(matlab_round(t0 / si_sec))
+        s1_idx = int(matlab_round(t1 / si_sec)) + 1
 
         columns = []
         for ch_num in sorted(channel_numbers):

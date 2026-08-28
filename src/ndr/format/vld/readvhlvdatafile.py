@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 
 from ndr.format.vld.readvhlvheaderfile import readvhlvheaderfile
+from ndr.time.fun.times2samples import matlab_round
 
 # MATLAB precision name -> (numpy big-endian dtype, unit size in bytes, maxint)
 _PRECISION = {
@@ -62,8 +63,7 @@ def _read_strided(fid, offset: int, count: int, dtype: np.dtype, stride_bytes: i
         return np.array([], dtype=dtype)
     if stride_bytes % itemsize:
         raise ValueError(
-            f"stride of {stride_bytes} bytes is not a multiple of the "
-            f"{itemsize}-byte item size."
+            f"stride of {stride_bytes} bytes is not a multiple of the {itemsize}-byte item size."
         )
 
     step = stride_bytes // itemsize
@@ -155,8 +155,8 @@ def readvhlvdatafile(
     tot_time = tot_sam / sr
 
     # Samples run from 1...N; sample 1 occurs at t == 0.
-    s0 = round(1 + t0 * sr)
-    s1 = round(1 + t1 * sr)
+    s0 = int(matlab_round(1 + t0 * sr))
+    s1 = int(matlab_round(1 + t1 * sr))
 
     with open(myfilename, "rb") as fid:
         if multiplexed:

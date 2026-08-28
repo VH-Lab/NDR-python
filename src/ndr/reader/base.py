@@ -12,6 +12,7 @@ import numpy as np
 
 from ndr.time.clocktype import ClockType
 from ndr.time.fun.samples2times import samples2times as _samples2times
+from ndr.time.fun.times2samples import matlab_round
 from ndr.time.fun.times2samples import times2samples as _times2samples
 
 
@@ -391,8 +392,8 @@ class ndr_reader_base(ABC):
                 sr = self.samplerate(epochstreams, epoch_select, channelprefix[0], channelnumber[0])
                 actual_t0 = t0 if t0 is not None else t0t1[0][0]
                 actual_t1 = t1 if t1 is not None else t0t1[0][1]
-                s0 = round(1 + actual_t0 * sr)
-                s1 = round(1 + actual_t1 * sr)
+                s0 = int(matlab_round(1 + actual_t0 * sr))
+                s1 = int(matlab_round(1 + actual_t1 * sr))
 
             data = self.readchannels_epochsamples(
                 channelprefix[0], channelnumber, epochstreams, epoch_select, int(s0), int(s1)

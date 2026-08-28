@@ -12,6 +12,7 @@ from typing import Any
 import numpy as np
 
 from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
+from ndr.time.fun.times2samples import matlab_round
 
 
 def Intan_RHD2000_blockinfo(
@@ -230,14 +231,14 @@ def read_Intan_RHD2000_datafile(
         sr_actual = sr
 
     # Convert time to sample indices
-    s0 = max(0, int(round(t0 * sr_actual)))
+    s0 = max(0, int(matlab_round(t0 * sr_actual)))
     if t1 == float("inf"):
         if channeltype == "aux":
             s1 = (samples_per_block // 4) * num_data_blocks - 1
         else:
             s1 = total_samples - 1
     else:
-        s1 = int(round(t1 * sr_actual))
+        s1 = int(matlab_round(t1 * sr_actual))
 
     num_samples = s1 - s0 + 1
     if num_samples <= 0:

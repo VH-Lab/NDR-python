@@ -17,6 +17,7 @@ from ndr.format.intan.read_Intan_RHD2000_datafile import (
 )
 from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
 from ndr.reader.base import ndr_reader_base
+from ndr.time.fun.times2samples import matlab_round
 
 
 class ndr_reader_intan__rhd(ndr_reader_base):
@@ -62,8 +63,8 @@ class ndr_reader_intan__rhd(ndr_reader_base):
         if not use_samples or s0 is None or s1 is None:
             t0t1 = self.t0_t1(epochstreams, epoch_select)
             sr = channelstruct[0]["samplerate"]
-            s0 = round(1 + t0t1[0][0] * sr)
-            s1 = round(1 + t0t1[0][1] * sr)
+            s0 = int(matlab_round(1 + t0t1[0][0] * sr))
+            s1 = int(matlab_round(1 + t0t1[0][1] * sr))
 
         data = self.readchannels_epochsamples(
             internal_type, channels, epochstreams, epoch_select, int(s0), int(s1)
@@ -138,9 +139,7 @@ class ndr_reader_intan__rhd(ndr_reader_base):
 
         if not isdirectory:
             _blockinfo, _bpb, _bp, num_data_blocks = Intan_RHD2000_blockinfo(filename, header)
-            total_samples = (
-                int(header["num_samples_per_data_block"]) * num_data_blocks
-            )
+            total_samples = int(header["num_samples_per_data_block"]) * num_data_blocks
         else:
             time_dat = Path(parentdir) / "time.dat"
             if not time_dat.exists():
@@ -246,7 +245,7 @@ class ndr_reader_intan__rhd(ndr_reader_base):
         if isinstance(channeltype, list):
             if not all(ct == channeltype[0] for ct in channeltype):
                 raise ValueError(
-                    "channeltype list must be uniform; " "intan_rhd reads one type per call."
+                    "channeltype list must be uniform; intan_rhd reads one type per call."
                 )
             channeltype = channeltype[0]
 

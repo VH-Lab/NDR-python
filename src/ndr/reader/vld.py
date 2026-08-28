@@ -16,6 +16,7 @@ from ndr.format.vld.readvhlvdatafile import readvhlvdatafile
 from ndr.format.vld.readvhlvheaderfile import readvhlvheaderfile
 from ndr.reader.base import ndr_reader_base
 from ndr.time.clocktype import ClockType
+from ndr.time.fun.times2samples import matlab_round
 
 # MATLAB precision name -> (ndr datatype, size in bits, maxint)
 _PRECISION2DATATYPE = {
@@ -125,7 +126,7 @@ class ndr_reader_vld(ndr_reader_base):
         if isinstance(channeltype, list):
             if not all(ct == channeltype[0] for ct in channeltype):
                 raise ValueError(
-                    "channeltype list must be uniform; the vld reader reads " "one type per call."
+                    "channeltype list must be uniform; the vld reader reads one type per call."
                 )
             channeltype = channeltype[0]
 
@@ -141,13 +142,12 @@ class ndr_reader_vld(ndr_reader_base):
             s0 = 1
         elif s0 < 1:
             warnings.warn(
-                "Starting sample number must be a positive integer. "
-                "Using default value (s0 = 1).",
+                "Starting sample number must be a positive integer. Using default value (s0 = 1).",
                 stacklevel=2,
             )
             s0 = 1
-        elif s0 != round(s0):
-            s0 = round(s0)
+        elif s0 != matlab_round(s0):
+            s0 = int(matlab_round(s0))
             warnings.warn(
                 "Starting sample number must be an integer. Using closest "
                 f"integer value (s0 = {s0}).",
@@ -158,8 +158,8 @@ class ndr_reader_vld(ndr_reader_base):
             s1 = tot_sam
         elif s1 < 1:
             raise ValueError("Ending sample number must be a positive integer.")
-        elif s1 != round(s1):
-            s1 = round(s1)
+        elif s1 != matlab_round(s1):
+            s1 = int(matlab_round(s1))
             warnings.warn(
                 "Ending sample number must be an integer. Using closest "
                 f"integer value (s1 = {s1}).",
