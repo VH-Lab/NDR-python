@@ -42,7 +42,9 @@ def test_read_config(example_rec: Path) -> None:
     except ImportError:
         pytest.skip("ndr.format.spikegadgets.read_rec_config not yet available")
 
-    h = read_rec_config(str(example_rec))
+    # read_rec_config mirrors MATLAB's two outputs and returns
+    # (config, officialchannels); the config is the first element.
+    h, _channels = read_rec_config(str(example_rec))
     assert h is not None
     assert hasattr(h, "samplingRate") or "samplingRate" in h
 
@@ -59,14 +61,16 @@ def test_read_trode_channels(example_rec: Path) -> None:
     except ImportError:
         pytest.skip("ndr.format.spikegadgets read functions not yet available")
 
-    h = read_rec_config(str(example_rec))
+    # read_rec_config mirrors MATLAB's two outputs and returns
+    # (config, officialchannels); the config is the first element.
+    h, _channels = read_rec_config(str(example_rec))
     sampling_rate = int(h["samplingRate"]) if isinstance(h, dict) else int(h.samplingRate)
     num_channels = int(h["numChannels"]) if isinstance(h, dict) else int(h.numChannels)
     header_size = int(h["headerSize"]) if isinstance(h, dict) else int(h.headerSize)
 
     t1 = 1 * sampling_rate
     data, time = read_rec_trodeChannels(
-        str(example_rec), num_channels, 1, sampling_rate, header_size, 1, t1
+        str(example_rec), num_channels, [1], sampling_rate, header_size, 1, t1
     )
 
     assert data is not None
