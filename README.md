@@ -64,4 +64,4 @@ See [AGENTS.md](AGENTS.md) and [docs/developer_notes/](docs/developer_notes/) fo
 
 ## License
 
-CC-BY-NC-SA-4.0
+MIT. See [LICENSE](LICENSE).

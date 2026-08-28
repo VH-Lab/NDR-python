@@ -3,6 +3,29 @@ project_metadata:
   naming_policy: "Strict MATLAB Mirror"
   indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
 
+
+  # Deliberate backend divergence, recorded so it is not "fixed" later.
+  #
+  # NDR-matlab dispatches on ndr.format.ced.isSON64: 32-bit .smr files go to
+  # sigTOOL, 64-bit .smrx files go to the sonpipe CLI. NDR-python sends BOTH
+  # through sonpipe.
+  #
+  # This is intentional, not drift. sigTOOL has years of production use behind
+  # it and there is no reason to disturb it on the MATLAB side. Python never had
+  # that option: its alternative was neo's CedRawIO, a reimplementation rather
+  # than a proven reader, which also imports CED's sonpy in-process -- and sonpy
+  # has no wheel for CPython 3.10-3.13 on Linux or macOS, and cannot be imported
+  # at all by a native arm64 interpreter on Apple Silicon. Routing everything
+  # through the vendor's own library via one backend beats maintaining two.
+  #
+  # Consequence for the symmetry tests: for 32-bit .smr they compare sigTOOL
+  # against CED's own library, which is a cross-implementation check rather than
+  # a mirror of one algorithm. A disagreement there is real news about one of
+  # the two readers, not a porting slip.
+  #
+  # The Python side lives in ndr/format/ced/sonpipe/, mirroring
+  # +ndr/+format/+ced/+sonpipe/ function for function.
+
 functions:
   - name: read_SOMSMR_datafile
     matlab_path: "+ndr/+format/+ced/read_SOMSMR_datafile.m"

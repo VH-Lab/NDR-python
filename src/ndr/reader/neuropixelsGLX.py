@@ -15,6 +15,7 @@ from ndr.format.neuropixelsGLX.header import header
 from ndr.reader.base import ndr_reader_base
 from ndr.time.clocktype import ClockType
 from ndr.time.fun.samples2times import samples2times
+from ndr.time.fun.times2samples import matlab_round
 
 
 class ndr_reader_neuropixelsGLX(ndr_reader_base):
@@ -71,7 +72,7 @@ class ndr_reader_neuropixelsGLX(ndr_reader_base):
             bytes_per_sample = 2 * info["n_saved_chans"]
             total_samples = binfile.stat().st_size // bytes_per_sample
         else:
-            total_samples = round(info["file_time_secs"] * info["sample_rate"])
+            total_samples = int(matlab_round(info["file_time_secs"] * info["sample_rate"]))
 
         t_end = (total_samples - 1) / info["sample_rate"]
         return [[0.0, t_end]]

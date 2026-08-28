@@ -40,8 +40,52 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install package with dev and formats dependencies
+        # The formats extra carries neo, pyabf, tdt, tifffile and scipy.
+        # Without it the reader tests raise ImportError and pass as skips,
+        # so the readers they cover are never actually exercised.
+        run: pip install -e ".[dev,formats]"
+
+      - name: Run tests
+        run: pytest tests/ src/ndr/test/ -v --tb=short
+
+  ced-integration:
+    name: CED integration (real sonpipe)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # CED ships sonpy only for CPython 3.14 on Linux, so the real CLI
+          # cannot run on the main test matrix. This job is the one place the
+          # CED reader is exercised end-to-end against a real .smr file; the
+          # stand-in CLI in tests/test_ced_sonpipe.py covers the bridge itself
+          # on every supported version.
+          python-version: "3.14"
+
       - name: Install package with dev dependencies
         run: pip install -e ".[dev]"
 
-      - name: Run tests
-        run: pytest tests/ -v --tb=short
+      - name: Install sonpipe (pulls CED's sonpy)
+        # Installed here rather than declared in pyproject.toml: sonpipe is not
+        # on PyPI yet, and a git URL in the dependency list would put every
+        # install of this package behind a second repository.
+        run: pip install "sonpipe @ git+https://github.com/VH-Lab/sonpipe.git"
+
+      - name: Verify sonpipe and sonpy are usable
+        # Ask sonpipe where SonFile lives rather than hardcoding a layout. CED
+        # packages sonpy three different ways depending on wheel and version --
+        # sonpy.SonFile, sonpy.sonpy.SonFile, sonpy.lib.SonFile -- and
+        # sonpipe.sonfile.load_sonpy already resolves all three. Naming one
+        # directly here is how this step failed the first time.
+        run: |
+          sonpipe --version
+          python -c "from sonpipe.sonfile import load_sonpy; m = load_sonpy(); assert hasattr(m, 'SonFile'); print('sonpy OK via', m.__name__)"
+
+      - name: Run the CED format tests against the real CLI
+        # NDR_REQUIRE_SONPIPE turns the usual skip into a failure, so this job
+        # cannot pass by quietly reading nothing.
+        env:
+          NDR_REQUIRE_SONPIPE: "1"
+        run: pytest src/ndr/test/format/ced/ tests/test_ced_sonpipe.py -v --tb=short

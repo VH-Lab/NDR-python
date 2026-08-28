@@ -158,15 +158,16 @@ class TestIntanBlockAccounting:
         assert blockinfo["num_supply"] > 0
         assert blockinfo["num_temp"] == 0
 
+        spb = blockinfo["samples_per_block"]
         expected = (
-            4 * 60
-            + 2 * blockinfo["num_amplifier"] * 60
-            + 2 * blockinfo["num_aux"] * 15
+            4 * spb
+            + 2 * blockinfo["num_amplifier"] * spb
+            + 2 * blockinfo["num_aux"] * (spb // 4)
             + 2 * blockinfo["num_supply"]
             + 2 * (blockinfo["num_temp"] > 0)
-            + 2 * blockinfo["num_adc"] * 60
-            + (2 * 60 if blockinfo["num_dig_in"] else 0)
-            + (2 * 60 if blockinfo["num_dig_out"] else 0)
+            + 2 * blockinfo["num_adc"] * spb
+            + (2 * spb if blockinfo["num_dig_in"] else 0)
+            + (2 * spb if blockinfo["num_dig_out"] else 0)
         )
         assert bytes_per_block == expected
 
@@ -176,8 +177,9 @@ class TestIntanBlockAccounting:
         header = read_Intan_RHD2000_header(EXAMPLE_RHD)
         _bi, _bpb, bytes_present, num_blocks = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
         sr = header["frequency_parameters"]["amplifier_sample_rate"]
+        spb = header["num_samples_per_data_block"]
         t0t1 = reader.t0_t1([EXAMPLE_RHD], 1)
-        assert t0t1[0][1] == pytest.approx((60 * num_blocks) / sr - 1 / sr)
+        assert t0t1[0][1] == pytest.approx((spb * num_blocks) / sr - 1 / sr)
 
     def test_read_is_continuous_across_a_block_boundary(self):
         """A 2-byte block error drops a sample at each boundary; check none is."""
@@ -190,3 +192,90 @@ class TestIntanBlockAccounting:
             "analog_in", [1], [EXAMPLE_RHD], 1, 61, 120
         ).ravel()
         np.testing.assert_allclose(data[60 : 60 + len(second)], second)
+
+
+class TestIntanSamplesPerDataBlockVersion:
+    """MATLAB Intan_RHD2000_blockinfo.m:45-49: 60 samples/block for v1, 128 for v2+.
+
+    read_Intan_RHD2000_header already derived this correctly, but the block
+    sizer ignored it and hardcoded 60, so every v2.0+ file was decoded at less
+    than half its true block length. Nothing short-read, so the corruption was
+    silent. The bundled fixture is v1, which is why no existing test caught it.
+    """
+
+    def test_blockinfo_uses_the_header_value(self):
+        header = read_Intan_RHD2000_header(EXAMPLE_RHD)
+        blockinfo, _bpb, _bp, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        assert blockinfo["samples_per_block"] == header["num_samples_per_data_block"]
+
+    @pytest.mark.parametrize("main_version,expected", [(1, 60), (2, 128), (3, 128)])
+    def test_v2_plus_blocks_hold_128_samples(self, main_version, expected):
+        """Pin the version->block-size rule directly; the fixture is v1 only."""
+        header = read_Intan_RHD2000_header(EXAMPLE_RHD)
+        header = dict(header)
+        header["data_file_main_version_number"] = main_version
+        header["num_samples_per_data_block"] = 60 if main_version == 1 else 128
+
+        blockinfo, bytes_per_block, _bp, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        assert blockinfo["samples_per_block"] == expected
+
+        # The block must grow with the sample count, not stay pinned at the
+        # v1 size: that was the whole failure mode.
+        per_sample_sections = 4 + 2 * blockinfo["num_amplifier"] + 2 * blockinfo["num_adc"]
+        assert bytes_per_block >= per_sample_sections * expected
+
+
+class TestMatlabRoundingParity:
+    """MATLAB `round` is half-away-from-zero; Python's and numpy's are half-to-even.
+
+    Every NDR-matlab time-to-sample conversion goes through MATLAB `round`
+    (times2samples.m:12, readvhlvdatafile.m:74-75/234-235, reader.m:137-138/355-356,
+    read_Intan_RHD2000_datafile.m:124-125/170-171). On an exact half-sample
+    boundary the two conventions pick different samples, so the same requested
+    interval reads a different span of the file in each language.
+    """
+
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            (0.5, 1.0),  # builtin round gives 0
+            (1.5, 2.0),
+            (2.5, 3.0),  # builtin round gives 2
+            (3.5, 4.0),
+            (-0.5, -1.0),  # away from zero, not toward it
+            (-2.5, -3.0),
+            (0.4, 0.0),
+            (0.6, 1.0),
+            (-0.6, -1.0),
+            (7.0, 7.0),
+        ],
+    )
+    def test_halves_go_away_from_zero(self, value, expected):
+        from ndr.time.fun.times2samples import matlab_round
+
+        assert matlab_round(value) == expected
+
+    def test_differs_from_builtin_exactly_on_halves(self):
+        """Pin the disagreement, so the helper cannot be quietly swapped back."""
+        from ndr.time.fun.times2samples import matlab_round
+
+        disagree = [x / 2 for x in range(-8, 9) if matlab_round(x / 2) != round(x / 2)]
+        # Only halves whose away-from-zero neighbour is odd: at 1.5 and 3.5 the
+        # even neighbour IS the away-from-zero one, so the two agree there.
+        assert disagree == [-2.5, -0.5, 0.5, 2.5]
+
+    def test_scalar_returns_float_arrays_return_arrays(self):
+        from ndr.time.fun.times2samples import matlab_round
+
+        assert isinstance(matlab_round(2.5), float)
+        out = matlab_round(np.array([0.5, 1.5, -0.5]))
+        assert isinstance(out, np.ndarray)
+        np.testing.assert_array_equal(out, [1.0, 2.0, -1.0])
+
+    def test_times2samples_uses_it(self):
+        """A time landing exactly between samples resolves the MATLAB way."""
+        from ndr.time.fun.times2samples import times2samples
+
+        # sr = 2 Hz, so t = 0.25 s is exactly half a sample past sample 1.
+        s = times2samples(np.array([0.25]), [0.0, 10.0], 2.0)
+        assert s[0] == 2.0  # banker's rounding would give 1.0

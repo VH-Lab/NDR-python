@@ -17,6 +17,7 @@ from ndr.fun.ndrresource import ndrresource
 from ndr.reader.base import ndr_reader_base
 from ndr.string.channelstring2channels import channelstring2channels
 from ndr.time.clocktype import ClockType
+from ndr.time.fun.times2samples import matlab_round
 
 
 class ndr_reader:
@@ -126,8 +127,8 @@ class ndr_reader:
                 t0t1 = self.t0_t1(epochstreams, epoch_select)
                 actual_t0 = t0 if np.isfinite(t0) else t0t1[0][0]
                 actual_t1 = t1 if np.isfinite(t1) else t0t1[0][1]
-                s0 = round(1 + actual_t0 * sr)
-                s1 = round(1 + actual_t1 * sr)
+                s0 = int(matlab_round(1 + actual_t0 * sr))
+                s1 = int(matlab_round(1 + actual_t1 * sr))
 
             if is_neo:
                 channels = channelstring
@@ -225,8 +226,8 @@ class ndr_reader:
 
             for i, ch in enumerate(channel):
                 srd = self.samplerate(epochstreams, epoch_select, "di", ch)
-                s0d = 1 + round(srd * t0)
-                s1d = 1 + round(srd * t1)
+                s0d = 1 + int(matlab_round(srd * t0))
+                s1d = 1 + int(matlab_round(srd * t1))
 
                 data_here = self.readchannels_epochsamples(
                     "di", [ch], epochstreams, epoch_select, s0d, s1d

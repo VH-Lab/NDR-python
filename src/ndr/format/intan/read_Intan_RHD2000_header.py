@@ -2,8 +2,9 @@
 
 Port of +ndr/+format/+intan/read_Intan_RHD2000_header.m
 
-This module uses vhlab-toolbox-python's Intan reading capability when available,
-and falls back to a native implementation otherwise.
+The header is parsed natively here. An earlier draft delegated to
+vhlab-toolbox-python when it was importable; no such branch remains, and
+nothing in this package imports that dependency.
 """
 
 from __future__ import annotations

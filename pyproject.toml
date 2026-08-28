@@ -7,14 +7,13 @@ name = "ndr"
 version = "0.1.0"
 description = "Neuroscience Data Reader - Python implementation"
 readme = "README.md"
-license = {text = "CC-BY-NC-SA-4.0"}
+license = {text = "MIT"}
 authors = [{name = "VH-Lab", email = "vhlab@brandeis.edu"}]
 maintainers = [{name = "Waltham Data Science"}]
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.20.0",
     "pydantic>=2.0",
-    "vhlab-toolbox-python @ git+https://github.com/VH-Lab/vhlab-toolbox-python.git@main",
 ]
 
 [project.optional-dependencies]
@@ -31,16 +30,14 @@ formats = [
     "neo>=0.12.0",
     "tdt>=0.5.0",
     "tifffile>=2021.7.2",
+    "scipy>=1.7.0",
 ]
-
-[tool.hatch.metadata]
-allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ndr"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "src/ndr/test"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short --ignore=tests/symmetry"
 markers = [

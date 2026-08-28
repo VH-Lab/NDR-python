@@ -52,7 +52,15 @@ def read_rec_analogChannels(
     num_channels = int(NumChannels)
     header_size_bytes = int(headerSize) * 2
     channel_size_bytes = num_channels * 2
-    block_size_bytes = header_size_bytes + 2 + channel_size_bytes
+    # One sample occupies: [header][4-byte uint32 timestamp][channel data].
+    # MATLAB's `blockSizeBytes` (headerSizeBytes + 2 + channelSizeBytes) is NOT
+    # this stride -- it is the skip argument to fread, which advances *after*
+    # reading, so MATLAB's true stride is header + 2(read) + 2 + channel =
+    # header + 4 + channel. Porting the MATLAB expression verbatim as a total
+    # stride left every read 2 bytes short per sample, drifting steadily off
+    # the correct offset (and, since the drift is not a multiple of the
+    # per-channel stride, onto the wrong channel).
+    block_size_bytes = header_size_bytes + 4 + channel_size_bytes
 
     configsize = 0
     if configExists:
@@ -71,8 +79,10 @@ def read_rec_analogChannels(
         for i in range(num_samples):
             ts_bytes = f.read(4)
             if len(ts_bytes) < 4:
-                timestamps = timestamps[:i]
-                break
+                raise EOFError(
+                    f"Requested samples {s0}..{s1} but {filename} holds only {i} "
+                    "timestamps from that offset."
+                )
             timestamps[i] = np.frombuffer(ts_bytes, dtype=np.dtype("<u4"))[0]
             if i < num_samples - 1:
                 f.seek(header_size_bytes + channel_size_bytes, 1)
@@ -87,7 +97,12 @@ def read_rec_analogChannels(
             for j in range(num_samples):
                 raw = f.read(2)
                 if len(raw) < 2:
-                    break
+                    # rec_data came from np.empty; breaking here would return
+                    # uninitialized memory as if it were recorded signal.
+                    raise EOFError(
+                        f"Requested samples {s0}..{s1} but {filename} holds only "
+                        f"{j} samples for the channel at byte location {byte_loc}."
+                    )
                 rec_data[i, j] = np.frombuffer(raw, dtype=np.dtype("<i2"))[0]
                 if j < num_samples - 1:
                     f.seek(block_size_bytes - 2, 1)

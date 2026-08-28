@@ -2,7 +2,16 @@
 
 Status of the MATLAB → Python port of [NDR-matlab](https://github.com/VH-Lab/NDR-matlab).
 
-**Last synchronized with NDR-matlab `main` at `b313c51` (2026-08-14), on 2026-08-28.**
+**Last synchronized with NDR-matlab at `ac13506`, on 2026-08-28.**
+
+`ac13506` reached NDR-matlab `main` through merge commit `0cdd9aa` (PR #120).
+Because that was a merge rather than a squash, the commit is still reachable
+and `git log -1 --format=%h -- <matlab_path>` still resolves to it, so the nine
+entries recording it (the four `+spikegadgets/read_rec_*`, the two
+`+vld/readvhlv*`, and the three `+ced/read_SOMSMR_*`) need no adjustment. A
+squash merge would have replaced the hash and made them report drift; the fix
+in that case is to re-point them at the merge commit, not to re-review the
+files.
 
 Every entry in every `ndr_matlab_python_bridge.yaml` now carries a
 `matlab_last_sync_hash`, so upstream drift can be detected mechanically: for

@@ -51,7 +51,15 @@ def read_rec_trodeChannels(
 
     header_size_bytes = header_size_int16 * 2
     channel_size_bytes = num_channels * 2
-    block_size_bytes = header_size_bytes + 2 + channel_size_bytes  # +2 for padding/sync
+    # One sample occupies: [header][4-byte uint32 timestamp][channel data].
+    # MATLAB's `blockSizeBytes` (headerSizeBytes + 2 + channelSizeBytes) is NOT
+    # this stride -- it is the skip argument to fread, which advances *after*
+    # reading, so MATLAB's true stride is header + 2(read) + 2 + channel =
+    # header + 4 + channel. Porting the MATLAB expression verbatim as a total
+    # stride left every read 2 bytes short per sample, drifting steadily off
+    # the correct offset (and, since the drift is not a multiple of the
+    # per-channel stride, onto the wrong channel).
+    block_size_bytes = header_size_bytes + 4 + channel_size_bytes
 
     # Find config size
     with open(filename, "rb") as f:
@@ -69,8 +77,10 @@ def read_rec_trodeChannels(
         for i in range(num_samples):
             ts_bytes = f.read(4)
             if len(ts_bytes) < 4:
-                timestamps = timestamps[:i]
-                break
+                raise EOFError(
+                    f"Requested samples {s0}..{s1} but {filename} holds only {i} "
+                    "timestamps from that offset."
+                )
             timestamps[i] = np.frombuffer(ts_bytes, dtype=np.dtype("<u4"))[0]
             f.seek(header_size_bytes + channel_size_bytes, 1)
         timestamps /= samplingRate
@@ -86,15 +96,19 @@ def read_rec_trodeChannels(
             for j in range(s1 - s0 + 1):
                 raw = f.read(2)
                 if len(raw) < 2:
-                    col = col[:j]
-                    break
+                    # Truncating col here left the tail of rec_data (np.empty)
+                    # uninitialized and returned it as signal.
+                    raise EOFError(
+                        f"Requested samples {s0}..{s1} but {filename} holds only "
+                        f"{j} samples for channel {ch}."
+                    )
                 col[j] = np.frombuffer(raw, dtype=np.dtype("<i2"))[0]
                 if j < s1 - s0:
                     f.seek(block_size_bytes - 2, 1)
 
             channel_data = col.astype(np.float64)
             channel_data = channel_data * 12780.0 / 65536.0  # convert to µV
-            rec_data[i, : len(channel_data)] = channel_data
+            rec_data[i, :] = channel_data
 
     rec_data = rec_data.T  # N samples x M channels
     timestamps = timestamps[: rec_data.shape[0]]

@@ -88,9 +88,16 @@ class ndr_reader_ced__smr(ndr_reader_base):
         seg = self._load_segment(epochstreams, epoch_select)
 
         if channeltype in ("time", "timestamp", "t"):
-            sig = seg.analogsignals[0]
-            times = sig.times.magnitude
-            return times[s0 - 1 : s1].reshape(-1, 1)
+            # Each requested channel gets its own signal's time base. Spike2
+            # mixes sample rates and neo splits differently-sampled channels
+            # into separate analogsignals, so analogsignals[0].times is the
+            # wrong axis for any channel that is not in the first signal --
+            # right length, wrong spacing.
+            time_list = []
+            for ch in channel:
+                sig = self._find_analog_by_ced_channel(seg, ch)
+                time_list.append(sig.times.magnitude[s0 - 1 : s1])
+            return np.column_stack(time_list)
 
         data_list = []
         for ch in channel:
