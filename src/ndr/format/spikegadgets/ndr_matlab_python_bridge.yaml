@@ -22,7 +22,7 @@ functions:
   - name: read_rec_analogChannels
     matlab_path: "+ndr/+format/+spikegadgets/read_rec_analogChannels.m"
     python_path: "ndr/format/spikegadgets/read_rec_analogChannels.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "ac13506"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -45,11 +45,21 @@ functions:
         type_python: "numpy.ndarray"
       - name: timestamps
         type_python: "numpy.ndarray"
+    decision_log: >-
+      A .rec sample is [header][4-byte uint32 timestamp][channel data], so the
+      per-sample stride is headerSizeBytes + 4 + channelSizeBytes. MATLAB's
+      blockSizeBytes is 2 less than that on purpose: it is the skip argument to
+      fread, which advances after reading 2 bytes. Porting that name over as a
+      total stride left every Python read 2 bytes short per sample, and using
+      it for the seek to s0 was wrong in both languages. Both ports now keep a
+      separate stride constant for sample-boundary seeks and reserve
+      blockSizeBytes for the fread skip. Paired in NDR-matlab ac13506;
+      timestamps are returned for the requested span in both ports.
 
   - name: read_rec_config
     matlab_path: "+ndr/+format/+spikegadgets/read_rec_config.m"
     python_path: "ndr/format/spikegadgets/read_rec_config.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "ac13506"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -58,11 +68,17 @@ functions:
         type_python: "dict"
       - name: channels
         type_python: "list[dict]"
+    decision_log: >-
+      The Python port parses the configuration XML from memory. MATLAB used to
+      round-trip it through a predictably named temp file in a shared
+      directory; NDR-matlab ac13506 switched it to an org.xml.sax.InputSource,
+      so neither port touches disk. read_rec_config returns a (config,
+      channels) tuple in Python, mirroring MATLAB's two output arguments.
 
   - name: read_rec_digitalChannels
     matlab_path: "+ndr/+format/+spikegadgets/read_rec_digitalChannels.m"
     python_path: "ndr/format/spikegadgets/read_rec_digitalChannels.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "ac13506"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -85,11 +101,21 @@ functions:
         type_python: "numpy.ndarray"
       - name: timestamps
         type_python: "numpy.ndarray"
+    decision_log: >-
+      A .rec sample is [header][4-byte uint32 timestamp][channel data], so the
+      per-sample stride is headerSizeBytes + 4 + channelSizeBytes. MATLAB's
+      blockSizeBytes is 2 less than that on purpose: it is the skip argument to
+      fread, which advances after reading 2 bytes. Porting that name over as a
+      total stride left every Python read 2 bytes short per sample, and using
+      it for the seek to s0 was wrong in both languages. Both ports now keep a
+      separate stride constant for sample-boundary seeks and reserve
+      blockSizeBytes for the fread skip. Paired in NDR-matlab ac13506;
+      timestamps are returned for the requested span in both ports.
 
   - name: read_rec_trodeChannels
     matlab_path: "+ndr/+format/+spikegadgets/read_rec_trodeChannels.m"
     python_path: "ndr/format/spikegadgets/read_rec_trodeChannels.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "ac13506"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -110,3 +136,13 @@ functions:
         type_python: "numpy.ndarray"
       - name: timestamps
         type_python: "numpy.ndarray"
+    decision_log: >-
+      A .rec sample is [header][4-byte uint32 timestamp][channel data], so the
+      per-sample stride is headerSizeBytes + 4 + channelSizeBytes. MATLAB's
+      blockSizeBytes is 2 less than that on purpose: it is the skip argument to
+      fread, which advances after reading 2 bytes. Porting that name over as a
+      total stride left every Python read 2 bytes short per sample, and using
+      it for the seek to s0 was wrong in both languages. Both ports now keep a
+      separate stride constant for sample-boundary seeks and reserve
+      blockSizeBytes for the fread skip. Paired in NDR-matlab ac13506;
+      timestamps are returned for the requested span in both ports.

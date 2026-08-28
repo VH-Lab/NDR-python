@@ -10,7 +10,7 @@ functions:
     type: function
     matlab_path: "+ndr/+format/+vld/readvhlvheaderfile.m"
     python_path: "ndr/format/vld/readvhlvheaderfile.py"
-    matlab_last_sync_hash: "7cab21a"
+    matlab_last_sync_hash: "ac13506"
     input_arguments:
       - name: myfilename
         type_matlab: "char"
@@ -20,17 +20,24 @@ functions:
         type_matlab: "struct"
         type_python: "dict[str, Any]"
     decision_log: >-
-      MATLAB coerces each field value with eval() and falls back to the raw
-      string; the Python port parses int then float and otherwise keeps the
-      string, which covers every field this format defines (ChannelString,
-      NumChans, SamplingRate, SamplesPerChunk, Multiplexed, precision, Scale)
-      without executing file contents as code.
+      Both ports coerce each field value to a number when the text is a plain
+      numeric literal and keep the raw string otherwise. This is now genuine
+      parity rather than a documented divergence: MATLAB previously evaluated
+      the value text with eval(), so opening a .vlh executed whatever MATLAB it
+      contained. NDR-matlab ac13506 replaced that with a regexp gate plus
+      str2double, matching _coerce() here. The gate is not redundant --
+      str2double alone accepts input Python's float() rejects (str2double of
+      '1,000' is 1000), which would reintroduce a split. Verified over 24
+      inputs, including numeric, string, Inf/NaN and expression-shaped values,
+      with no divergence. Covers every field the format defines
+      (ChannelString, NumChans, SamplingRate, SamplesPerChunk, Multiplexed,
+      precision, Scale).
 
   - name: readvhlvdatafile
     type: function
     matlab_path: "+ndr/+format/+vld/readvhlvdatafile.m"
     python_path: "ndr/format/vld/readvhlvdatafile.py"
-    matlab_last_sync_hash: "7cab21a"
+    matlab_last_sync_hash: "ac13506"
     input_arguments:
       - name: myfilename
         type_matlab: "char"
