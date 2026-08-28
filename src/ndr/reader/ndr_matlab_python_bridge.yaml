@@ -68,6 +68,93 @@ classes:
           reader names channels: 'indexed' (base default), 'physical', or
           'native'. MATLAB name kept verbatim per Strict MATLAB Mirror, so
           this method is camelCase where the rest of the API is lowercase.
+      - name: numframes
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: n
+            type_python: "int"
+      - name: framesize
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: sz
+            type_matlab: "1x5 double"
+            type_python: "list[int]"
+            decision_log: "[Y X C Z T] extent."
+      - name: dimensionorder
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: order
+            type_python: "str"
+      - name: datatype
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: dt
+            type_matlab: "char"
+            type_python: "str"
+        decision_log: >-
+          MATLAB returns a MATLAB class name ('single'/'double'); the Python
+          port returns the numpy dtype name ('float32'/'float64'). Integer
+          types ('uint16', 'int16') are spelled identically in both.
+      - name: frametimes
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: frameind
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: "Semantic Parity: frame indices are 1-based."
+        output_arguments:
+          - name: t
+            type_python: "numpy.ndarray"
+      - name: readframes
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: frameind
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: "Semantic Parity: frame indices are 1-based."
+          - name: SelectC
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: >-
+              MATLAB name/value pair; Python keyword-only argument. 1-based;
+              None (MATLAB []) keeps every channel.
+          - name: SelectZ
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: >-
+              MATLAB name/value pair; Python keyword-only argument. 1-based;
+              None (MATLAB []) keeps every plane.
+        output_arguments:
+          - name: frames
+            type_python: "numpy.ndarray"
+      - name: metadata
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: m
+            type_matlab: "struct"
+            type_python: "dict[str, Any]"
       - name: underlying_datatype
         input_arguments:
           - name: epochstreams
@@ -174,6 +261,22 @@ classes:
           - name: s
             type_python: "numpy.ndarray"
     static_methods:
+      - name: emptyimagemetadata
+        output_arguments:
+          - name: m
+            type_matlab: "struct"
+            type_python: "dict[str, Any]"
+      - name: selectframeCZ
+        input_arguments:
+          - name: frames
+            type_python: "numpy.ndarray"
+          - name: SelectC
+            type_python: "list[int] | numpy.ndarray | None"
+          - name: SelectZ
+            type_python: "list[int] | numpy.ndarray | None"
+        output_arguments:
+          - name: frames
+            type_python: "numpy.ndarray"
       - name: mfdaq_channeltypes
         output_arguments:
           - name: ct
@@ -862,3 +965,265 @@ classes:
             type_python: "numpy.ndarray"
           - name: data
             type_python: "numpy.ndarray"
+
+  - name: vld
+    type: class
+    matlab_path: "+ndr/+reader/vld.m"
+    python_path: "ndr/reader/vld.py"
+    matlab_last_sync_hash: "8cc299d"
+    python_class: "ndr_reader_vld"
+    inherits: base
+    decision_log: >-
+      Ported 2026-08-28. VH Lab LabView (.vld/.vlh) reader. An epoch is a
+      .vld binary paired with a .vlh header of the same base name. Inherits
+      the base 'indexed' channelLabelingConvention. MATLAB's private static
+      helpers precision2datatype and total_samples are ported as
+      _precision2datatype and _total_samples.
+    methods:
+      - name: filenamefromepochfiles
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: filename
+            type_python: "str"
+      - name: readheader
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: header
+            type_matlab: "struct"
+            type_python: "dict[str, Any]"
+      - name: epochclock
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: ec
+            type_python: "list[ClockType]"
+      - name: t0_t1
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: t0t1
+            type_python: "list[list[float]]"
+      - name: getchannelsepoch
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: channels
+            type_python: "list[dict]"
+      - name: underlying_datatype
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+        output_arguments:
+          - name: datatype
+            type_python: "str"
+          - name: p
+            type_python: "numpy.ndarray"
+          - name: datasize
+            type_python: "int"
+      - name: readchannels_epochsamples
+        input_arguments:
+          - name: channeltype
+            type_matlab: "char | cell array of char"
+            type_python: "str | list[str]"
+          - name: channel
+            type_python: "int | list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: s0
+            type_python: "int | float"
+          - name: s1
+            type_python: "int | float"
+        output_arguments:
+          - name: data
+            type_python: "numpy.ndarray"
+      - name: samplerate
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+          - name: channeltype
+            type_python: "str"
+          - name: channel
+            type_python: "int | list[int]"
+        output_arguments:
+          - name: sr
+            type_python: "float | numpy.ndarray"
+      - name: daqchannels2internalchannels
+        input_arguments:
+          - name: channelprefix
+            type_python: "list[str]"
+          - name: channelnumber
+            type_python: "list[int]"
+          - name: epochstreams
+            type_python: "list[str]"
+          - name: epoch_select
+            type_python: "int"
+        output_arguments:
+          - name: channelstruct
+            type_python: "list[dict]"
+
+  - name: tiffstack
+    type: class
+    matlab_path: "+ndr/+reader/tiffstack.m"
+    python_path: "ndr/reader/tiffstack.py"
+    matlab_last_sync_hash: "a2ffd8b"
+    python_class: "ndr_reader_tiffstack"
+    inherits: base
+    decision_log: >-
+      Ported 2026-08-28. Native multipage-TIFF image reader; implements the
+      frame API rather than the channel API. MATLAB uses imfinfo/imread;
+      the Python port uses tifffile (an optional dependency, imported lazily
+      so it is only required when a TIFF is actually read). MATLAB's
+      tiffclass derives the class from BitsPerSample plus SampleFormat;
+      tifffile already resolves each page to a numpy dtype, so the Python
+      tiffclass returns that dtype's name.
+    methods:
+      - name: imagefiles
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str] | str"
+        output_arguments:
+          - name: files
+            type_python: "list[str]"
+      - name: tiffsindir
+        input_arguments:
+          - name: folder
+            type_python: "str | Path"
+        output_arguments:
+          - name: files
+            type_python: "list[str]"
+      - name: filenamefromepochfiles
+        input_arguments:
+          - name: filename_array
+            type_python: "list[str]"
+        output_arguments:
+          - name: filename
+            type_python: "str"
+      - name: resolveepoch
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+        output_arguments:
+          - name: info
+            type_matlab: "struct"
+            type_python: "dict[str, Any]"
+      - name: framesource
+        input_arguments:
+          - name: info
+            type_python: "dict[str, Any]"
+          - name: frameidx
+            type_python: "int"
+        output_arguments:
+          - name: filename
+            type_python: "str"
+          - name: page
+            type_python: "int"
+        decision_log: "Semantic Parity: frameidx and the returned page are 1-based."
+      - name: numframes
+      - name: framesize
+      - name: dimensionorder
+      - name: datatype
+      - name: frametimes
+      - name: readframes
+      - name: metadata
+      - name: frametimesfilename
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+        output_arguments:
+          - name: frametimesfile
+            type_python: "str"
+      - name: hasframetimes
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+        output_arguments:
+          - name: b
+            type_python: "bool"
+      - name: epochclock
+      - name: t0_t1
+      - name: getchannelsepoch
+    static_methods:
+      - name: tiffclass
+        input_arguments:
+          - name: fi
+            type_matlab: "struct (imfinfo output)"
+            type_python: "dict[str, Any]"
+        output_arguments:
+          - name: dt
+            type_python: "str"
+
+  - name: prairieview
+    type: class
+    matlab_path: "+ndr/+reader/prairieview.m"
+    python_path: "ndr/reader/prairieview.py"
+    matlab_last_sync_hash: "64d06e4"
+    python_class: "ndr_reader_prairieview"
+    inherits: tiffstack
+    decision_log: >-
+      Ported 2026-08-28. Native legacy Prairie View reader; inherits the TIFF
+      machinery from tiffstack and adds multi-channel file grouping (parsed
+      from Cycle/Ch markers in the file names), real per-frame timestamps
+      from the config, and raster-scan metadata. Uses no NANSEN code or
+      dependency.
+    methods:
+      - name: framelayout
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+        output_arguments:
+          - name: L
+            type_matlab: "struct"
+            type_python: "dict[str, Any]"
+      - name: numframes
+      - name: framesize
+      - name: datatype
+      - name: readframes
+        decision_log: >-
+          SelectC is honored at the source: files for unselected channels are
+          never opened, so only SelectZ is post-selected via selectframeCZ.
+      - name: config
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+        output_arguments:
+          - name: v
+            type_matlab: "struct"
+            type_python: "dict[str, Any]"
+      - name: hasconfigtimes
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str]"
+        output_arguments:
+          - name: tf
+            type_python: "bool"
+      - name: frametimes
+      - name: epochclock
+      - name: t0_t1
+      - name: metadata

@@ -1,42 +1,103 @@
 [
   {
-    "type": ["intan_rhd", "intan", "rhd"],
+    "type": [
+      "intan_rhd",
+      "intan",
+      "rhd"
+    ],
     "classname": "ndr.reader.intan_rhd.ndr_reader_intan__rhd"
   },
   {
-    "type": ["axon_abf", "axon", "abf"],
+    "type": [
+      "axon_abf",
+      "axon",
+      "abf"
+    ],
     "classname": "ndr.reader.axon_abf.ndr_reader_axon__abf"
   },
   {
-    "type": ["ced_smr", "ced", "smr"],
+    "type": [
+      "ced_smr",
+      "ced",
+      "smr"
+    ],
     "classname": "ndr.reader.ced_smr.ndr_reader_ced__smr"
   },
   {
-    "type": ["spikegadgets_rec", "spikegadgets", "rec"],
+    "type": [
+      "spikegadgets_rec",
+      "spikegadgets",
+      "rec"
+    ],
     "classname": "ndr.reader.spikegadgets_rec.ndr_reader_spikegadgets__rec"
   },
   {
-    "type": ["tdt_sev", "tdt", "sev"],
+    "type": [
+      "tdt_sev",
+      "tdt",
+      "sev"
+    ],
     "classname": "ndr.reader.tdt_sev.ndr_reader_tdt__sev"
   },
   {
-    "type": ["neo"],
+    "type": [
+      "neo"
+    ],
     "classname": "ndr.reader.neo.ndr_reader_neo"
   },
   {
-    "type": ["whitematter"],
+    "type": [
+      "whitematter"
+    ],
     "classname": "ndr.reader.whitematter.ndr_reader_whitematter"
   },
   {
-    "type": ["bjg"],
+    "type": [
+      "bjg"
+    ],
     "classname": "ndr.reader.bjg.ndr_reader_bjg"
   },
   {
-    "type": ["dabrowska"],
+    "type": [
+      "dabrowska"
+    ],
     "classname": "ndr.reader.dabrowska.ndr_reader_dabrowska"
   },
   {
-    "type": ["neuropixelsGLX", "neuropixels", "spikeglx", "imec"],
+    "type": [
+      "neuropixelsGLX",
+      "neuropixels",
+      "spikeglx",
+      "imec"
+    ],
     "classname": "ndr.reader.neuropixelsGLX.ndr_reader_neuropixelsGLX"
+  },
+  {
+    "type": [
+      "tiffstack",
+      "tiff",
+      "tif",
+      "multipagetiff"
+    ],
+    "classname": "ndr.reader.tiffstack.ndr_reader_tiffstack"
+  },
+  {
+    "type": [
+      "prairieview",
+      "prairie",
+      "pv",
+      "prairieview_pcf"
+    ],
+    "classname": "ndr.reader.prairieview.ndr_reader_prairieview"
+  },
+  {
+    "type": [
+      "vld",
+      "vlh",
+      "vhlv",
+      "vhlabview",
+      "labview"
+    ],
+    "classname": "ndr.reader.vld.ndr_reader_vld"
   }
 ]

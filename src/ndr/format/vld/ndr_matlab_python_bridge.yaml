@@ -1,0 +1,68 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+# Ported 2026-08-28 from NDR-matlab 8cc299d/7cab21a (VH Lab LabView reader).
+
+functions:
+  - name: readvhlvheaderfile
+    type: function
+    matlab_path: "+ndr/+format/+vld/readvhlvheaderfile.m"
+    python_path: "ndr/format/vld/readvhlvheaderfile.py"
+    matlab_last_sync_hash: "7cab21a"
+    input_arguments:
+      - name: myfilename
+        type_matlab: "char"
+        type_python: "str | Path"
+    output_arguments:
+      - name: mystruct
+        type_matlab: "struct"
+        type_python: "dict[str, Any]"
+    decision_log: >-
+      MATLAB coerces each field value with eval() and falls back to the raw
+      string; the Python port parses int then float and otherwise keeps the
+      string, which covers every field this format defines (ChannelString,
+      NumChans, SamplingRate, SamplesPerChunk, Multiplexed, precision, Scale)
+      without executing file contents as code.
+
+  - name: readvhlvdatafile
+    type: function
+    matlab_path: "+ndr/+format/+vld/readvhlvdatafile.m"
+    python_path: "ndr/format/vld/readvhlvdatafile.py"
+    matlab_last_sync_hash: "7cab21a"
+    input_arguments:
+      - name: myfilename
+        type_matlab: "char"
+        type_python: "str | Path"
+      - name: headerstruct
+        type_matlab: "struct"
+        type_python: "dict[str, Any] | None"
+      - name: channelnums
+        type_matlab: "numeric"
+        type_python: "int | list[int] | numpy.ndarray"
+        decision_log: "Semantic Parity: channel numbers are 1-based."
+      - name: t0
+        type_matlab: "double"
+        type_python: "float"
+      - name: t1
+        type_matlab: "double"
+        type_python: "float"
+    output_arguments:
+      - name: T
+        type_matlab: "double"
+        type_python: "numpy.ndarray"
+      - name: D
+        type_matlab: "double | single | int16 | int32"
+        type_python: "numpy.ndarray"
+      - name: tot_sam
+        type_matlab: "double"
+        type_python: "float"
+      - name: tot_time
+        type_matlab: "double"
+        type_python: "float"
+    decision_log: >-
+      Data are big-endian ('ieee-be' in MATLAB). Both storage layouts are
+      supported: chunked (SamplesPerChunk of each channel in turn) and
+      Multiplexed (sample-interleaved). MATLAB's UseWaitBar/WaitBarMessage
+      name-value pair is a MATLAB GUI affordance and is not ported.
