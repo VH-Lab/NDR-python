@@ -57,7 +57,7 @@ functions:
 
   - name: readCellBin
     matlab_path: "+ndr/+format/+stereoseq/readCellBin.m"
-    matlab_last_sync_hash: "d5c254fa"
+    matlab_last_sync_hash: "fe7c607c"
     python_path: "ndr/format/stereoseq/readCellBin.py"
     decision_log: >
       Reads a SAW cellbin .h5ad: one identifier, centroid, optional boundary
@@ -113,6 +113,28 @@ functions:
       say which is which. isUnsupervisedGuess is derived from the column
       NAME alone and is marked as a guess; cellTypeLabels has an
       is_unsupervised field for a human to settle it.
+
+      THE VALUES OF A LABELING COME OUT THROUGH obsColumns, BY NAME. Naming
+      a categorical column there returns its decoded category names, one
+      per cell, alongside any numeric columns asked for in the same call.
+      It is deliberately NOT in the default: the default is measurements,
+      and a labeling is a claim about each cell rather than a measurement
+      of it, so which one to believe stays the caller's decision. Without
+      this the readers reported that a labeling existed and gave no way to
+      read it, and ndi.fun.doc.gene.makeCellTypeLabels had nothing that
+      could be handed to it.
+
+      pandas writes code -1 for a cell the labeling never assigned, and
+      that becomes '' on both sides -- the empty string makeCellTypeLabels
+      documents as UNLABELED, which is a real state. It is a deliberate
+      branch rather than a fallback: in Python, numpy's negative indexing
+      would make -1 address the LAST category, handing those cells a real
+      and plausible label that nothing downstream could catch. Both ports
+      also check the code array's length and upper bound, because a code
+      off its range puts a legal label on the wrong cell and every value
+      still looks valid afterwards. The cellbin_unlabeled.h5ad fixture
+      exists only to reach that byte, which cannot be written by naming a
+      category.
 
       MATLAB's h5read returns dimensions in the REVERSE of h5py's write
       order, so obsm/spatial arrives 2 x nCells and obsm/cell_border
