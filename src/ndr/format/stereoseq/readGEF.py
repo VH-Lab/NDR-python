@@ -223,9 +223,7 @@ def readGEF(
             if chosen:
                 break
         if not chosen:
-            raise KeyError(
-                f"No (gene, expression) pair under {', '.join(roots)} in {filename}."
-            )
+            raise KeyError(f"No (gene, expression) pair under {', '.join(roots)} in {filename}.")
         expr_ds = f[chosen][expr_name]
         gene_ds = f[chosen]["gene"]
 
@@ -310,9 +308,7 @@ def readGEF(
             )
 
         if contiguous:
-            gene_index = np.repeat(
-                np.arange(n_genes, dtype=np.int32), counts[:n_genes]
-            )
+            gene_index = np.repeat(np.arange(n_genes, dtype=np.int32), counts[:n_genes])
             written = 0
             while written < n_records:
                 n = min(_GEF_BLOCK, n_records - written)

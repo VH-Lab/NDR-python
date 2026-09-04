@@ -175,9 +175,9 @@ def test_probe_only_does_not_touch_the_expression_dataset(monkeypatch):
     monkeypatch.setattr(h5py.Dataset, "__getitem__", spy)
     readGEF(gef("basic"), probeOnly=True)
 
-    assert not any(r.endswith("expression") for r in reads), (
-        f"probeOnly read the expression dataset: {reads}"
-    )
+    assert not any(
+        r.endswith("expression") for r in reads
+    ), f"probeOnly read the expression dataset: {reads}"
 
 
 def test_max_genes_limits():
