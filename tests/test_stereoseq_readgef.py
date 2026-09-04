@@ -192,3 +192,25 @@ def test_max_genes_limits():
 def test_not_a_gef_is_named():
     with pytest.raises(KeyError, match="No .gene, expression. pair"):
         readGEF(gef("notagef"))
+
+
+def test_non_contiguous_gene_blocks_take_the_per_gene_path():
+    """The fallback read strategy, which no other fixture reaches.
+
+    readGEF picks between two strategies by checking whether the gene
+    offsets are contiguous and ascending: contiguous files are read in
+    large blocks, others one gene at a time. Every other fixture is
+    contiguous, so without this one the fallback is only assumed to work.
+
+    Here gene 1 sits at row 0, gene 0 at rows 1-3 and gene 2 at rows 4-5,
+    so records come back in GENE order rather than file order -- which is
+    also what proves each record was attributed to the right gene.
+    """
+    x, y, gi, c, gid, _, meta = readGEF(gef("noncontiguous"))
+
+    assert meta["nRecords"] == 6
+    assert list(gi) == [0, 0, 0, 1, 2, 2]
+    assert list(x) == [11, 12, 20, 10, 30, 31]
+    assert list(y) == [51, 52, 60, 50, 70, 71]
+    assert list(c) == [2, 200, 7, 1, 8, 9]
+    assert gid == ["ENSG1", "ENSG2", "ENSG3"]
