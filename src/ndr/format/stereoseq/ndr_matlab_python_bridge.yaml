@@ -54,3 +54,70 @@ functions:
       Both ports are tested against the SAME seven .gef fixtures, generated
       by bscholl-genomics-python's make_gef_conformance_fixtures.py, so the
       two readers are held to one artifact rather than each to its own.
+
+  - name: readCellBin
+    matlab_path: "+ndr/+format/+stereoseq/readCellBin.m"
+    matlab_last_sync_hash: "d5c254fa"
+    python_path: "ndr/format/stereoseq/readCellBin.py"
+    decision_log: >
+      Reads a SAW cellbin .h5ad: one identifier, centroid, optional boundary
+      polygon and per-cell measurements per cell. Consolidates two spike
+      implementations, extract_cells.py and genomics/cellFootprints.py.
+
+      READ WITH PLAIN HDF5, NOT anndata, on both sides. An .h5ad is HDF5
+      with AnnData conventions layered on it, and those conventions are
+      simple enough to read directly: /obs carries an "_index" attribute
+      naming the identifier dataset, numeric columns are datasets, and
+      categorical columns are GROUPS holding "categories" and "codes".
+      Reading it directly is what lets MATLAB do the same thing Python
+      does; an anndata dependency would leave the two ports on different
+      footings, which is what this bridge exists to prevent. The fixtures
+      are still written BY anndata, so the layout being read is genuine
+      rather than our idea of it.
+
+      THE FILE DOES NOT SAY whether boundary vertices are centroid-relative
+      or absolute, nor what pads the unused vertex slots. Both are
+      inferred, and both are recorded as explicit fields on the NDI
+      document precisely so nothing downstream guesses again. So both ports
+      REPORT rather than decide quietly: meta.contourReference is the
+      answer, meta.contourReferenceSource says detected or forced, and
+      meta.relativeEvidence carries the numbers behind it. Getting it wrong
+      is silent and total -- treat absolute vertices as relative and every
+      outline lands a chip-width from its cell with no error raised.
+
+      THE THRESHOLD IS ONE RULE NOW, WHICH IT WAS NOT BEFORE. The two spike
+      implementations disagreed: extract_cells.py used median(|centroid|)
+      with a 10% threshold, cellFootprints.py used max(|cx|,|cy|) with 5%.
+      They agreed only by luck on the data they had been run on (about 900
+      vs 920 on opossum) and could have disagreed on another section. The
+      surviving rule is max with 5%: the scale describes the frame's
+      extent rather than where the tissue happens to sit. The measured
+      ratio is reported so the call is auditable, and contourReference
+      overrides it.
+
+      An empty contour KEEPS ITS ROW as a 0x2 rather than being dropped.
+      Dropping it would shift every later cell's contour onto the wrong
+      cell, silently. The fixtures include such a cell for that reason.
+
+      outputReference defaults to centroid-relative because that is what
+      spatialGeneExpressionCells stores and what int16 vertices can hold;
+      absolute is available and the two are exact inverses, which is the
+      property the strongest test asserts (two fixtures holding the same
+      polygons in different frames must normalise identically).
+
+      LABEL COLUMNS ARE REPORTED, NOT CHOSEN. A cellbin routinely carries
+      transferred atlas calls and unsupervised clusterings side by side.
+      They are not interchangeable -- a clustering carries no biological
+      identity, so reading one of its colours as a cell type is a
+      scientific error rather than a display bug -- and the file does not
+      say which is which. isUnsupervisedGuess is derived from the column
+      NAME alone and is marked as a guess; cellTypeLabels has an
+      is_unsupervised field for a human to settle it.
+
+      MATLAB's h5read returns dimensions in the REVERSE of h5py's write
+      order, so obsm/spatial arrives 2 x nCells and obsm/cell_border
+      arrives 2 x V x nCells. The MATLAB side permutes rather than
+      reshapes: a reshape reinterprets the same bytes and scrambles
+      vertices instead of failing. The fixture's x and y ranges differ, and
+      its vertex offsets differ in x and y, so a transposition shows up
+      rather than looking plausible.
