@@ -1,0 +1,56 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: readGEF
+    matlab_path: "+ndr/+format/+stereoseq/readGEF.m"
+    matlab_last_sync_hash: "dbd64119"
+    python_path: "ndr/format/stereoseq/readGEF.py"
+    decision_log: >
+      Reads BGI/MGI Stereo-seq .gef files, which are HDF5. Promoted from
+      readStomicsGef.m in bscholl-genomics-python, which had been reading
+      real GEFs since August and was the only MATLAB code that had; the
+      harness there now borrows it back so the two cannot drift. The
+      interface was kept IDENTICAL on promotion because compareMatlabToPython
+      had already validated that exact signature against 444 real tiles, and
+      changing it would have discarded that validation.
+
+      IT DOES NOT FOLLOW THE ndr.reader MOTIF, deliberately. A Stereo-seq
+      section is not epoch-based data -- it would be a single epoch only by
+      force -- and SAW carries far more parameters than that interface has
+      room for. It belongs to the ndr.format layer, alongside the other
+      plain format readers, none of which implement the reader interface
+      either. The division it observes: NDR reads the vendor's file and
+      returns arrays; NDI turns arrays into documents. Nothing here imports
+      NDI, though the first four return values are exactly what
+      ndi.fun.doc.gene.makePyramid takes as its first four arguments.
+
+      Both sides return the same seven values in the same order rather than
+      Python bundling them into a dict, so the call reads the same in either
+      language. Option names are the MATLAB name-value names verbatim
+      (probeOnly, maxGenes, countCeiling), per the naming policy.
+
+      probeOnly reads the gene table, extent and field names but no records.
+      A real section is ~10^8 records and minutes; a caller that only needs
+      to show what is in a file must not pay that. nRecords stays exact
+      under it because it is the sum of the gene table's own counts, and the
+      extent is reported UNVALIDATED because with no records there is
+      nothing to check the attributes against -- a caller must be able to
+      tell that apart from a box the data agreed with.
+
+      Nothing about the layout is assumed on either side: the group, the
+      expression dataset and every field name are probed against candidate
+      lists, because GEF layouts drift between SAW versions. The extent
+      attributes are accepted only when they CONTAIN the data, probed
+      nearest-first from the bin group outward -- probing only the file root
+      yields a 1x1 pyramid on files that put them deeper.
+
+      Counts are clipped in a WIDE type in both languages. Clipping in the
+      narrow type saturates SAW's uint8 bin1 counts at 255 rather than at
+      countCeiling, silently; that trap has bitten this code before.
+
+      Both ports are tested against the SAME seven .gef fixtures, generated
+      by bscholl-genomics-python's make_gef_conformance_fixtures.py, so the
+      two readers are held to one artifact rather than each to its own.
