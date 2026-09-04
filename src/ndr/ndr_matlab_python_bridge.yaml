@@ -6,9 +6,16 @@ project_metadata:
 # Contract recorded 2026-08-27 for the top-level ndr namespace. The Python
 # implementations predated this bridge file.
 #
+# Ported:
+#   +ndr/+setup/sonpipe.m     -> ndr.setup.sonpipe (install() + `python -m ndr.setup.sonpipe`).
+#                                Same intent as MATLAB: install the sonpipe CLI
+#                                so the CED reader can drive CED's sonpy. Also
+#                                available as the [ced] optional extra in
+#                                pyproject.toml; both entry points install the
+#                                same git URL.
+#
 # Not ported (MATLAB-only tooling, no Python counterpart is meaningful):
 #   +ndr/+docs/build.m        - builds MATLAB markdown docs
-#   +ndr/+setup/sonpipe.m     - installs the external sonpipe binary
 #   +ndr/+fun/python_detect.m - locates a Python interpreter for MATLAB's py.*
 
 classes:

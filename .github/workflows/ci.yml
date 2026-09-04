@@ -64,14 +64,12 @@ jobs:
           # on every supported version.
           python-version: "3.14"
 
-      - name: Install package with dev dependencies
-        run: pip install -e ".[dev]"
-
-      - name: Install sonpipe (pulls CED's sonpy)
-        # Installed here rather than declared in pyproject.toml: sonpipe is not
-        # on PyPI yet, and a git URL in the dependency list would put every
-        # install of this package behind a second repository.
-        run: pip install "sonpipe @ git+https://github.com/VH-Lab/sonpipe.git"
+      - name: Install package with dev and ced dependencies
+        # The [ced] extra pulls sonpipe from its git URL. Same install as
+        # `python -m ndr.setup.sonpipe`; downstream packages (NDI-python) use
+        # the module entry point in their own CI so they don't have to know
+        # the git URL themselves.
+        run: pip install -e ".[dev,ced]"
 
       - name: Verify sonpipe and sonpy are usable
         # Ask sonpipe where SonFile lives rather than hardcoding a layout. CED
