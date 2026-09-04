@@ -17,6 +17,10 @@ Promoted from readStomicsGef.m in bscholl-genomics-python, which had been
 reading real GEFs since August. The interface is unchanged from that
 version because compareMatlabToPython had already validated it against
 444 real tiles.
+
+See also ``ndr.format.stereoseq.readCellBin``. NDR-matlab's
+``docs/notes/stereoseq_formats.md`` describes both file layouts and the
+SAW quirks these work around.
 """
 
 from __future__ import annotations

@@ -13,6 +13,10 @@ columns are GROUPS holding ``categories`` and ``codes``. Reading it
 directly is what lets MATLAB and Python do the same thing here; an
 anndata dependency would leave the two ports on different footings, which
 is what the bridge exists to prevent.
+
+See also ``ndr.format.stereoseq.readGEF``. NDR-matlab's
+``docs/notes/stereoseq_formats.md`` describes both file layouts and the
+SAW quirks these work around.
 """
 
 from __future__ import annotations
