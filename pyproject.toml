@@ -32,6 +32,20 @@ formats = [
     "tifffile>=2021.7.2",
     "scipy>=1.7.0",
 ]
+# CED Spike2 support runs out of process through the sonpipe CLI, which pulls
+# CED's sonpy binding as its own dependency. Not in the base install because
+# CED pins sonpy to specific interpreter builds (CPython 3.14 on Linux at the
+# time of writing) and the wheel is a vendor drop, not on PyPI; declaring it
+# unconditionally would put every install of ndr behind a second repository
+# and a narrow Python. Opt in with `pip install ndr[ced]`, or run
+# `python -m ndr.setup.sonpipe` after installing ndr -- both land on the same
+# git URL. Without either the CED reader raises SonpipeNotFoundError.
+ced = ["sonpipe @ git+https://github.com/VH-Lab/sonpipe.git"]
+
+[tool.hatch.metadata]
+# The [ced] extra points at sonpipe's git URL; PEP 508 direct references
+# need this opt-in to appear in optional-dependencies.
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ndr"]
