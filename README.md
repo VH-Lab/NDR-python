@@ -48,6 +48,25 @@ data, time = r.read(epochfiles, "ai1-3", t0=0, t1=10)
 | BJG | `ndr.reader.bjg.BJG` | Stub |
 | Dabrowska | `ndr.reader.dabrowska.Dabrowska` | Stub |
 
+### Format-layer readers
+
+Not every format NDR reads is epoch-based, so not every one has a reader class.
+These are read through `ndr.format` and return arrays directly.
+
+| Format | Function | Status |
+|--------|----------|--------|
+| BGI/MGI Stereo-seq `.gef` | `ndr.format.stereoseq.readGEF` | Implemented (requires `h5py`) |
+| SAW cellbin `.h5ad` | `ndr.format.stereoseq.readCellBin` | Implemented (requires `h5py`) |
+
+A Stereo-seq section is spatial transcriptomics, not a time series -- it would
+be a single epoch only by force, and SAW carries far more parameters than the
+reader interface has room for. Both functions take `probeOnly` to report what a
+file contains without reading its bulk, which matters because a real section is
+~10^8 records. See
+[NDR-matlab's format notes](https://github.com/VH-Lab/NDR-matlab/blob/main/docs/notes/stereoseq_formats.md)
+for the file layouts, the SAW quirks both readers work around, and the contour
+inferences they report rather than resolve silently.
+
 ## Testing
 
 ```bash
