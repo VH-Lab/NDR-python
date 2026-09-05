@@ -75,6 +75,42 @@ def _classify_obs(obs, index_name):
     return sorted(numeric), sorted(labels, key=lambda d: d["name"])
 
 
+def _categorical(group, name: str, n_cells: int) -> list[str]:
+    """Decode an AnnData categorical /obs column into one string per cell.
+
+    The column is a GROUP, not a dataset: ``categories`` holds the distinct
+    strings and ``codes`` a ZERO-BASED index into them, one per cell. pandas
+    writes -1 for a value it has no category for, and that is a meaningful
+    state rather than a defect -- a cell the labeling never assigned -- so
+    it becomes ``""``, which is what ``makeCellTypeLabels`` documents an
+    empty label to mean.
+
+    Both bounds are CHECKED rather than trusted. A code array of the wrong
+    length, or one reaching past the categories, would otherwise put a real
+    category name on the wrong cell, and nothing downstream could tell:
+    every label would still be a legal label. Note that numpy's negative
+    indexing makes -1 silently address the LAST category, so the empty
+    string here is a deliberate branch, not a fallback.
+    """
+    cats = _text(group["categories"][...])
+    codes = np.asarray(group["codes"][...]).ravel()
+    if codes.size != n_cells:
+        raise ValueError(
+            f"/obs/{name}/codes has {codes.size} entries " f"but the file has {n_cells} cells."
+        )
+    if codes.size and codes.max() > len(cats) - 1:
+        raise ValueError(
+            f"/obs/{name}/codes reaches category {int(codes.max())} "
+            f"but only {len(cats)} are defined."
+        )
+    if codes.size and codes.min() < -1:
+        raise ValueError(
+            f"/obs/{name}/codes holds {int(codes.min())}; "
+            f"the only negative code pandas writes is -1."
+        )
+    return ["" if c < 0 else cats[c] for c in codes]
+
+
 def _unsupervised(name: str) -> bool:
     """Guess, from the NAME alone, whether a labeling is unsupervised.
 
@@ -212,7 +248,15 @@ def readCellBin(
             Centroid-relative is the default because that is what
             ``spatialGeneExpressionCells`` stores and what int16 vertices
             can hold.
-        obsColumns: per-cell columns to return; None returns every numeric one.
+        obsColumns: per-cell columns to return; None returns every numeric
+            one. A CATEGORICAL column may be named here too, and comes back
+            as a list of str of its decoded category names, one per cell --
+            that is how a labeling gets out of the file and into
+            ``ndi.fun.doc_gene.makeCellTypeLabels``. It is not in the
+            default because the default is measurements, and a labeling is
+            a claim about each cell rather than a measurement of it: which
+            labeling to believe is the caller's decision (see
+            ``meta["labelColumns"]``), so it must be asked for by name.
 
     Returns:
         ``(cell_id, x, y, contours, obs, meta)``. ``cell_id`` is a list of
@@ -337,10 +381,14 @@ def readCellBin(
             return [], np.zeros(0), np.zeros(0), [], {}, meta
 
         want = obsColumns if obsColumns else numeric
+        label_names = [d["name"] for d in labels]
         obs: dict[str, Any] = {}
         for c in want:
-            if c not in numeric:
-                raise KeyError(f"No numeric /obs column {c!r}; available: {numeric}")
-            obs[c] = np.asarray(obs_group[c][...])
+            if c in numeric:
+                obs[c] = np.asarray(obs_group[c][...])
+            elif c in label_names:
+                obs[c] = _categorical(obs_group[c], c, meta["nCells"])
+            else:
+                raise KeyError(f"No /obs column {c!r}; available: {numeric + label_names}")
 
         return cell_id, x, y, contours, obs, meta

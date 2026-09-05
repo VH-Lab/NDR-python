@@ -153,9 +153,58 @@ def test_obs_columns_can_be_selected():
     assert list(obs) == ["area"]
 
 
+def test_label_values_come_back_when_asked_for_by_name():
+    # meta["labelColumns"] says a labeling EXISTS; this is how its per-cell
+    # values get out of the file, and without it makeCellTypeLabels has
+    # nothing to be given.
+    *_, obs, _ = readCellBin(cb("basic"), obsColumns=["subclass_nn_column"])
+    assert obs["subclass_nn_column"] == [
+        "L2/3 IT",
+        "Pvalb",
+        "L2/3 IT",
+        "Astro",
+        "Pvalb",
+    ]
+
+
+def test_labels_are_not_returned_by_default():
+    # The default is measurements. A labeling is a claim about each cell and
+    # which one to believe is the caller's decision, so it is asked for by
+    # name rather than swept up.
+    *_, obs, _ = readCellBin(cb("basic"))
+    assert "subclass_nn_column" not in obs
+    assert "leiden" not in obs
+    assert "area" in obs
+
+
+def test_numeric_and_label_columns_mix_in_one_call():
+    *_, obs, _ = readCellBin(cb("basic"), obsColumns=["area", "leiden"])
+    assert sorted(obs) == ["area", "leiden"]
+    assert obs["leiden"] == ["0", "1", "0", "2", "1"]
+
+
+def test_missing_category_becomes_unlabeled_not_a_wrong_label():
+    # pandas writes code -1 for a cell the labeling never assigned, and
+    # numpy's negative indexing makes -1 address the LAST category. A reader
+    # that does not branch on it hands those cells a real, plausible label
+    # that nothing downstream can catch.
+    *_, obs, _ = readCellBin(cb("unlabeled"), obsColumns=["subclass_nn_column"])
+    assert obs["subclass_nn_column"] == ["L2/3 IT", "", "L2/3 IT", "", "Pvalb"]
+
+
 def test_unknown_obs_column_names_what_is_there():
     with pytest.raises(KeyError, match="nosuchcolumn"):
         readCellBin(cb("basic"), obsColumns=["nosuchcolumn"])
+
+
+def test_unknown_column_message_lists_labels_too():
+    # The available list must name the categorical columns as well, now that
+    # they can be asked for; a message that omits them sends the caller
+    # looking for a reader that already exists.
+    with pytest.raises(KeyError) as excinfo:
+        readCellBin(cb("basic"), obsColumns=["nosuchcolumn"])
+    assert "subclass_nn_column" in str(excinfo.value)
+    assert "area" in str(excinfo.value)
 
 
 def test_not_an_h5ad_is_named():
