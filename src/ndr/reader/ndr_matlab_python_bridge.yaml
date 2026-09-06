@@ -335,7 +335,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/somecompany_someformat.m"
     python_path: "ndr/reader/somecompany_someformat.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "f78c56e"
     python_class: "ndr_reader_somecompany__someformat"
     inherits: base
     notes: "Template/example reader class for creating new format readers."
@@ -710,7 +710,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/spikegadgets_rec.m"
     python_path: "ndr/reader/spikegadgets_rec.py"
-    matlab_last_sync_hash: "3974d59"
+    matlab_last_sync_hash: "c2f6e34"
     python_class: "ndr_reader_spikegadgets__rec"
     inherits: base
     decision_log: >-
@@ -845,7 +845,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/bjg.m"
     python_path: "ndr/reader/bjg.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "f78c56e"
     python_class: "ndr_reader_bjg"
     inherits: base
     decision_log: >-
@@ -894,7 +894,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/dabrowska.m"
     python_path: "ndr/reader/dabrowska.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "f78c56e"
     python_class: "ndr_reader_dabrowska"
     inherits: base
     decision_log: >-
@@ -943,7 +943,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/whitematter.m"
     python_path: "ndr/reader/whitematter.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "f78c56e"
     python_class: "ndr_reader_whitematter"
     inherits: base
     decision_log: >-
@@ -1215,6 +1215,217 @@ classes:
           MATLAB counterpart is needed because MATLAB's class names are
           already its allocation types.
 
+  - name: omezarr
+    type: class
+    matlab_path: "+ndr/+reader/omezarr.m"
+    python_path: "ndr/reader/omezarr.py"
+    matlab_last_sync_hash: "b65d919"
+    python_class: "ndr_reader_omezarr"
+    inherits: base
+    decision_log: >-
+      Ported 2026-09-06. Native OME-Zarr (NGFF v0.4) image reader; sibling
+      of tiffstack, implements the frame API only. Pixel reads delegate
+      to ndr.format.omezarr.readArray, which uses Python's `zarr` library
+      (an optional dependency, imported lazily). The MATLAB reader's
+      hand-rolled Blosc/Zstd chunk-reader is not needed here because
+      the zarr library handles every codec and byte order the MATLAB
+      side supports (and more) natively.
+
+      Epochstream shape mirrors MATLAB's cell array: either a str path
+      (which errors with the pyramid list because pyramid selection has
+      no default -- see issue #127), or a list containing a
+      [zarrPath, pyramidName] 2-list, or a flat [zarrPath, pyramidName]
+      when the second element is unambiguously a pyramid name.
+    methods:
+      - name: resolveepoch
+        input_arguments:
+          - name: epochstreams
+            type_python: "list | str"
+        output_arguments:
+          - name: info
+            type_matlab: "struct"
+            type_python: "dict[str, Any]"
+      - name: numframes
+      - name: framesize
+      - name: dimensionorder
+      - name: datatype
+      - name: frametimes
+      - name: readframes
+        input_arguments:
+          - name: epochstreams
+            type_python: "list | str"
+          - name: epoch_select
+            type_python: "int"
+          - name: frameind
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: "Semantic Parity: frame indices are 1-based."
+          - name: Level
+            type_python: "int"
+            decision_log: >-
+              MATLAB name/value pair; Python keyword-only argument.
+              1-based; default 1 (highest resolution).
+          - name: SelectC
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: >-
+              MATLAB name/value pair; Python keyword-only argument.
+              1-based; None (MATLAB []) keeps every channel.
+          - name: SelectZ
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: >-
+              MATLAB name/value pair; Python keyword-only argument.
+              1-based; None (MATLAB []) keeps every plane.
+        output_arguments:
+          - name: frames
+            type_python: "numpy.ndarray"
+      - name: epochclock
+      - name: t0_t1
+      - name: getchannelsepoch
+    static_methods:
+      - name: parseEpochstreams
+        input_arguments:
+          - name: epochstreams
+            type_python: "list | str"
+        output_arguments:
+          - name: zarrPath
+            type_python: "str"
+          - name: pyramidName
+            type_python: "str"
+      - name: classifyAxes
+        input_arguments:
+          - name: axes
+            type_python: "list[dict[str, str]]"
+        output_arguments:
+          - name: axisIndex
+            type_matlab: "struct"
+            type_python: "dict[str, Any]"
+      - name: axisSize
+        input_arguments:
+          - name: shape
+            type_python: "list[int]"
+          - name: idx
+            type_python: "int | float"
+          - name: fallback
+            type_python: "int"
+        output_arguments:
+          - name: s
+            type_python: "int"
+      - name: zarrClass
+        input_arguments:
+          - name: dtypeStr
+            type_python: "str"
+        output_arguments:
+          - name: dt
+            type_python: "str"
+        decision_log: "Returns the MATLAB class name (single/double for floats)."
+      - name: numpy_dtype
+        input_arguments:
+          - name: matlab_class
+            type_python: "str"
+        output_arguments:
+          - name: dtype
+            type_python: "numpy.dtype"
+        decision_log: >-
+          Python-only inverse of zarrClass, converting the reported MATLAB
+          class name into the numpy dtype used to allocate frame arrays.
+      - name: formatNameList
+        input_arguments:
+          - name: names
+            type_python: "list[str]"
+        output_arguments:
+          - name: s
+            type_python: "str"
+      - name: arrangePlaneYXC
+        input_arguments:
+          - name: plane
+            type_python: "numpy.ndarray"
+          - name: axisIndex
+            type_python: "dict[str, Any]"
+          - name: Y
+            type_python: "int"
+          - name: X
+            type_python: "int"
+          - name: C
+            type_python: "int"
+        output_arguments:
+          - name: planeYXC
+            type_python: "numpy.ndarray"
+
+  - name: smartspim
+    type: class
+    matlab_path: "+ndr/+reader/smartspim.m"
+    python_path: "ndr/reader/smartspim.py"
+    matlab_last_sync_hash: "34759c7"
+    python_class: "ndr_reader_smartspim"
+    inherits: base
+    decision_log: >-
+      Ported 2026-09-06. Native SmartSPIM (LifeCanvas raw acquisition)
+      image reader; sibling of omezarr/tiffstack, implements the frame
+      API only. One (channel, tile) pair per epoch: stitching is
+      deliberately out of scope on both sides (issue #128). MATLAB uses
+      imfinfo/imread through ndr.format.smartspim.readTileVolume; the
+      Python port uses tifffile (an optional dependency, imported
+      lazily).
+
+      Epochstream shape mirrors MATLAB's cell array: either a str path
+      (which errors with the channel list), or a list of
+      [rootDir, channelName] (errors with the tile list), or a list of
+      [rootDir, channelName, tileId] that pins the epoch, optionally
+      nested inside a larger list with sidecar entries.
+    methods:
+      - name: resolveepoch
+        input_arguments:
+          - name: epochstreams
+            type_python: "list | str"
+        output_arguments:
+          - name: info
+            type_matlab: "struct"
+            type_python: "dict[str, Any]"
+      - name: numframes
+      - name: framesize
+      - name: dimensionorder
+      - name: datatype
+      - name: frametimes
+      - name: readframes
+        input_arguments:
+          - name: epochstreams
+            type_python: "list | str"
+          - name: epoch_select
+            type_python: "int"
+          - name: frameind
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: "Semantic Parity: frame indices are 1-based."
+          - name: SelectC
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: "MATLAB name/value pair; Python keyword-only argument."
+          - name: SelectZ
+            type_python: "list[int] | numpy.ndarray | None"
+            decision_log: "MATLAB name/value pair; Python keyword-only argument."
+        output_arguments:
+          - name: frames
+            type_python: "numpy.ndarray"
+      - name: epochclock
+      - name: t0_t1
+      - name: getchannelsepoch
+    static_methods:
+      - name: parseEpochstreams
+        input_arguments:
+          - name: epochstreams
+            type_python: "list | str"
+        output_arguments:
+          - name: rootDir
+            type_python: "str"
+          - name: channelName
+            type_python: "str"
+          - name: tileId
+            type_python: "str"
+      - name: formatNameList
+        input_arguments:
+          - name: names
+            type_python: "list[str]"
+        output_arguments:
+          - name: s
+            type_python: "str"
+
   - name: prairieview
     type: class
     matlab_path: "+ndr/+reader/prairieview.m"
@@ -1263,3 +1474,17 @@ classes:
       - name: epochclock
       - name: t0_t1
       - name: metadata
+
+  - name: imagestack
+    type: class
+    matlab_path: "+ndr/+reader/imagestack.m"
+    matlab_last_sync_hash: "64d06e4"
+    status: not_applicable
+    decision_log: >
+      MATLAB reader that delegates to NANSEN's nansen.stack.ImageStack
+      (VervaekeLab). NANSEN is a MATLAB-only library with no Python
+      equivalent, so there is nothing to delegate to on this side. NDR-python
+      covers the same image-stack formats through native readers
+      (ndr.reader.tiffstack, ndr.reader.omezarr, ndr.reader.smartspim,
+      ndr.reader.prairieview), so an imagestack-shaped wrapper would add no
+      coverage and none is planned.

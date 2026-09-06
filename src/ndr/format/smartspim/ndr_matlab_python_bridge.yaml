@@ -1,0 +1,99 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: isSmartSPIM
+    matlab_path: "+ndr/+format/+smartspim/isSmartSPIM.m"
+    matlab_last_sync_hash: "d329021"
+    python_path: "ndr/format/smartspim/isSmartSPIM.py"
+    decision_log: >-
+      Cheap non-throwing probe: TRUE iff the directory has a
+      metadata.json that parses as JSON AND at least one channel
+      directory whose name matches "Ex_<n>_Em_<f>_Ch<n>". Straight port
+      using stdlib json + re.
+
+  - name: listChannels
+    matlab_path: "+ndr/+format/+smartspim/listChannels.m"
+    matlab_last_sync_hash: "87ef61d"
+    python_path: "ndr/format/smartspim/listChannels.py"
+    decision_log: >-
+      Enumerates channel directories under rootDir and enriches each with
+      laser power (from metadata.json's laserPower entries, keyed by
+      rounded excitation wavelength) and per-channel tile count (from
+      metadata.json's tiles list). Missing metadata is tolerated: laser
+      powers come back NaN, numTiles comes back NaN. The MATLAB version
+      keys the per-name tile counter through matlab.lang.makeValidName;
+      the Python port keys directly on the channel name because Python
+      dict keys have no MATLAB-identifier restriction. Result is a list
+      of dicts sorted alphabetically by name.
+
+  - name: listTiles
+    matlab_path: "+ndr/+format/+smartspim/listTiles.m"
+    matlab_last_sync_hash: "87ef61d"
+    python_path: "ndr/format/smartspim/listTiles.py"
+    decision_log: >-
+      Builds one dict per tile in the channel from xml_import.xml
+      (mandatory) and xml_merging.xml (optional). Fields match the MATLAB
+      struct exactly. The Python side uses plain string keys for the
+      merging-by-dir and numSlices-by-dir lookups (MATLAB used
+      matlab.lang.makeValidName because struct fields must be valid
+      identifiers); the lookup values are identical. Missing merging XML
+      returns stitchedPixelOffset=None and stitchedUmOffset=None.
+
+  - name: readAcquisitionMetadata
+    matlab_path: "+ndr/+format/+smartspim/readAcquisitionMetadata.m"
+    matlab_last_sync_hash: "d329021"
+    python_path: "ndr/format/smartspim/readAcquisitionMetadata.py"
+    decision_log: >-
+      Parses metadata.json (required) and sequence.json (optional) into a
+      single dict with the same field names as the MATLAB struct.
+      Numeric fields default to NaN when missing; character fields
+      default to ''. Errors mirror MATLAB's specific classes (missing
+      sample_metadata, missing um_per_pix/z_step_um, invalid JSON,
+      missing steps/z in sequence.json). Prefix-based field lookup
+      (`_find_field_by_prefix`) handles case variants (laser_power vs
+      laserPower) exactly as the MATLAB helper does.
+
+  - name: readStitcherXml
+    matlab_path: "+ndr/+format/+smartspim/readStitcherXml.m"
+    matlab_last_sync_hash: "87ef61d"
+    python_path: "ndr/format/smartspim/readStitcherXml.py"
+    decision_log: >-
+      Parses a TeraStitcher-format XML file into voxelDims, dimensions,
+      origin and stacks. MATLAB uses xmlread through a Java InputSource
+      to avoid external DTD resolution; Python uses stdlib
+      xml.etree.ElementTree, which does no external entity resolution by
+      default. Both sides strip the <!DOCTYPE ...> line before parsing
+      because the vendor names a "TeraStitcher.DTD" that is not shipped.
+
+  - name: readTileInfo
+    matlab_path: "+ndr/+format/+smartspim/readTileInfo.m"
+    matlab_last_sync_hash: "d329021"
+    python_path: "ndr/format/smartspim/readTileInfo.py"
+    decision_log: >-
+      Cheap-per-tile probe: converts the tile id (forward-slash DIR_NAME)
+      to a filesystem path, lists TIFF slices, and opens only the first
+      slice's header. MATLAB uses imfinfo; the Python port uses tifffile
+      (an optional dependency, imported lazily). The dtype field returns
+      the MATLAB numeric class name in both ports ('single'/'double' for
+      floats, others verbatim) so cross-language callers see the same
+      string. The MATLAB helper accepts an uppercase-glob fallback for
+      case-insensitive filesystems; Python's pathlib.suffix comparison
+      is already case-insensitive against a lowercased tuple, so the
+      fallback collapses into one pass.
+
+  - name: readTileVolume
+    matlab_path: "+ndr/+format/+smartspim/readTileVolume.m"
+    matlab_last_sync_hash: "d329021"
+    python_path: "ndr/format/smartspim/readTileVolume.py"
+    decision_log: >-
+      Reads the z-slices of one tile and stacks them into a 3D array
+      with axis order (z, y, x). Options mirror MATLAB name-value pairs
+      verbatim (ZRange) per the naming policy; Python takes it as a
+      keyword-only argument. ZRange is 1-based inclusive on both sides.
+      MATLAB uses imread; the Python port uses tifffile.imread. First
+      slice locks the dtype, matching the MATLAB behavior. Stitching /
+      cross-tile assembly is deliberately out of scope on both sides
+      (issue #128).

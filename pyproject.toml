@@ -33,6 +33,10 @@ formats = [
     "tdt>=0.5.0",
     "tifffile>=2021.7.2",
     "scipy>=1.7.0",
+    # ndr.format.omezarr uses the zarr library so we do not need to
+    # hand-roll chunk reading or Blosc/Zstd decoding.
+    "zarr>=2.13",
+    "numcodecs>=0.10",
 ]
 # CED Spike2 support runs out of process through the sonpipe CLI, which pulls
 # CED's sonpy binding as its own dependency. Not in the base install because

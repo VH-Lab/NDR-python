@@ -7,7 +7,7 @@ functions:
   - name: header
     matlab_path: "+ndr/+format/+dabrowska/header.m"
     python_path: "ndr/format/dabrowska/header.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "f78c56e"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -18,7 +18,7 @@ functions:
   - name: read
     matlab_path: "+ndr/+format/+dabrowska/read.m"
     python_path: "ndr/format/dabrowska/read.py"
-    matlab_last_sync_hash: "0df3ac7"
+    matlab_last_sync_hash: "f78c56e"
     input_arguments:
       - name: filename
         type_python: "str | Path"

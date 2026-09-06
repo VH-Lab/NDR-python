@@ -7,7 +7,7 @@ functions:
   - name: read_SEV_channel
     matlab_path: "+ndr/+format/+tdt/read_SEV_channel.m"
     python_path: "ndr/format/tdt/read_SEV_channel.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "f78c56e"
     input_arguments:
       - name: dirname
         type_python: "str | Path"
@@ -28,7 +28,7 @@ functions:
   - name: read_SEV_header
     matlab_path: "+ndr/+format/+tdt/read_SEV_header.m"
     python_path: "ndr/format/tdt/read_SEV_header.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "f78c56e"
     input_arguments:
       - name: dirname
         type_python: "str | Path"
@@ -43,7 +43,7 @@ functions:
   - name: read_SEV_logs
     matlab_path: "+ndr/+format/+tdt/read_SEV_logs.m"
     python_path: "ndr/format/tdt/read_SEV_logs.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "f78c56e"
     input_arguments:
       - name: dirname
         type_python: "str | Path"

@@ -26,7 +26,7 @@ functions:
   - name: copy_rec_files
     matlab_path: "+ndr/+format/+spikegadgets/copy_rec_files.m"
     python_path: "ndr/format/spikegadgets/copy_rec_files.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "f78c56e"
     input_arguments:
       - name: filename_in
         type_python: "str | Path"
@@ -130,6 +130,24 @@ functions:
       separate stride constant for sample-boundary seeks and reserve
       blockSizeBytes for the fread skip. Paired in NDR-matlab ac13506;
       timestamps are returned for the requested span in both ports.
+
+  - name: read_rec_configsize
+    matlab_path: "+ndr/+format/+spikegadgets/read_rec_configsize.m"
+    python_path: "ndr/format/spikegadgets/read_rec_configsize.py"
+    matlab_last_sync_hash: "c2f6e34"
+    input_arguments:
+      - name: filename
+        type_python: "str | Path"
+    output_arguments:
+      - name: configSize
+        type_python: "int"
+    decision_log: >-
+      Returns the byte offset of the first packet after '</Configuration>'.
+      Landed in NDR-matlab c2f6e34 alongside the .vlh eval removal. The
+      Python port consumes the LF/CRLF/none terminator explicitly rather
+      than the fixed + 2 MATLAB uses (see the divergence note at the top
+      of this file); MATLAB's fixed offset is correct on every Trodes file
+      but off by one on any hand-written CRLF header.
 
   - name: read_rec_trodeChannels
     matlab_path: "+ndr/+format/+spikegadgets/read_rec_trodeChannels.m"
