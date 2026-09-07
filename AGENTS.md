@@ -36,9 +36,13 @@ commit hash in the command printed beneath it. Go there for:
 
 - **Section 4** — one entry per MATLAB function, and the one declared
   exception.
-- **Section 5** — `matlab_last_sync_hash` is a COMMIT (`git -C
-  ../NDR-matlab log -n 1 --format=%h -- <path>`), never a blob, and it must
-  be the latest commit touching the file.
+- **Section 5 / 5a** — `matlab_last_sync_hash` is a COMMIT (`git -C
+  ../NDR-matlab log -n 1 --format=%h -- <path>`), never a blob. Either the
+  file's own last-touching commit or a repo-wide batch-sync commit is legal.
+  What fails CI is DRIFT: `git log <hash>..HEAD -- <matlab_path>` non-empty,
+  i.e. NDR-matlab has touched that file since. File-scoped — unrelated repo
+  activity never trips it. Rule set for all three bridge repos by
+  NDI-python#211.
 - **Section 6** — the complete `status` vocabulary: `regular_port`,
   `ported_differently`, `porting_deferred`, `matlab_only`, `retired`. EVERY
   entry states its status, including the ordinary one: a plain 1:1 port is

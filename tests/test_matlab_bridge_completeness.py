@@ -522,56 +522,114 @@ def _collect_hash_entries() -> list[BridgeEntry]:
     return entries
 
 
-class TestEveryRecordedHashIsCurrent:
-    """Every ``matlab_last_sync_hash`` names the latest commit that
-    touched the MATLAB file it points at.
+def _commits_touching_since(root: Path, matlab_path: str, since: str) -> list[str] | None:
+    """Commits touching ``matlab_path`` after ``since``, newest first.
 
-    The bridge is only useful if the recorded hash is current. When
-    MATLAB edits a file, the hash goes stale; a check that lets that
-    silently drift tells the next reader "reviewed as of hash X" when
-    nobody has looked at what changed since. This is the guard that
-    keeps ``matlab_last_sync_hash`` honest.
+    This is the drift question, and it is PATH-FILTERED: ``-- <matlab_path>``
+    restricts the walk to commits touching that one file, so unrelated
+    activity in NDR-matlab never makes an entry drift no matter what form the
+    recorded hash takes.
 
-    When this test fails, two ways to fix it: (1) review the MATLAB
-    diff, port any behavioral changes, and bump the hash to the latest;
-    or (2) leave the Python code alone and bump the hash while adding a
-    short note in the ``decision_log`` explaining why the MATLAB change
-    doesn't affect the Python side.
+    Returns None when git cannot answer -- an unresolvable hash, say. That is
+    not silently a pass: the caller reports it, and
+    ``test_matlab_bridge_conventions.py`` names the bad object precisely.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "log",
+                "--format=%h",
+                f"{since}..HEAD",
+                "--",
+                matlab_path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return result.stdout.split()
+
+
+class TestNoEntryHasDrifted:
+    """An entry DRIFTS when NDR-matlab has commits touching its
+    ``matlab_path`` after the recorded hash. Drift fails CI.
+
+        git log <matlab_last_sync_hash>..HEAD -- <matlab_path>
+
+    Set for all three bridge repos by NDI-python#211. The rule is
+    file-scoped: only commits touching THIS file count, so unrelated
+    NDR-matlab activity never trips it.
+
+    WHY NOT "the hash equals the file's last-touching commit". Because that
+    asks about the hash's FORM rather than about the file, and rejects
+    records that are true. Both forms are legal, and drift is sound under
+    both:
+
+    * the file's own last-touching commit -- the documented default, and the
+      more informative of the two: "I examined this version of this file";
+    * a repo-wide commit, e.g. NDR-matlab HEAD when a batch was examined
+      together -- a broader claim, "I examined as of this repo state", and
+      still sound, since any later change to the file is caught and changes
+      before it fall inside what was examined.
+
+    Equals-latest failed the second form on entries whose records were TRUE,
+    and the only way to clear the resulting red build was to rewrite a
+    correct record with a different, equally correct value. NDI-python had
+    103 such entries. That is how a check teaches contributors to ignore it.
+
+    When this test DOES fail, the file really has changed since it was
+    examined. Two ways to clear it, both fine: review the MATLAB diff and
+    port the change, or leave the Python alone and bump the hash with a
+    ``decision_log`` note saying why the change is a no-op here.
     """
 
-    def test_all_recorded_hashes_are_the_latest_for_their_file(self):
+    def test_no_matlab_file_changed_after_its_recorded_hash(self):
         root = require_matlab_root()
         require_full_history(root)
         entries = _collect_hash_entries()
         assert entries, "no matlab_last_sync_hash entries found"
 
-        stale: list[str] = []
+        drifted: list[str] = []
+        unresolvable: list[str] = []
         for entry in entries:
-            latest = _git_hash_for_path(root, entry.matlab_path)
-            if latest is None:
-                # Missing MATLAB file: caught by the stale-path test above.
+            if _git_hash_for_path(root, entry.matlab_path) is None:
+                # git doesn't know the file; the stale-path test covers it.
                 continue
-            recorded_full = _resolve_short_hash(root, entry.hash)
-            if recorded_full == latest:
-                continue
+            since = _commits_touching_since(root, entry.matlab_path, entry.hash)
             src_rel = entry.source.relative_to(REPO_ROOT)
-            latest_short = latest[:7]
-            stale.append(
-                f"{src_rel}: {entry.matlab_path}\n"
-                f"      recorded: {entry.hash}  latest: {latest_short}"
-            )
+            if since is None:
+                unresolvable.append(f"{src_rel}: {entry.matlab_path}  recorded: {entry.hash}")
+                continue
+            if since:
+                shown = ", ".join(since[:5]) + (", ..." if len(since) > 5 else "")
+                drifted.append(
+                    f"{src_rel}: {entry.matlab_path}\n"
+                    f"      recorded: {entry.hash}   "
+                    f"commits touching it since: {len(since)} ({shown})"
+                )
 
-        assert not stale, (
-            f"{len(stale)} bridge entr{'y' if len(stale) == 1 else 'ies'} "
-            "record a matlab_last_sync_hash that is no longer the latest "
-            "commit touching the MATLAB file:\n\n  "
-            + "\n  ".join(stale)
-            + "\n\nReview the MATLAB diff between the recorded hash and "
-            "the latest, port any behavioral changes to Python, and "
-            "update matlab_last_sync_hash. If nothing needs to change on "
-            "the Python side, bump the hash and add a short note in the "
-            "decision_log explaining why the MATLAB change is a no-op "
-            "here (e.g. comment-only, MATLAB-analyzer fix)."
+        assert not unresolvable, (
+            "git could not walk history from these recorded hashes -- they do "
+            "not name anything in NDR-matlab:\n  "
+            + "\n  ".join(unresolvable)
+            + "\n\nSee test_matlab_bridge_conventions.py, which names the bad "
+            "object type."
+        )
+        assert not drifted, (
+            f"{len(drifted)} bridge entr{'y has' if len(drifted) == 1 else 'ies have'} "
+            "DRIFTED -- NDR-matlab has commits touching the MATLAB file after the "
+            "recorded matlab_last_sync_hash:\n\n  "
+            + "\n  ".join(drifted)
+            + "\n\nReview the MATLAB diff between the recorded hash and HEAD, port "
+            "any behavioral changes to Python, and update matlab_last_sync_hash. If "
+            "nothing needs to change on the Python side, bump the hash and add a "
+            "short note in the decision_log explaining why the MATLAB change is a "
+            "no-op here (e.g. comment-only, MATLAB-analyzer fix)."
         )
 
 
@@ -620,6 +678,92 @@ class TestTheGuardWouldActuallyCatchOne:
         """Every registered package really is guarded, not merely listed."""
         index = read_bridge_index(package)
         assert not index.records(f"{package.matlab_dir}/aFunctionNobodyHasWritten.m")
+
+
+class TestDriftIsFileScopedAndAcceptsBothHashForms:
+    """The drift rule, exercised against real NDR-matlab history.
+
+    Fixtures are derived from the checkout rather than hardcoded, so these
+    keep testing the mechanism as MATLAB history moves on.
+    """
+
+    def _a_file_with_history(self, root: Path) -> tuple[str, list[str]]:
+        """A bridged MATLAB file and its commits, newest first (>= 2)."""
+        for entry in _collect_hash_entries():
+            commits = subprocess.run(
+                ["git", "-C", str(root), "log", "--format=%h", "--", entry.matlab_path],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.split()
+            if len(commits) >= 2:
+                return entry.matlab_path, commits
+        pytest.skip("no bridged MATLAB file has two commits to compare")
+
+    def test_an_older_hash_drifts(self):
+        """The case the guard exists for: the file moved after it was
+        examined, so the record is no longer true."""
+        root = require_matlab_root()
+        require_full_history(root)
+        path, commits = self._a_file_with_history(root)
+        since = _commits_touching_since(root, path, commits[1])
+        assert since, f"{path} should report drift from its second-newest commit"
+        assert commits[0] in since
+
+    def test_the_files_own_last_touching_commit_does_not_drift(self):
+        """Form one of a legal hash: "I examined this version of this file"."""
+        root = require_matlab_root()
+        require_full_history(root)
+        path, commits = self._a_file_with_history(root)
+        assert _commits_touching_since(root, path, commits[0]) == []
+
+    def test_a_repo_wide_commit_does_not_drift(self):
+        """Form two: "I examined as of this repo state" -- a batch sync.
+
+        This is the case equals-latest got wrong. NDR-matlab HEAD is not the
+        file's own last-touching commit, so equals-latest would reject it;
+        drift accepts it, because nothing has touched the file since.
+        NDI-python had 103 entries of exactly this shape, all of them true.
+        """
+        root = require_matlab_root()
+        require_full_history(root)
+        path, commits = self._a_file_with_history(root)
+        head = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--short", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+        # Precondition: this really is the divergent case, or the test proves
+        # nothing -- HEAD must NOT be the file's own last-touching commit.
+        if head == commits[0]:
+            pytest.skip("HEAD is this file's last-touching commit; no divergence to test")
+
+        assert (
+            _commits_touching_since(root, path, head) == []
+        ), "a repo-wide hash must not drift when nothing has touched the file since"
+
+    def test_unrelated_repo_activity_does_not_drift_an_entry(self):
+        """File-scoped, not repo-scoped: commits that do not touch the file
+        never make it drift. This is the property @stevevanhooser asked for --
+        "a change is only noticed when the file changes rather than anything
+        on the repo"."""
+        root = require_matlab_root()
+        require_full_history(root)
+        path, commits = self._a_file_with_history(root)
+        total_since = subprocess.run(
+            ["git", "-C", str(root), "log", "--format=%h", f"{commits[0]}..HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.split()
+        touching_since = _commits_touching_since(root, path, commits[0])
+        assert touching_since == []
+        # The repo moved on; the entry did not drift. That is the whole point.
+        if not total_since:
+            pytest.skip("no unrelated commits after this file's last change")
+        assert len(total_since) > len(touching_since)
 
 
 class TestHashCollectionCollectsNestedEntries:

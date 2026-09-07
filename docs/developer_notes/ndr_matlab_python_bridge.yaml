@@ -83,6 +83,13 @@ project_metadata:
 #
 #     git -C ../NDR-matlab log -n 1 --format=%h -- <matlab_path>
 #
+# BOTH FORMS OF COMMIT ARE LEGAL (NDI-python#211). The command above gives the
+# file's own last-touching commit -- the default, and the more informative of
+# the two, because it says "I examined this version of this file". A repo-wide
+# commit is equally legal, e.g. NDR-matlab HEAD recorded when a batch of files
+# was examined together: a broader claim, "I examined as of this repo state".
+# Drift (Section 5a) is sound under both, so neither needs rewriting.
+#
 # NOT with `git hash-object <file>`. The distinction matters because freshness
 # is asked by walking history:
 #
@@ -114,20 +121,46 @@ project_metadata:
 # false.
 
 # =============================================================================
-# 5a. Detecting Upstream MATLAB Changes
+# 5a. DRIFT: detecting upstream MATLAB changes
 # =============================================================================
-# Every recorded `matlab_last_sync_hash` must be the latest commit touching its
-# MATLAB file. `tests/test_matlab_bridge_completeness.py` enforces this, so
-# when MATLAB edits a bridged file CI goes red and you must either:
+# An entry DRIFTS when NDR-matlab has commits touching its `matlab_path` after
+# the recorded hash:
+#
+#     git -C ../NDR-matlab log <matlab_last_sync_hash>..HEAD -- <matlab_path>
+#
+# Non-empty means drift, and drift fails CI. The rule is set for all three
+# bridge repos by NDI-python#211; `tests/test_matlab_bridge_completeness.py`
+# enforces it here.
+#
+# THE CHECK IS FILE-SCOPED, ALWAYS. `-- <matlab_path>` restricts the walk to
+# commits touching that ONE file, so unrelated NDR-matlab activity never makes
+# an entry drift, whatever form the recorded hash takes.
+#
+# NOT "the hash equals the file's last-touching commit". That older rule asked
+# about the hash's FORM rather than about the file, and so rejected records
+# that were TRUE -- an entry recording a repo-wide batch-sync commit failed it
+# even when nothing had touched the file since. The only way to clear the red
+# build was to rewrite a correct record with a different, equally correct
+# value. NDI-python had 103 entries of that shape. A check that demands
+# busywork on true records is a check contributors learn to ignore.
+#
+# When an entry does drift, the file really has changed since it was examined,
+# and you must either:
 #
 #   1. Review the MATLAB diff, port the behavioral change, and bump the hash; or
 #   2. Bump the hash and add a short `decision_log` note saying why the MATLAB
 #      change is a no-op on the Python side (comment-only, analyzer fix, ...).
 #
 # This check needs a NON-SHALLOW NDR-matlab checkout. A shallow clone collapses
-# every file's history to the last merge commit and lies about which commit is
-# latest, so CI checks it out with `fetch-depth: 0` and the test fails loudly
-# rather than emitting one false failure per entry.
+# every file's history to the commit it fetched, so the drift walk cannot see
+# the real history and every entry reads as wrong. CI checks it out with
+# `fetch-depth: 0`, and the test fails loudly on a shallow clone rather than
+# emitting one false failure per entry.
+#
+# STILL OPEN at NDI-python#211, so NOT enforced here yet: whether every entry
+# with a `matlab_path` must carry a hash at all. NDR-python already satisfies
+# it in fact -- all 120 entries carry one -- so adopting it here would be a
+# no-op whenever #211 settles it.
 
 # =============================================================================
 # 6. status: THE COMPLETE VOCABULARY
@@ -333,8 +366,9 @@ status_vocabulary:
 # name                 | Strict Match. Case-sensitive match to the MATLAB .m file.
 # matlab_path          | Path relative to NDR-matlab's repo root, or "N/A" for a
 #                      | `retired` entry. Must name a file that exists.
-# matlab_last_sync_hash| A COMMIT in NDR-matlab, and the latest one touching the
-#                      | file. See Section 5. Never a blob.
+# matlab_last_sync_hash| A COMMIT in NDR-matlab -- either the file's own
+#                      | last-touching commit or a repo-wide one. Must not have
+#                      | DRIFTED (Section 5a). See Section 5. Never a blob.
 # status               | REQUIRED on every entry. One of Section 6's vocabulary;
 #                      | `regular_port` for an ordinary 1:1 port. Requires a
 #                      | `decision_log` for every value except `regular_port`.
