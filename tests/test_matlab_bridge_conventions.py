@@ -79,7 +79,7 @@ CI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 #: silent widening of what CI accepts.
 ALLOWED_STATUSES = frozenset(
     {
-        "ported_elsewhere",
+        "ported_differently",
         "porting_deferred",
         "matlab_only",
         "retired",
@@ -89,9 +89,13 @@ ALLOWED_STATUSES = frozenset(
 #: Retired spellings, mapped to what to use instead. A value here gets a
 #: better error message than "not in the vocabulary".
 REPLACED_STATUSES = {
+    "ported_elsewhere": (
+        "ported_differently -- the label names the manner, not the location, "
+        "since python_path already answers where"
+    ),
     "not_yet_ported": "porting_deferred",
     "not_applicable": (
-        "one of ported_elsewhere / porting_deferred / matlab_only -- decide "
+        "one of ported_differently / porting_deferred / matlab_only -- decide "
         "which of the three it actually meant by reading the decision_log"
     ),
     "implemented": "no status at all (a plain port is the default)",
@@ -100,7 +104,7 @@ REPLACED_STATUSES = {
 }
 
 #: Statuses that must say where the Python capability lives.
-STATUSES_REQUIRING_PYTHON_PATH = frozenset({"ported_elsewhere"})
+STATUSES_REQUIRING_PYTHON_PATH = frozenset({"ported_differently"})
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +149,7 @@ class Entry:
     def python_paths(self) -> list[str]:
         """``python_path`` as a list.
 
-        A plain port names one file. A ``ported_elsewhere`` entry may name
+        A plain port names one file. A ``ported_differently`` entry may name
         several when the capability really is reached through more than one
         module (``+ndr/+reader/imagestack.m`` is covered by four readers), so
         both a string and a list are accepted here.
@@ -386,8 +390,8 @@ class TestEveryStatusIsInTheVocabulary:
             "find-and-replace would just move the ambiguity."
         )
 
-    def test_ported_elsewhere_says_where(self):
-        """``ported_elsewhere`` without a ``python_path`` is a worse
+    def test_ported_differently_says_where(self):
+        """``ported_differently`` without a ``python_path`` is a worse
         ``porting_deferred``: it asserts the capability exists and then
         declines to say where, so the next reader has to search for it."""
         offenders = [
@@ -396,11 +400,11 @@ class TestEveryStatusIsInTheVocabulary:
             if entry.status in STATUSES_REQUIRING_PYTHON_PATH and not entry.python_paths
         ]
         assert not offenders, (
-            "these entries claim status: ported_elsewhere but name no python_path:\n  "
+            "these entries claim status: ported_differently but name no python_path:\n  "
             + "\n  ".join(offenders)
             + "\n\nName the module the capability is reached through (a list is fine "
             "when it really is more than one). If you cannot name one, the entry is "
-            "porting_deferred or matlab_only, not ported_elsewhere."
+            "porting_deferred or matlab_only, not ported_differently."
         )
 
     def test_every_named_python_path_exists(self):

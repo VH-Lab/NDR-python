@@ -38,10 +38,10 @@ commit hash in the command printed beneath it. Go there for:
 - **Section 5** — `matlab_last_sync_hash` is a COMMIT (`git -C
   ../NDR-matlab log -n 1 --format=%h -- <path>`), never a blob, and it must
   be the latest commit touching the file.
-- **Section 6** — the complete `status` vocabulary: `ported_elsewhere`,
+- **Section 6** — the complete `status` vocabulary: `ported_differently`,
   `porting_deferred`, `matlab_only`, `retired`. A plain 1:1 port carries no
-  `status` at all. `not_yet_ported` and `not_applicable` are retired
-  spellings and CI rejects them.
+  `status` at all. `ported_elsewhere`, `not_yet_ported` and `not_applicable`
+  are retired spellings and CI rejects them.
 
 ## Testing
 - Unit tests: `pytest tests/`

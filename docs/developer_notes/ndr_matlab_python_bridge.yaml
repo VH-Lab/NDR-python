@@ -141,16 +141,17 @@ project_metadata:
 
 status_vocabulary:
 
-  ported_elsewhere: >-
-    Python HAS this capability, but not as a 1:1 counterpart under the mirrored
-    name -- it lives under a different name, is folded into a class, or is
-    reached through different machinery (including a third-party dependency
-    that does the work MATLAB hand-rolls). REQUIRES a `python_path` naming the
-    Python module through which the capability is reached; when the real work
-    is done by a dependency, the `decision_log` names the dependency. Use this
-    and not `matlab_only` whenever a Python caller can do the thing -- a reader
-    who sees `matlab_only` concludes Python cannot, which is the opposite of
-    the truth.
+  ported_differently: >-
+    Python HAS this capability, but does the job a DIFFERENT WAY rather than as
+    a 1:1 counterpart under the mirrored name: under a different name, folded
+    into a class or another function, or through different machinery -- very
+    often a third-party dependency doing work MATLAB hand-rolls. The label
+    names the manner, not the location: `python_path` already answers WHERE,
+    and REQUIRES an answer here (a list when the capability genuinely spans
+    modules). When the real work is done by a dependency, the `decision_log`
+    names it. Use this and not `matlab_only` whenever a Python caller can do
+    the thing -- a reader who sees `matlab_only` concludes Python cannot, which
+    is the opposite of the truth.
 
   porting_deferred: >-
     No Python counterpart today. The gap is known and may be closed later. The
@@ -172,10 +173,19 @@ status_vocabulary:
     NDR-matlab commit removed it.
 
 # RETIRED STATUS VALUES -- do not reintroduce:
+#   ported_elsewhere -> ported_differently. "Elsewhere" names a PLACE, but
+#                      `python_path` already answers where. Of the nine entries
+#                      carrying it, six had not moved anywhere at all: zarr and
+#                      numcodecs simply do what MATLAB hand-rolls, and four
+#                      native readers cover what +ndr/+reader/imagestack.m
+#                      delegates to NANSEN. What a reader cannot recover from
+#                      any other field is the MANNER, so the label names that.
+#                      Renamed across NDI-python, NDR-python and DID-python
+#                      together; see NDR-python issue #21.
 #   not_yet_ported  -> porting_deferred  (vague: "not yet" by whom, blocked on what?)
 #   not_applicable  -> split by what is actually meant. It conflated three
 #                      incompatible claims: "Python does this another way"
-#                      (ported_elsewhere), "we haven't done it" (porting_deferred)
+#                      (ported_differently), "we haven't done it" (porting_deferred)
 #                      and "MATLAB-ism, never will" (matlab_only). Its plain
 #                      reading -- "Python cannot / need not do this" -- was
 #                      flatly wrong for the majority of entries carrying it.
@@ -299,8 +309,8 @@ status_vocabulary:
 # status               | One of Section 6's vocabulary, or absent for a plain
 #                      | port. Requires a `decision_log`.
 # python_path          | Where the Python counterpart lives. Required for a plain
-#                      | port and for `ported_elsewhere`. A plain port names one
-#                      | file; a `ported_elsewhere` entry MAY name a list when
+#                      | port and for `ported_differently`. A plain port names one
+#                      | file; a `ported_differently` entry MAY name a list when
 #                      | the capability is genuinely reached through more than
 #                      | one module (see +ndr/+reader/imagestack.m).
 # python_qualified     | Dotted module path. Required on EVERY member of a

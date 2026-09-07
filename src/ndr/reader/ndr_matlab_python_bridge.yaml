@@ -1479,7 +1479,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/imagestack.m"
     matlab_last_sync_hash: "64d06e4"
-    status: ported_elsewhere
+    status: ported_differently
     python_path:
       - "ndr/reader/tiffstack.py"
       - "ndr/reader/omezarr.py"
@@ -1493,6 +1493,6 @@ classes:
       same image-stack formats through native readers (ndr.reader.tiffstack,
       ndr.reader.omezarr, ndr.reader.smartspim, ndr.reader.prairieview).
       A wrapper mirroring the MATLAB name would add no coverage over those,
-      so none is planned. Recorded as ported_elsewhere and not matlab_only
+      so none is planned. Recorded as ported_differently and not matlab_only
       precisely because a reader must not conclude that Python cannot read
       image stacks.

@@ -148,7 +148,7 @@ sonpipe:
   - name: runcmd
     matlab_path: "+ndr/+format/+ced/+sonpipe/runcmd.m"
     matlab_last_sync_hash: "d5953d7"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/ced/sonpipe/_invoke.py"
     decision_log: >
       Ported under a different name: MATLAB shells to the CLI through
@@ -170,7 +170,7 @@ sonpipe:
   - name: invoke_binary
     matlab_path: "+ndr/+format/+ced/+sonpipe/private/invoke_binary.m"
     matlab_last_sync_hash: "a32c4f5"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/ced/sonpipe/_invoke.py"
     decision_log: >
       Folded into _invoke rather than given its own module: MATLAB reads the
@@ -181,7 +181,7 @@ sonpipe:
   - name: invoke_text
     matlab_path: "+ndr/+format/+ced/+sonpipe/private/invoke_text.m"
     matlab_last_sync_hash: "a32c4f5"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/ced/sonpipe/_invoke.py"
     decision_log: >
       Folded into _invoke rather than given its own module: MATLAB reads the
