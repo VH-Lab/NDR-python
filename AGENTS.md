@@ -41,8 +41,9 @@ commit hash in the command printed beneath it. Go there for:
   file's own last-touching commit or a repo-wide batch-sync commit is legal.
   What fails CI is DRIFT: `git log <hash>..HEAD -- <matlab_path>` non-empty,
   i.e. NDR-matlab has touched that file since. File-scoped — unrelated repo
-  activity never trips it. Rule set for all three bridge repos by
-  NDI-python#211.
+  activity never trips it. Every entry naming a `matlab_path` must carry a
+  hash — one that is absent can never drift, so it would claim to be current
+  forever. Rules set for all three bridge repos by NDI-python#211.
 - **Section 6** — the complete `status` vocabulary: `regular_port`,
   `ported_differently`, `porting_deferred`, `matlab_only`, `retired`. EVERY
   entry states its status, including the ordinary one: a plain 1:1 port is

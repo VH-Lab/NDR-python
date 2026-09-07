@@ -144,6 +144,17 @@ class Entry:
         return value.strip() if isinstance(value, str) else ""
 
     @property
+    def matlab_last_sync_hash(self) -> str:
+        """The entry's OWN recorded hash.
+
+        Deliberately not inherited from an enclosing entry: this gate asks
+        whether THIS entry records what was examined, and a hash borrowed from
+        a parent is a claim the parent made about a different file.
+        """
+        value = self.node.get("matlab_last_sync_hash")
+        return value.strip() if isinstance(value, str) else ""
+
+    @property
     def python_qualified(self) -> str:
         value = self.node.get("python_qualified")
         return value.strip() if isinstance(value, str) else ""
@@ -442,6 +453,39 @@ class TestEveryStatusIsInTheVocabulary:
             + "\n\nName the module the capability is reached through (a list is fine "
             "for ported_differently when it really is more than one). If you cannot "
             "name one, the entry is porting_deferred or matlab_only."
+        )
+
+    def test_every_entry_naming_a_matlab_path_carries_a_hash(self):
+        """An entry with no ``matlab_last_sync_hash`` can never drift.
+
+        That is the failure this gate exists for, and it is worse than a stale
+        hash rather than milder: a stale hash goes red and gets fixed, while a
+        missing one asserts "this port is current" forever and nothing can
+        contradict it. Silent false assurance instead of a red build.
+        NDI-python#211 decision 2 gates it.
+
+        Deliberately NOT dependent on an NDR-matlab checkout -- it reads only
+        this repo's YAML -- so it runs in every test-matrix job, not just the
+        bridge job. A rule this cheap should not be reachable from only one
+        job.
+
+        A ``retired`` entry sets ``matlab_path: "N/A"``, naming no file, so
+        there is nothing for it to drift against and it is exempt.
+        """
+        hashless = [
+            f"{entry.where}: {entry.name or '<unnamed>'} -> {entry.matlab_path}"
+            for entry in all_entries()
+            if entry.matlab_path and not entry.matlab_last_sync_hash
+        ]
+        assert not hashless, (
+            f"{len(hashless)} bridge entr{'y names' if len(hashless) == 1 else 'ies name'} "
+            "a matlab_path but record no matlab_last_sync_hash:\n  "
+            + "\n  ".join(hashless)
+            + "\n\nRecord the commit you examined:\n"
+            "    git -C ../NDR-matlab log -n 1 --format=%h -- <matlab_path>\n"
+            "An entry without a hash cannot drift, so it claims to be current "
+            "forever and nothing can contradict it. See section 5a of "
+            "docs/developer_notes/" + BRIDGE_FILENAME + "."
         )
 
     def test_every_named_python_path_exists(self):

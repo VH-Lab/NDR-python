@@ -157,10 +157,14 @@ project_metadata:
 # `fetch-depth: 0`, and the test fails loudly on a shallow clone rather than
 # emitting one false failure per entry.
 #
-# STILL OPEN at NDI-python#211, so NOT enforced here yet: whether every entry
-# with a `matlab_path` must carry a hash at all. NDR-python already satisfies
-# it in fact -- all 120 entries carry one -- so adopting it here would be a
-# no-op whenever #211 settles it.
+# EVERY ENTRY NAMING A `matlab_path` MUST CARRY A HASH (NDI-python#211
+# decision 2, enforced). An entry without one can never drift, so it asserts
+# its port is current forever and nothing can contradict it -- the same false
+# assurance as a stale hash, but silent instead of red. A `retired` entry sets
+# `matlab_path: "N/A"`, names no file, and is exempt.
+#
+# That gate reads only this repo, needing no NDR-matlab checkout, so it runs in
+# every test-matrix job rather than only the bridge job.
 
 # =============================================================================
 # 6. status: THE COMPLETE VOCABULARY
