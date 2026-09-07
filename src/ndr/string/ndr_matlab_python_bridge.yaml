@@ -7,7 +7,7 @@ functions:
   - name: channelstring2channels
     matlab_path: "+ndr/+string/channelstring2channels.m"
     python_path: "ndr/string/channelstring2channels.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "e4c5a25"
     input_arguments:
       - name: channel_string
         type_python: "str"
@@ -18,7 +18,7 @@ functions:
   - name: intseq2str
     matlab_path: "+ndr/+string/intseq2str.m"
     python_path: "ndr/string/intseq2str.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "e4c5a25"
     input_arguments:
       - name: seq
         type_python: "list[int] | numpy.ndarray"
@@ -29,7 +29,7 @@ functions:
   - name: str2intseq
     matlab_path: "+ndr/+string/str2intseq.m"
     python_path: "ndr/string/str2intseq.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "e4c5a25"
     input_arguments:
       - name: s
         type_python: "str"

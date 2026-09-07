@@ -5,18 +5,13 @@ project_metadata:
 
 # Contract recorded 2026-08-27. The Python implementation of this sub-package
 # predated its bridge file.
-#
-# Not ported: +ndr/+file/fileobj.m. It wraps MATLAB's fopen/fread file-handle
-# semantics (byte order, machine format, seek modes) for which Python uses
-# built-in file objects plus numpy dtypes directly; the Python format readers
-# open files themselves rather than going through a fileobj shim.
 
 functions:
   - name: textfile2char
     type: function
     matlab_path: "+ndr/+file/textfile2char.m"
     python_path: "ndr/file/textfile2char.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "4abee5d"
     input_arguments:
       - name: filename
         type_matlab: "char"
@@ -25,3 +20,15 @@ functions:
       - name: t
         type_matlab: "char"
         type_python: "str"
+
+  - name: fileobj
+    type: class
+    matlab_path: "+ndr/+file/fileobj.m"
+    matlab_last_sync_hash: "4abee5d"
+    status: not_applicable
+    decision_log: >
+      Wraps MATLAB's fopen/fread file-handle semantics (byte order, machine
+      format, seek modes) for which Python uses built-in file objects plus
+      numpy dtypes directly. The Python format readers open files themselves
+      rather than going through a fileobj shim, so there is no Python
+      counterpart to port and none is planned.

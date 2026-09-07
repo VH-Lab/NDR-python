@@ -7,7 +7,7 @@ functions:
   - name: header
     matlab_path: "+ndr/+format/+dabrowska/header.m"
     python_path: "ndr/format/dabrowska/header.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "e9da7bb"
     input_arguments:
       - name: filename
         type_python: "str | Path"

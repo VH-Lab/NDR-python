@@ -58,7 +58,7 @@ functions:
   - name: fread_QString
     matlab_path: "+ndr/+format/+intan/fread_QString.m"
     python_path: "ndr/format/intan/fread_QString.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "94c5232"
     input_arguments:
       - name: fid
         type_python: "file-like"
@@ -94,7 +94,7 @@ functions:
   - name: cat_Intan_RHD2000_files
     matlab_path: "+ndr/+format/+intan/cat_Intan_RHD2000_files.m"
     python_path: "ndr/format/intan/cat_Intan_RHD2000_files.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "ba074d4"
     input_arguments:
       - name: filenames
         type_python: "str | Path (variadic)"
@@ -105,7 +105,7 @@ functions:
   - name: concat_rhd_files
     matlab_path: "+ndr/+format/+intan/concat_rhd_files.m"
     python_path: "ndr/format/intan/concat_rhd_files.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "9125d98"
     input_arguments:
       - name: dirname
         type_python: "str | Path"
@@ -114,7 +114,7 @@ functions:
   - name: copy_Intan_RHD2000_blocks
     matlab_path: "+ndr/+format/+intan/copy_Intan_RHD2000_blocks.m"
     python_path: "ndr/format/intan/copy_Intan_RHD2000_blocks.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "24cfef8"
     input_arguments:
       - name: filename_in
         type_python: "str | Path"
@@ -127,3 +127,56 @@ functions:
     output_arguments:
       - name: status
         type_python: "int"
+
+  - name: detectRHD2000FileMode
+    matlab_path: "+ndr/+format/+intan/detectRHD2000FileMode.m"
+    matlab_last_sync_hash: "a938988"
+    status: not_yet_ported
+    decision_log: >
+      Detects whether an .rhd filename follows the Intan
+      '<prefix>_<YYMMDD>_<HHMMSS>.rhd' multi-file convention. Not yet ported:
+      the Python side currently reads .rhd files individually and does not
+      auto-assemble multi-file recordings. Landed in NDR-matlab a938988
+      (2026-05-06). Port when a multi-file dataset needs Python coverage.
+
+  - name: getRHD2000FileList
+    matlab_path: "+ndr/+format/+intan/getRHD2000FileList.m"
+    matlab_last_sync_hash: "a938988"
+    status: not_yet_ported
+    decision_log: >
+      Companion to detectRHD2000FileMode: returns the sorted list of .rhd
+      files that make up a recording. Same porting status: waits until a
+      Python caller needs multi-file assembly. Landed in NDR-matlab a938988
+      (2026-05-06).
+
+# ---------------------------------------------------------------------------
+# The +manufacturer subpackage: Intan's stock demo reader, vendored so the
+# Python readers can validate against it byte-for-byte. Python has parallel
+# modules under ndr/format/intan/manufacturer/.
+# ---------------------------------------------------------------------------
+
+manufacturer:
+  - name: read_Intan_RHD2000_file
+    matlab_path: "+ndr/+format/+intan/+manufacturer/read_Intan_RHD2000_file.m"
+    python_path: "ndr/format/intan/manufacturer/read_Intan_RHD2000_file.py"
+    matlab_last_sync_hash: "d78c7ea"
+    decision_log: >
+      Vendored Intan demo reader that loads the entire file into MATLAB
+      workspace variables. Python mirror lives at the parallel path and
+      loads into a dict of numpy arrays instead.
+
+  - name: read_Intan_RHD2000_file_var
+    matlab_path: "+ndr/+format/+intan/+manufacturer/read_Intan_RHD2000_file_var.m"
+    python_path: "ndr/format/intan/manufacturer/read_Intan_RHD2000_file_var.py"
+    matlab_last_sync_hash: "d78c7ea"
+    decision_log: >
+      Variable-argument variant of the vendored Intan demo reader. Python
+      mirror at the parallel path.
+
+  - name: upsample2x
+    matlab_path: "+ndr/+format/+intan/+manufacturer/upsample2x.m"
+    python_path: "ndr/format/intan/manufacturer/upsample2x.py"
+    matlab_last_sync_hash: "d78c7ea"
+    decision_log: >
+      2x FIR-filter upsampler used by the Intan demo reader. Straight port
+      to numpy; the FIR coefficients are lifted from the MATLAB source.

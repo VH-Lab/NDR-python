@@ -26,6 +26,63 @@ jobs:
       - name: Lint with ruff
         run: ruff check src/ tests/
 
+  bridge:
+    name: MATLAB/Python bridge completeness
+    runs-on: ubuntu-latest
+    steps:
+      # Two checkouts, laid out as siblings, because the check compares
+      # NDR-matlab's +ndr tree against this repo's bridge YAMLs.
+      # No MATLAB runtime is needed -- it only reads the source tree --
+      # so this stays a fast job rather than joining the format-heavy
+      # test matrix. Mirrors NDI-python's ``bridge`` job by design.
+      - uses: actions/checkout@v4
+        with:
+          path: NDR-python
+
+      - name: Check out NDR-matlab (matching branch, fall back to main)
+        uses: actions/checkout@v4
+        with:
+          repository: VH-Lab/NDR-matlab
+          # A bridge entry usually lands on the same feature branch as
+          # the MATLAB function it records, so check that branch first.
+          ref: ${{ github.head_ref || github.ref_name }}
+          # fetch-depth: 0 so the hash-currency test can walk history
+          # for every file: without it `git log -- <path>` sees only the
+          # last commit and every recorded hash looks stale.
+          fetch-depth: 0
+          path: NDR-matlab
+        continue-on-error: true
+        id: matlab_checkout_branch
+
+      - name: Check out NDR-matlab (main fallback)
+        if: steps.matlab_checkout_branch.outcome == 'failure'
+        uses: actions/checkout@v4
+        with:
+          repository: VH-Lab/NDR-matlab
+          ref: main
+          fetch-depth: 0
+          path: NDR-matlab
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest and PyYAML
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pyyaml
+
+      - name: Check bridge completeness and hash currency
+        working-directory: NDR-python
+        env:
+          # Both repos are checked out above, so an absent MATLAB tree
+          # means the checkout step broke. Fail instead of skipping --
+          # a check that could not run must not report a pass.
+          NDR_BRIDGE_CHECK_STRICT: "1"
+          NDR_MATLAB_PATH: ${{ github.workspace }}/NDR-matlab
+        run: pytest tests/test_matlab_bridge_completeness.py -v --tb=short
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest

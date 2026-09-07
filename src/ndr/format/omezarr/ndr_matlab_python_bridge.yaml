@@ -1,0 +1,130 @@
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+functions:
+  - name: isOMEZarr
+    matlab_path: "+ndr/+format/+omezarr/isOMEZarr.m"
+    matlab_last_sync_hash: "21eedad"
+    python_path: "ndr/format/omezarr/isOMEZarr.py"
+    decision_log: >-
+      Cheap non-throwing probe. Returns TRUE iff the directory has a
+      .zattrs file whose parsed JSON carries a non-empty `multiscales`
+      field. Straight port; the Python side uses the stdlib json module
+      instead of MATLAB's jsondecode, but the recognition criterion is
+      byte-for-byte the same.
+
+  - name: listPyramids
+    matlab_path: "+ndr/+format/+omezarr/listPyramids.m"
+    matlab_last_sync_hash: "21eedad"
+    python_path: "ndr/format/omezarr/listPyramids.py"
+    decision_log: >-
+      Enumerates NGFF `multiscales` entries in the store's .zattrs, filling
+      each entry's `name`, `type`, `axes` (list of {name, type, unit}) and
+      `levels` (list of {path, shape, chunks, dtype, scale, translation}).
+      Level shape/chunks/dtype come from the array's own .zarray so that
+      readArray can allocate without a second walk. The Python side returns
+      a list of dicts where MATLAB returns a struct array; field names and
+      values are identical.
+
+  - name: readAttrs
+    matlab_path: "+ndr/+format/+omezarr/readAttrs.m"
+    matlab_last_sync_hash: "21eedad"
+    python_path: "ndr/format/omezarr/readAttrs.py"
+    decision_log: >-
+      Low-level metadata primitive: reads <zarrPath>/.zattrs and returns
+      the parsed JSON as a dict. Errors if the directory does not exist,
+      .zattrs is absent, or JSON parsing fails, matching MATLAB's specific
+      error classes.
+
+  - name: resolveArrayPath
+    matlab_path: "+ndr/+format/+omezarr/resolveArrayPath.m"
+    matlab_last_sync_hash: "21eedad"
+    python_path: "ndr/format/omezarr/resolveArrayPath.py"
+    decision_log: >-
+      Maps (pyramidName, level) to the absolute on-disk directory of the
+      Zarr array. `level` is 1-based (Semantic Parity: level 1 is the
+      highest resolution, the first entry in `datasets`). Errors listing
+      the available pyramids when the name does not exist, which is the
+      silent-failure guard from issue #127.
+
+  - name: readArray
+    matlab_path: "+ndr/+format/+omezarr/readArray.m"
+    matlab_last_sync_hash: "a847431"
+    python_path: "ndr/format/omezarr/readArray.py"
+    decision_log: >-
+      Reads pixels for one region of one pyramid level and returns an n-D
+      numpy array. Options mirror MATLAB name-value pairs verbatim
+      (Region, OutputType) per the naming policy; Python takes them as
+      keyword-only arguments. Region is 1-based inclusive on both sides.
+
+      IMPLEMENTATION DIVERGES DELIBERATELY. MATLAB has no zarr library, so
+      the MATLAB readArray hand-rolls chunk-reading, Blosc/Zstd decoding
+      and dtype parsing through +ndr/+format/+omezarr/private/*.m
+      (decompressBlosc, decompressZstd, parseDType, readChunk,
+      readZArrayMeta). Python has the `zarr` library, so those helpers
+      collapse into a single `zarr.open()` call plus numpy slicing --
+      about 10 lines total. The `private/*.m` files are recorded in this
+      bridge as `status: not_applicable` for that reason.
+
+      The Python side supports every codec and byte order the installed
+      zarr library supports, which is a superset of the MATLAB scope
+      (v2, C-order, Blosc/Zstd or uncompressed, fixed-length numeric
+      dtypes). A store the MATLAB reader accepts is also accepted here.
+
+  - name: decompressBlosc
+    matlab_path: "+ndr/+format/+omezarr/private/decompressBlosc.m"
+    matlab_last_sync_hash: "a847431"
+    status: not_applicable
+    decision_log: >-
+      Not ported: MATLAB helper that unwraps the Blosc container and
+      dispatches to the codec-specific decompressor. Python's `zarr`
+      library reads Blosc containers through `numcodecs.Blosc`, so
+      readArray never needs to see the container bytes.
+
+  - name: decompressZstd
+    matlab_path: "+ndr/+format/+omezarr/private/decompressZstd.m"
+    matlab_last_sync_hash: "248f7f2"
+    status: not_applicable
+    decision_log: >-
+      Not ported: MATLAB helper that shells out to the system `zstd`
+      binary because MATLAB has no built-in Zstd decoder. Python's `zarr`
+      library uses `numcodecs.Zstd`, which links libzstd directly, so no
+      external process is needed and no equivalent Python file exists.
+
+  - name: parseDType
+    matlab_path: "+ndr/+format/+omezarr/private/parseDType.m"
+    matlab_last_sync_hash: "a847431"
+    status: not_applicable
+    decision_log: >-
+      Not ported: MATLAB helper that parses the Zarr dtype string
+      (e.g. '<u2', '>f4') into (MATLAB class name, byte order, item size).
+      Python's `zarr` library resolves dtypes internally and hands back a
+      numpy dtype; there is no equivalent Python file. See the
+      ndr.reader.omezarr class for the small MATLAB-class-name mapping
+      that the reader still exposes.
+
+  - name: readChunk
+    matlab_path: "+ndr/+format/+omezarr/private/readChunk.m"
+    matlab_last_sync_hash: "248f7f2"
+    status: not_applicable
+    decision_log: >-
+      Not ported: MATLAB helper that opens one chunk file, invokes the
+      right decompressor, casts bytes to the array dtype, and reshapes to
+      the chunk's own shape. Python's `zarr.open()` reads and assembles
+      chunks itself; readArray only slices into the returned array-like.
+
+  - name: readZArrayMeta
+    matlab_path: "+ndr/+format/+omezarr/private/readZArrayMeta.m"
+    matlab_last_sync_hash: "a847431"
+    status: not_applicable
+    decision_log: >-
+      Not ported as a standalone helper: MATLAB reads .zarray by hand to
+      get shape/chunks/dtype/order/fill/compressor before decoding chunks.
+      Python obtains the same information from the opened `zarr.Array`
+      (shape, chunks, dtype). listPyramids does still read `shape`,
+      `chunks` and `dtype` from .zarray directly (a small stdlib-json
+      helper inside the module) because it enumerates levels without
+      opening every array; that helper is deliberately inline and does
+      not correspond to a separate file.

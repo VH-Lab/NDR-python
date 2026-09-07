@@ -85,3 +85,100 @@ functions:
         type_python: "float | None"
       - name: blockinfo
         type_python: "object"
+
+  - name: isSON64
+    matlab_path: "+ndr/+format/+ced/isSON64.m"
+    matlab_last_sync_hash: "7745c1b"
+    status: not_applicable
+    decision_log: >
+      Backend dispatch helper for MATLAB: sends 32-bit .smr files to sigTOOL
+      and 64-bit .smrx files to sonpipe. NDR-python routes both file types
+      through sonpipe (see the backend-divergence note at the top of this
+      file), so no such dispatch is needed on the Python side and there is
+      no counterpart to port.
+
+# ---------------------------------------------------------------------------
+# The sonpipe subpackage: MATLAB shells out to the sonpipe CLI, Python calls
+# the CLI directly through subprocess. Function-for-function ports where the
+# Python name matches; private helpers collapse into the CLI wrapper.
+# ---------------------------------------------------------------------------
+
+sonpipe:
+  - name: read_SOMSMR_header
+    matlab_path: "+ndr/+format/+ced/+sonpipe/read_SOMSMR_header.m"
+    python_path: "ndr/format/ced/sonpipe/read_SOMSMR_header.py"
+    matlab_last_sync_hash: "d5953d7"
+    decision_log: >
+      Straight port: invokes the sonpipe CLI's header command and parses
+      the returned JSON into a dict. Python side lives at the mirror path.
+
+  - name: read_SOMSMR_datafile
+    matlab_path: "+ndr/+format/+ced/+sonpipe/read_SOMSMR_datafile.m"
+    python_path: "ndr/format/ced/sonpipe/read_SOMSMR_datafile.py"
+    matlab_last_sync_hash: "d5953d7"
+    decision_log: >
+      Straight port: invokes the sonpipe CLI's data command over a time
+      window and reads the binary output back as a numpy array.
+
+  - name: read_SOMSMR_sampleinterval
+    matlab_path: "+ndr/+format/+ced/+sonpipe/read_SOMSMR_sampleinterval.m"
+    python_path: "ndr/format/ced/sonpipe/read_SOMSMR_sampleinterval.py"
+    matlab_last_sync_hash: "d5953d7"
+    decision_log: >
+      Straight port: returns the sample interval reported by the CLI for a
+      given channel, matching the +ndr/+format/+ced entry point of the same
+      name.
+
+  - name: channelinfo
+    matlab_path: "+ndr/+format/+ced/+sonpipe/channelinfo.m"
+    python_path: "ndr/format/ced/sonpipe/channelinfo.py"
+    matlab_last_sync_hash: "d5953d7"
+    decision_log: >
+      Straight port: queries the CLI for one channel's metadata dict
+      (kind, sample interval, units, comment, etc.).
+
+  - name: executable
+    matlab_path: "+ndr/+format/+ced/+sonpipe/executable.m"
+    python_path: "ndr/format/ced/sonpipe/executable.py"
+    matlab_last_sync_hash: "d5953d7"
+    decision_log: >
+      Straight port: resolves the sonpipe binary on PATH and errors with a
+      clear pointer to ndr.setup.sonpipe when it is not installed.
+
+  - name: runcmd
+    matlab_path: "+ndr/+format/+ced/+sonpipe/runcmd.m"
+    matlab_last_sync_hash: "d5953d7"
+    status: not_applicable
+    decision_log: >
+      MATLAB shells to the CLI through system(); Python uses subprocess.run
+      directly from ndr.format.ced.sonpipe._invoke, so no runcmd wrapper is
+      needed. _invoke.py is the counterpart in spirit but not name.
+
+  - name: Contents
+    matlab_path: "+ndr/+format/+ced/+sonpipe/Contents.m"
+    matlab_last_sync_hash: "c65e267"
+    status: not_applicable
+    decision_log: >
+      MATLAB's Contents.m is help text listed by MATLAB's `help` command
+      for a package. Python packages use docstrings on __init__.py for
+      the same purpose; there is no file-level counterpart to port.
+
+  # ---- sonpipe/private/ ----
+  - name: invoke_binary
+    matlab_path: "+ndr/+format/+ced/+sonpipe/private/invoke_binary.m"
+    matlab_last_sync_hash: "a32c4f5"
+    status: not_applicable
+    decision_log: >
+      MATLAB helper that reads the CLI's stdout as raw bytes into a typed
+      buffer. Python does the same directly in ndr.format.ced.sonpipe._invoke
+      with subprocess.run(capture_output=True) plus numpy.frombuffer, so
+      there is no separate module to name here.
+
+  - name: invoke_text
+    matlab_path: "+ndr/+format/+ced/+sonpipe/private/invoke_text.m"
+    matlab_last_sync_hash: "a32c4f5"
+    status: not_applicable
+    decision_log: >
+      MATLAB helper that reads the CLI's stdout as text and parses JSON.
+      Python does the same directly in ndr.format.ced.sonpipe._invoke with
+      subprocess.run + json.loads, so there is no separate module to name.

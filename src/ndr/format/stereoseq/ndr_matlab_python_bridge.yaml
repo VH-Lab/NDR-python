@@ -6,7 +6,7 @@ project_metadata:
 functions:
   - name: readGEF
     matlab_path: "+ndr/+format/+stereoseq/readGEF.m"
-    matlab_last_sync_hash: "dbd64119"
+    matlab_last_sync_hash: "108dfff"
     python_path: "ndr/format/stereoseq/readGEF.py"
     decision_log: >
       Reads BGI/MGI Stereo-seq .gef files, which are HDF5. Promoted from

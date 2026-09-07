@@ -8,14 +8,14 @@ classes:
     type: class
     matlab_path: "+ndr/+time/clocktype.m"
     python_path: "ndr/time/clocktype.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "3cf7866"
     python_class: "ClockType"
 
   - name: timereference
     type: class
     matlab_path: "+ndr/+time/timereference.m"
     python_path: "ndr/time/timereference.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "93ffb18"
     python_class: "TimeReference"
     properties:
       - name: referent
@@ -38,7 +38,7 @@ functions:
   - name: samples2times
     matlab_path: "+ndr/+time/+fun/samples2times.m"
     python_path: "ndr/time/fun/samples2times.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "d6680e8"
     input_arguments:
       - name: s
         type_python: "numpy.ndarray | int | float"
@@ -53,7 +53,7 @@ functions:
   - name: times2samples
     matlab_path: "+ndr/+time/+fun/times2samples.m"
     python_path: "ndr/time/fun/times2samples.py"
-    matlab_last_sync_hash: "20743f7"
+    matlab_last_sync_hash: "d6680e8"
     input_arguments:
       - name: t
         type_python: "numpy.ndarray | float"
