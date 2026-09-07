@@ -556,14 +556,31 @@ class TestTheWorkflowActuallyRunsTheBridgeChecks:
     test of its own rather than a comment asking the next person to remember.
     """
 
-    def _bridge_job(self) -> str:
+    def _job(self, name: str) -> str:
+        """The YAML text of one top-level job in the CI workflow."""
         text = CI_WORKFLOW.read_text(encoding="utf-8")
-        marker = "\n  bridge:\n"
-        assert marker in text, f"{CI_WORKFLOW.relative_to(REPO_ROOT)} has no `bridge:` job"
+        marker = f"\n  {name}:\n"
+        assert marker in text, f"{CI_WORKFLOW.relative_to(REPO_ROOT)} has no `{name}:` job"
         after = text.split(marker, 1)[1]
         # Up to the next top-level job key (two-space indent at line start).
         following = re.search(r"\n  [a-zA-Z0-9_-]+:\n", after)
         return after[: following.start()] if following else after
+
+    def _job_commands(self, name: str) -> str:
+        """A job's text with COMMENT LINES STRIPPED.
+
+        Guards about what a job *runs* must read what it runs. Matching raw
+        job text lets a comment mentioning the flag satisfy an assertion the
+        command no longer does -- which is how the first version of
+        :meth:`test_the_test_matrix_deselects_matlab_dependent_tests` passed
+        while the matrix had stopped deselecting anything.
+        """
+        return "\n".join(
+            line for line in self._job(name).splitlines() if not line.lstrip().startswith("#")
+        )
+
+    def _bridge_job(self) -> str:
+        return self._job("bridge")
 
     def test_every_bridge_test_file_is_named_by_the_bridge_job(self):
         job = self._bridge_job()
@@ -587,6 +604,48 @@ class TestTheWorkflowActuallyRunsTheBridgeChecks:
             f"the `bridge` job does not set {STRICT_ENV_VAR}. Without it, a broken "
             "NDR-matlab checkout makes every bridge test skip, and the job goes "
             "green having checked nothing."
+        )
+
+    def test_the_test_matrix_deselects_matlab_dependent_tests(self):
+        """The matrix jobs have no NDR-matlab checkout, so tests needing one
+        must be DESELECTED there, not skipped.
+
+        Skipping would work, and that is the problem: it leaves a standing
+        pile of skips in every matrix job, which trains a reader to scroll
+        past skips -- so the next one, a real one, goes unnoticed. Same
+        reasoning the whole bridge guard rests on.
+        """
+        commands = self._job_commands("test")
+        assert "not needs_matlab" in commands, (
+            "the `test` matrix job does not deselect MATLAB-dependent tests. "
+            'Add -m "not needs_matlab" to its pytest invocation; without it '
+            "those tests skip there instead, and a standing pile of skips is "
+            "what this repo's bridge guard exists to avoid."
+        )
+
+    def test_the_bridge_job_does_not_deselect_them(self):
+        """The corollary, and the one that actually matters.
+
+        Deselecting in the matrix is only safe because the bridge job runs
+        them. If that job ever grew the same filter, the port-synchrony core
+        -- drift, the commit-object check, completeness -- would run NOWHERE
+        while every job stayed green.
+        """
+        commands = self._job_commands("bridge")
+        assert "needs_matlab" not in commands, (
+            "the `bridge` job filters on the needs_matlab marker. It must not: "
+            "it is the only job with an NDR-matlab checkout, so filtering there "
+            "would leave drift and completeness running in no job at all, with "
+            "CI still green."
+        )
+
+    def test_the_marker_is_registered(self):
+        """An unregistered marker is a warning, not an error -- so a typo in
+        the filter would silently deselect nothing at all."""
+        pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        assert "needs_matlab:" in pyproject, (
+            "the needs_matlab marker is not registered in pyproject.toml's "
+            "[tool.pytest.ini_options] markers list"
         )
 
     def test_the_matlab_checkout_is_not_shallow(self):
