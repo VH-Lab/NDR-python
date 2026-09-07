@@ -95,9 +95,15 @@ project_metadata:
 # because its spec said "the hash of the .m file" while printing a command that
 # yields a commit.
 #
-# NDR-python additionally requires the commit to be the LATEST one touching
-# that file (see Section 5a). This is stricter than NDI-python, which accepts
-# any commit because it also records repo-wide batch-sync commits.
+# WHAT COUNTS AS OUT OF DATE is Section 5a, and the rule is set for all three
+# bridge repos by the coordinating issue, NDI-python#211 -- not here. This
+# spec deliberately does NOT restate another repo's policy: an earlier draft
+# said NDR-python was "stricter than NDI-python, which accepts any commit",
+# which was a description of somebody else's rule that goes stale the moment
+# they change it. NDI-python#211 asked for exactly that sentence to be
+# deleted and cross-referenced instead. Read the policy there; read how
+# NDR-python enforces it in Section 5a and in
+# tests/test_matlab_bridge_completeness.py.
 #
 # RECOVERING A BAD HASH. If an entry ever holds a blob hash, convert it
 # exactly: walk the file's history comparing `git rev-parse <commit>:<path>`
