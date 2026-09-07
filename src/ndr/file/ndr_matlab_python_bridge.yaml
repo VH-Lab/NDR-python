@@ -25,7 +25,7 @@ functions:
     type: class
     matlab_path: "+ndr/+file/fileobj.m"
     matlab_last_sync_hash: "4abee5d"
-    status: not_applicable
+    status: matlab_only
     decision_log: >
       Wraps MATLAB's fopen/fread file-handle semantics (byte order, machine
       format, seek modes) for which Python uses built-in file objects plus

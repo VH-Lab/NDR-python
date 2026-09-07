@@ -14,11 +14,11 @@ in that case is to re-point them at the merge commit, not to re-review the
 files.
 
 Every entry in every `ndr_matlab_python_bridge.yaml` now carries a
-`matlab_last_sync_hash`, so upstream drift can be detected mechanically: for
-each entry, compare that field against
-`git log -1 --format="%h" -- <matlab_path>` in an NDR-matlab checkout. A
-difference means the MATLAB file moved since the Python side was last
-examined. See `docs/developer_notes/ndr_matlab_python_bridge.yaml` § 3a.
+`matlab_last_sync_hash`, so upstream drift can be detected mechanically. What
+that field is, how to obtain it, and how drift is checked are specified in
+`docs/developer_notes/ndr_matlab_python_bridge.yaml` § 5 and § 5a — the one
+normative place for the bridge rules. This document reports the state of the
+port; it does not define the contract.
 
 ## Naming Convention
 

@@ -183,7 +183,8 @@ Symmetry tests confirm **behavioural** parity at runtime. The bridge YAML files
 under `src/ndr/*/ndr_matlab_python_bridge.yaml` describe **interface** parity at
 the signature level. See
 `docs/developer_notes/ndr_matlab_python_bridge.yaml` for the full spec, and
-Section 5 of that file ("Building a New Bridge YAML File") for the step-by-step
-procedure to add or update a contract. The `PYTHON_PORTING_GUIDE.md` also
-documents the porting workflow, including how to compute and record
-`matlab_last_sync_hash`.
+Section 8 of that file ("Building a New Bridge YAML File") for the step-by-step
+procedure to add or update a contract. That spec is also the one normative place
+for the `status` vocabulary (§ 6) and for what `matlab_last_sync_hash` is (§ 5);
+`PYTHON_PORTING_GUIDE.md` covers how to write the Python and points there for
+the YAML rules rather than repeating them.

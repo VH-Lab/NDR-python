@@ -1479,12 +1479,20 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/imagestack.m"
     matlab_last_sync_hash: "64d06e4"
-    status: not_applicable
+    status: ported_elsewhere
+    python_path:
+      - "ndr/reader/tiffstack.py"
+      - "ndr/reader/omezarr.py"
+      - "ndr/reader/smartspim.py"
+      - "ndr/reader/prairieview.py"
     decision_log: >
-      MATLAB reader that delegates to NANSEN's nansen.stack.ImageStack
-      (VervaekeLab). NANSEN is a MATLAB-only library with no Python
-      equivalent, so there is nothing to delegate to on this side. NDR-python
-      covers the same image-stack formats through native readers
-      (ndr.reader.tiffstack, ndr.reader.omezarr, ndr.reader.smartspim,
-      ndr.reader.prairieview), so an imagestack-shaped wrapper would add no
-      coverage and none is planned.
+      Image-stack reading IS available in Python, just not behind an
+      imagestack-shaped class. The MATLAB class is a thin delegate to
+      NANSEN's nansen.stack.ImageStack (VervaekeLab), a MATLAB-only library
+      with nothing to delegate to on this side; NDR-python instead reads the
+      same image-stack formats through native readers (ndr.reader.tiffstack,
+      ndr.reader.omezarr, ndr.reader.smartspim, ndr.reader.prairieview).
+      A wrapper mirroring the MATLAB name would add no coverage over those,
+      so none is planned. Recorded as ported_elsewhere and not matlab_only
+      precisely because a reader must not conclude that Python cannot read
+      image stacks.

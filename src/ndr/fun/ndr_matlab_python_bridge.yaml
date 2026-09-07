@@ -27,7 +27,7 @@ functions:
   - name: python_detect
     matlab_path: "+ndr/+fun/python_detect.m"
     matlab_last_sync_hash: "35d5bbe"
-    status: not_applicable
+    status: matlab_only
     decision_log: >
       MATLAB-only helper that locates a Python interpreter for MATLAB's
       py.* interop. Python does not need to detect itself, so this has
