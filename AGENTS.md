@@ -17,10 +17,11 @@ NDR-python is a faithful Python port of NDR-matlab (Neuroscience Data Reader).
 
 ## Workflow
 1. Check the bridge YAML in the target package.
-2. If the function is missing, add it based on the MATLAB source. If it
-   won't be ported 1:1, still add an entry with a `status` and a
-   `decision_log` explaining why — the CI completeness check fails on
-   unrecorded `.m` files.
+2. If the function is missing, add it based on the MATLAB source with
+   `status: regular_port`. If it won't be ported 1:1, add an entry with the
+   matching `status` and a `decision_log` explaining why — the CI
+   completeness check fails on unrecorded `.m` files, and the conventions
+   check fails on an entry with no `status` at all.
 3. Record the MATLAB commit in `matlab_last_sync_hash`.
 4. Implement the Python code.
 5. Run `black` and `ruff check --fix` before committing.
@@ -38,10 +39,14 @@ commit hash in the command printed beneath it. Go there for:
 - **Section 5** — `matlab_last_sync_hash` is a COMMIT (`git -C
   ../NDR-matlab log -n 1 --format=%h -- <path>`), never a blob, and it must
   be the latest commit touching the file.
-- **Section 6** — the complete `status` vocabulary: `ported_differently`,
-  `porting_deferred`, `matlab_only`, `retired`. A plain 1:1 port carries no
-  `status` at all. `ported_elsewhere`, `not_yet_ported` and `not_applicable`
-  are retired spellings and CI rejects them.
+- **Section 6** — the complete `status` vocabulary: `regular_port`,
+  `ported_differently`, `porting_deferred`, `matlab_only`, `retired`. EVERY
+  entry states its status, including the ordinary one: a plain 1:1 port is
+  written `status: regular_port`, never left blank, so a human reading the
+  YAML can tell a finished entry from an unfilled one. Every status except
+  `regular_port` also needs a `decision_log`. `ported_elsewhere`,
+  `not_yet_ported`, `not_applicable`, `ported` and `implemented` are retired
+  spellings and CI rejects them.
 
 ## Testing
 - Unit tests: `pytest tests/`

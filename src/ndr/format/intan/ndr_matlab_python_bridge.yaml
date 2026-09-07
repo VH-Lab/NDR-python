@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: read_Intan_RHD2000_header
     matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_header.m"
+    status: regular_port
     python_path: "ndr/format/intan/read_Intan_RHD2000_header.py"
     matlab_last_sync_hash: "a938988"
     input_arguments:
@@ -17,6 +18,7 @@ functions:
 
   - name: read_Intan_RHD2000_datafile
     matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_datafile.m"
+    status: regular_port
     python_path: "ndr/format/intan/read_Intan_RHD2000_datafile.py"
     matlab_last_sync_hash: "cae4b00"
     input_arguments:
@@ -38,6 +40,7 @@ functions:
 
   - name: Intan_RHD2000_blockinfo
     matlab_path: "+ndr/+format/+intan/Intan_RHD2000_blockinfo.m"
+    status: regular_port
     python_path: "ndr/format/intan/read_Intan_RHD2000_datafile.py"
     matlab_last_sync_hash: "a938988"
     input_arguments:
@@ -57,6 +60,7 @@ functions:
 
   - name: fread_QString
     matlab_path: "+ndr/+format/+intan/fread_QString.m"
+    status: regular_port
     python_path: "ndr/format/intan/fread_QString.py"
     matlab_last_sync_hash: "94c5232"
     input_arguments:
@@ -68,6 +72,7 @@ functions:
 
   - name: read_Intan_RHD2000_directory
     matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_directory.m"
+    status: regular_port
     python_path: "ndr/format/intan/read_Intan_RHD2000_directory.py"
     matlab_last_sync_hash: "cae4b00"
     input_arguments:
@@ -93,6 +98,7 @@ functions:
 
   - name: cat_Intan_RHD2000_files
     matlab_path: "+ndr/+format/+intan/cat_Intan_RHD2000_files.m"
+    status: regular_port
     python_path: "ndr/format/intan/cat_Intan_RHD2000_files.py"
     matlab_last_sync_hash: "ba074d4"
     input_arguments:
@@ -104,6 +110,7 @@ functions:
 
   - name: concat_rhd_files
     matlab_path: "+ndr/+format/+intan/concat_rhd_files.m"
+    status: regular_port
     python_path: "ndr/format/intan/concat_rhd_files.py"
     matlab_last_sync_hash: "9125d98"
     input_arguments:
@@ -113,6 +120,7 @@ functions:
 
   - name: copy_Intan_RHD2000_blocks
     matlab_path: "+ndr/+format/+intan/copy_Intan_RHD2000_blocks.m"
+    status: regular_port
     python_path: "ndr/format/intan/copy_Intan_RHD2000_blocks.py"
     matlab_last_sync_hash: "24cfef8"
     input_arguments:
@@ -158,6 +166,7 @@ functions:
 manufacturer:
   - name: read_Intan_RHD2000_file
     matlab_path: "+ndr/+format/+intan/+manufacturer/read_Intan_RHD2000_file.m"
+    status: regular_port
     python_path: "ndr/format/intan/manufacturer/read_Intan_RHD2000_file.py"
     matlab_last_sync_hash: "d78c7ea"
     decision_log: >
@@ -167,6 +176,7 @@ manufacturer:
 
   - name: read_Intan_RHD2000_file_var
     matlab_path: "+ndr/+format/+intan/+manufacturer/read_Intan_RHD2000_file_var.m"
+    status: regular_port
     python_path: "ndr/format/intan/manufacturer/read_Intan_RHD2000_file_var.py"
     matlab_last_sync_hash: "d78c7ea"
     decision_log: >
@@ -175,6 +185,7 @@ manufacturer:
 
   - name: upsample2x
     matlab_path: "+ndr/+format/+intan/+manufacturer/upsample2x.m"
+    status: regular_port
     python_path: "ndr/format/intan/manufacturer/upsample2x.py"
     matlab_last_sync_hash: "d78c7ea"
     decision_log: >

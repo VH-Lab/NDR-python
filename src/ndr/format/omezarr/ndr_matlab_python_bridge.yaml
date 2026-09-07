@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: isOMEZarr
     matlab_path: "+ndr/+format/+omezarr/isOMEZarr.m"
+    status: regular_port
     matlab_last_sync_hash: "21eedad"
     python_path: "ndr/format/omezarr/isOMEZarr.py"
     decision_log: >-
@@ -17,6 +18,7 @@ functions:
 
   - name: listPyramids
     matlab_path: "+ndr/+format/+omezarr/listPyramids.m"
+    status: regular_port
     matlab_last_sync_hash: "21eedad"
     python_path: "ndr/format/omezarr/listPyramids.py"
     decision_log: >-
@@ -30,6 +32,7 @@ functions:
 
   - name: readAttrs
     matlab_path: "+ndr/+format/+omezarr/readAttrs.m"
+    status: regular_port
     matlab_last_sync_hash: "21eedad"
     python_path: "ndr/format/omezarr/readAttrs.py"
     decision_log: >-
@@ -40,6 +43,7 @@ functions:
 
   - name: resolveArrayPath
     matlab_path: "+ndr/+format/+omezarr/resolveArrayPath.m"
+    status: regular_port
     matlab_last_sync_hash: "21eedad"
     python_path: "ndr/format/omezarr/resolveArrayPath.py"
     decision_log: >-
@@ -51,6 +55,7 @@ functions:
 
   - name: readArray
     matlab_path: "+ndr/+format/+omezarr/readArray.m"
+    status: regular_port
     matlab_last_sync_hash: "a847431"
     python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-

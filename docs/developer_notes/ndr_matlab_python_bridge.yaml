@@ -126,20 +126,35 @@ project_metadata:
 # =============================================================================
 # 6. status: THE COMPLETE VOCABULARY
 # =============================================================================
-# `status` says why a MATLAB function has no 1:1 Python counterpart. It is a
-# closed set. `tests/test_matlab_bridge_conventions.py` reads the keys below
-# and rejects any other value, so this table and the enforcement cannot drift.
+# `status` says how a MATLAB function is (or is not) represented in Python.
+# It is a closed set. `tests/test_matlab_bridge_conventions.py` reads the keys
+# below and rejects any other value, so this table and the enforcement cannot
+# drift.
 #
-# THE DEFAULT IS NOT WRITTEN DOWN. A ported function carries NO `status:` at
-# all -- just a `python_path` (and `python_class` for a class) under the
-# mirrored name. Do not write `status: ported`; there must be exactly one way
-# to say the ordinary thing.
+# EVERY ENTRY STATES ITS STATUS, INCLUDING THE ORDINARY ONE. A plain 1:1 port
+# is written `status: regular_port`, not left blank. These files are read by
+# people far more often than by the test suite, and an absent field does not
+# announce what it means: a reader looking at an entry with no `status` cannot
+# tell "this is a normal port" from "nobody filled this in". Spelling it out
+# costs one line and removes the guess. This is enforced -- an entry with a
+# `matlab_path` and no `status` fails.
 #
-# Every entry that DOES carry a status needs a `decision_log` explaining it
-# (enforced). A status without a reason passes the completeness check while
-# telling the next reader nothing, so the gap gets re-investigated anyway.
+# Every status EXCEPT `regular_port` needs a `decision_log` explaining it
+# (enforced). A divergence without a reason passes the completeness check while
+# telling the next reader nothing, so the gap gets re-investigated anyway. A
+# regular port needs no justification -- mirroring MATLAB is the default -- so
+# requiring 105 boilerplate decision_logs would only devalue the ones that
+# carry real reasoning.
 
 status_vocabulary:
+
+  regular_port: >-
+    The ordinary case, and by far the most common: a 1:1 Python counterpart
+    under the mirrored name. REQUIRES a `python_path` (and `python_class` for
+    a class). Needs no `decision_log` -- there is no decision to record, since
+    mirroring MATLAB is what the port does by default. Written out rather than
+    left blank so that a human reading the YAML can tell a finished entry from
+    an unfinished one at a glance.
 
   ported_differently: >-
     Python HAS this capability, but does the job a DIFFERENT WAY rather than as
@@ -189,8 +204,12 @@ status_vocabulary:
 #                      and "MATLAB-ism, never will" (matlab_only). Its plain
 #                      reading -- "Python cannot / need not do this" -- was
 #                      flatly wrong for the majority of entries carrying it.
-#   implemented     -> a synonym for the default; omit `status` instead.
+#   implemented     -> regular_port (one spelling for the ordinary case).
+#   ported          -> regular_port (ditto).
 #   does_not_exist  -> retired.
+#
+# NOTE: an ABSENT `status` used to mean "regular port". It no longer does --
+# it now means the entry is incomplete, and fails. See the preamble above.
 
 # =============================================================================
 # 7. Structure for Classes and Functions
@@ -200,6 +219,7 @@ status_vocabulary:
 # - name: base                        # Exact MATLAB Name
 #   type: class
 #   matlab_path: "+ndr/+reader/base.m"
+#   status: regular_port
 #   python_path: "ndr/reader/base.py"
 #   python_class: "ndr_reader_base"
 #   matlab_last_sync_hash: "a4c9e07"  # Latest COMMIT touching base.m (Section 5)
@@ -239,6 +259,7 @@ status_vocabulary:
 # - name: ndrpath
 #   type: function
 #   matlab_path: "+ndr/+fun/ndrpath.m"
+#   status: regular_port
 #   python_path: "ndr/fun/ndrpath.py"
 #   matlab_last_sync_hash: "8f3a2b1"
 #   input_arguments: []
@@ -271,6 +292,7 @@ status_vocabulary:
 #      - `name` (MATLAB class name, e.g. `intan_rhd`)
 #      - `type: class`
 #      - `matlab_path` (e.g. `"+ndr/+reader/intan_rhd.m"`)
+#      - `status` (Section 6 -- `regular_port` for an ordinary 1:1 port)
 #      - `python_path` (e.g. `"ndr/reader/intan_rhd.py"`)
 #      - `python_class` (derived using the Class Name Mirror Rule from
 #        `docs/developer_notes/PYTHON_PORTING_GUIDE.md`, e.g.
@@ -282,7 +304,8 @@ status_vocabulary:
 #        `type_python`.
 # 4. For each standalone MATLAB function, add an entry under `functions:` with
 #    the same fields (minus `properties` and `methods`). If it has no 1:1
-#    counterpart, give it a `status` from Section 6 and a `decision_log`.
+#    counterpart, give it the matching `status` from Section 6 and a
+#    `decision_log` saying why.
 # 5. Register the package in `PACKAGES` in
 #    `tests/test_matlab_bridge_completeness.py`, or nothing under it is guarded.
 # 6. Run the bridge checks:
@@ -306,10 +329,11 @@ status_vocabulary:
 #                      | `retired` entry. Must name a file that exists.
 # matlab_last_sync_hash| A COMMIT in NDR-matlab, and the latest one touching the
 #                      | file. See Section 5. Never a blob.
-# status               | One of Section 6's vocabulary, or absent for a plain
-#                      | port. Requires a `decision_log`.
-# python_path          | Where the Python counterpart lives. Required for a plain
-#                      | port and for `ported_differently`. A plain port names one
+# status               | REQUIRED on every entry. One of Section 6's vocabulary;
+#                      | `regular_port` for an ordinary 1:1 port. Requires a
+#                      | `decision_log` for every value except `regular_port`.
+# python_path          | Where the Python counterpart lives. Required for
+#                      | `regular_port` and for `ported_differently`. A plain port names one
 #                      | file; a `ported_differently` entry MAY name a list when
 #                      | the capability is genuinely reached through more than
 #                      | one module (see +ndr/+reader/imagestack.m).
@@ -318,6 +342,7 @@ status_vocabulary:
 # input_arguments      | Used to generate Pydantic @validate_call.
 # output_arguments     | Defines the order of the Return Tuple.
 # type_python          | Use Python 3.10+ syntax (e.g., str | int).
-# decision_log         | Mandatory for any divergence and for any `status`.
+# decision_log         | Mandatory for any divergence and for every `status`
+#                      | except `regular_port`.
 #                      | Should include the sync date (e.g., "Synchronized with
 #                      | MATLAB main as of 2026-04-11.").

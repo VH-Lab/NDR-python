@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: assign
     matlab_path: "+ndr/+data/assign.m"
+    status: regular_port
     python_path: "ndr/data/assign.py"
     matlab_last_sync_hash: "fc1a801"
     input_arguments:
@@ -19,6 +20,7 @@ functions:
 
   - name: colvec
     matlab_path: "+ndr/+data/colvec.m"
+    status: regular_port
     python_path: "ndr/data/colvec.py"
     matlab_last_sync_hash: "94c5232"
     input_arguments:
@@ -30,6 +32,7 @@ functions:
 
   - name: rowvec
     matlab_path: "+ndr/+data/rowvec.m"
+    status: regular_port
     python_path: "ndr/data/rowvec.py"
     matlab_last_sync_hash: "94c5232"
     input_arguments:
@@ -41,6 +44,7 @@ functions:
 
   - name: struct2namevaluepair
     matlab_path: "+ndr/+data/struct2namevaluepair.m"
+    status: regular_port
     python_path: "ndr/data/struct2namevaluepair.py"
     matlab_last_sync_hash: "fc1a801"
     input_arguments:

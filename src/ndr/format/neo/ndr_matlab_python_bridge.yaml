@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: Utils
     matlab_path: "+ndr/+format/+neo/Utils.py"
+    status: regular_port
     python_path: "ndr/format/neo/Utils.py"
     matlab_last_sync_hash: "32dc732"
     input_arguments: []
@@ -14,6 +15,7 @@ functions:
 
   - name: neo_python
     matlab_path: "+ndr/+format/+neo/neo_python.py"
+    status: regular_port
     python_path: "ndr/format/neo/neo_python.py"
     matlab_last_sync_hash: "76160c4"
     input_arguments: []

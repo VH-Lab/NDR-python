@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: readGEF
     matlab_path: "+ndr/+format/+stereoseq/readGEF.m"
+    status: regular_port
     matlab_last_sync_hash: "108dfff"
     python_path: "ndr/format/stereoseq/readGEF.py"
     decision_log: >
@@ -57,6 +58,7 @@ functions:
 
   - name: readCellBin
     matlab_path: "+ndr/+format/+stereoseq/readCellBin.m"
+    status: regular_port
     matlab_last_sync_hash: "fe7c607c"
     python_path: "ndr/format/stereoseq/readCellBin.py"
     decision_log: >

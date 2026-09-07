@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: isSmartSPIM
     matlab_path: "+ndr/+format/+smartspim/isSmartSPIM.m"
+    status: regular_port
     matlab_last_sync_hash: "d329021"
     python_path: "ndr/format/smartspim/isSmartSPIM.py"
     decision_log: >-
@@ -16,6 +17,7 @@ functions:
 
   - name: listChannels
     matlab_path: "+ndr/+format/+smartspim/listChannels.m"
+    status: regular_port
     matlab_last_sync_hash: "87ef61d"
     python_path: "ndr/format/smartspim/listChannels.py"
     decision_log: >-
@@ -31,6 +33,7 @@ functions:
 
   - name: listTiles
     matlab_path: "+ndr/+format/+smartspim/listTiles.m"
+    status: regular_port
     matlab_last_sync_hash: "87ef61d"
     python_path: "ndr/format/smartspim/listTiles.py"
     decision_log: >-
@@ -44,6 +47,7 @@ functions:
 
   - name: readAcquisitionMetadata
     matlab_path: "+ndr/+format/+smartspim/readAcquisitionMetadata.m"
+    status: regular_port
     matlab_last_sync_hash: "d329021"
     python_path: "ndr/format/smartspim/readAcquisitionMetadata.py"
     decision_log: >-
@@ -58,6 +62,7 @@ functions:
 
   - name: readStitcherXml
     matlab_path: "+ndr/+format/+smartspim/readStitcherXml.m"
+    status: regular_port
     matlab_last_sync_hash: "87ef61d"
     python_path: "ndr/format/smartspim/readStitcherXml.py"
     decision_log: >-
@@ -70,6 +75,7 @@ functions:
 
   - name: readTileInfo
     matlab_path: "+ndr/+format/+smartspim/readTileInfo.m"
+    status: regular_port
     matlab_last_sync_hash: "d329021"
     python_path: "ndr/format/smartspim/readTileInfo.py"
     decision_log: >-
@@ -86,6 +92,7 @@ functions:
 
   - name: readTileVolume
     matlab_path: "+ndr/+format/+smartspim/readTileVolume.m"
+    status: regular_port
     matlab_last_sync_hash: "d329021"
     python_path: "ndr/format/smartspim/readTileVolume.py"
     decision_log: >-

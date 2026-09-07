@@ -451,28 +451,39 @@ class TestTheBridgeFilesAreComplete:
             assert len(reason.split()) >= 10, f"exclusion {prefix!r} needs a real reason"
 
 
-class TestTheDeferralsSayWhy:
-    """A ``status`` is a decision, not a label.
+#: ``regular_port`` is the ordinary case and needs no justification --
+#: mirroring MATLAB is what the port does by default, so there is no decision
+#: to record, and demanding one on all 105 would produce boilerplate that
+#: devalues the logs carrying real reasoning. Every OTHER status records a
+#: divergence, and a divergence without a reason is what this check exists to
+#: catch. ``test_matlab_bridge_conventions.py`` pins its copy of this set
+#: against ours so the two files cannot disagree.
+STATUSES_NEEDING_NO_DECISION_LOG = frozenset({"regular_port"})
 
-    An entry that records a status but no reason passes the
+
+class TestTheDeferralsSayWhy:
+    """A divergence is a decision, not a label.
+
+    An entry that records a divergent status but no reason passes the
     completeness check while telling the next reader nothing -- so the
     gap is "recorded" and still gets re-investigated. Same rule as
     NDI-python's guard.
     """
 
     @pytest.mark.parametrize("package", PACKAGES, ids=lambda p: p.id)
-    def test_every_status_entry_has_a_decision_log(self, package: BridgedPackage):
+    def test_every_divergence_has_a_decision_log(self, package: BridgedPackage):
         undocumented = []
         for source in sorted((REPO_ROOT / package.python_dir).rglob(BRIDGE_FILENAME)):
             data = yaml.safe_load(source.read_text(encoding="utf-8"))
             for entry in _entries_with_status(data):
+                if entry["status"].strip() in STATUSES_NEEDING_NO_DECISION_LOG:
+                    continue
                 if len((entry.get("decision_log") or "").split()) < 5:
                     name = entry.get("name", "<unnamed>")
                     undocumented.append(f"{source.relative_to(REPO_ROOT)}: {name}")
-        assert (
-            not undocumented
-        ), "bridge entries with a status but no decision_log explaining it:\n  " + "\n  ".join(
-            undocumented
+        assert not undocumented, (
+            "bridge entries that record a divergence but no decision_log "
+            "explaining it:\n  " + "\n  ".join(undocumented)
         )
 
 

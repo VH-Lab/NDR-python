@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: read_SEV_channel
     matlab_path: "+ndr/+format/+tdt/read_SEV_channel.m"
+    status: regular_port
     python_path: "ndr/format/tdt/read_SEV_channel.py"
     matlab_last_sync_hash: "8291e5e"
     input_arguments:
@@ -27,6 +28,7 @@ functions:
 
   - name: read_SEV_header
     matlab_path: "+ndr/+format/+tdt/read_SEV_header.m"
+    status: regular_port
     python_path: "ndr/format/tdt/read_SEV_header.py"
     matlab_last_sync_hash: "8291e5e"
     input_arguments:
@@ -42,6 +44,7 @@ functions:
 
   - name: read_SEV_logs
     matlab_path: "+ndr/+format/+tdt/read_SEV_logs.m"
+    status: regular_port
     python_path: "ndr/format/tdt/read_SEV_logs.py"
     matlab_last_sync_hash: "8291e5e"
     input_arguments:

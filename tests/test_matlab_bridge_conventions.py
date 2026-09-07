@@ -59,6 +59,7 @@ import yaml
 from tests.test_matlab_bridge_completeness import (
     BRIDGE_FILENAME,
     REPO_ROOT,
+    STATUSES_NEEDING_NO_DECISION_LOG,
     STRICT_ENV_VAR,
     all_bridge_files,
     normalize_matlab_path,
@@ -79,6 +80,7 @@ CI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 #: silent widening of what CI accepts.
 ALLOWED_STATUSES = frozenset(
     {
+        "regular_port",
         "ported_differently",
         "porting_deferred",
         "matlab_only",
@@ -98,13 +100,14 @@ REPLACED_STATUSES = {
         "one of ported_differently / porting_deferred / matlab_only -- decide "
         "which of the three it actually meant by reading the decision_log"
     ),
-    "implemented": "no status at all (a plain port is the default)",
+    "implemented": "regular_port",
     "does_not_exist": "retired",
-    "ported": "no status at all (a plain port is the default)",
+    "ported": "regular_port",
 }
 
-#: Statuses that must say where the Python capability lives.
-STATUSES_REQUIRING_PYTHON_PATH = frozenset({"ported_differently"})
+#: Statuses that must say where the Python capability lives. A
+#: ``regular_port`` that names no module is not a recorded port at all.
+STATUSES_REQUIRING_PYTHON_PATH = frozenset({"regular_port", "ported_differently"})
 
 
 # ---------------------------------------------------------------------------
@@ -355,6 +358,33 @@ class TestTheVocabularyIsTheDocumentedOne:
             "Update both together."
         )
 
+    def test_the_decision_log_exemption_is_documented(self):
+        """Which status is exempt from ``decision_log`` is a rule too.
+
+        ``regular_port`` is exempt because mirroring MATLAB is the default and
+        there is no decision to record. That exemption is enforced in
+        ``test_matlab_bridge_completeness.py``; this pins it to what the spec
+        actually tells a reader, so the exemption cannot quietly widen to a
+        status that really does owe an explanation.
+        """
+        vocabulary = spec_vocabulary()
+        assert STATUSES_NEEDING_NO_DECISION_LOG <= frozenset(vocabulary), (
+            "a status exempt from decision_log is not in the vocabulary: "
+            f"{sorted(STATUSES_NEEDING_NO_DECISION_LOG - frozenset(vocabulary))}"
+        )
+        documented_exempt = {
+            status
+            for status, description in vocabulary.items()
+            if "no `decision_log`" in str(description)
+        }
+        assert documented_exempt == set(STATUSES_NEEDING_NO_DECISION_LOG), (
+            "the spec and the code disagree about which statuses need no "
+            "decision_log.\n"
+            f"  spec says exempt:    {sorted(documented_exempt)}\n"
+            f"  code treats exempt:  {sorted(STATUSES_NEEDING_NO_DECISION_LOG)}\n"
+            "Every other status records a divergence and owes a reason."
+        )
+
     def test_every_documented_status_explains_itself(self):
         """A one-word gloss is not a definition; the whole point of the table
         is that a reader can tell the four apart without guessing."""
@@ -390,21 +420,28 @@ class TestEveryStatusIsInTheVocabulary:
             "find-and-replace would just move the ambiguity."
         )
 
-    def test_ported_differently_says_where(self):
-        """``ported_differently`` without a ``python_path`` is a worse
-        ``porting_deferred``: it asserts the capability exists and then
-        declines to say where, so the next reader has to search for it."""
+    def test_a_status_that_claims_a_port_says_where(self):
+        """A status asserting the capability exists must name the module.
+
+        ``regular_port`` and ``ported_differently`` both claim Python can do
+        the thing. Either one without a ``python_path`` is a worse
+        ``porting_deferred``: it makes the claim and then declines to say
+        where, so the next reader has to go searching for a module that may
+        not exist.
+        """
         offenders = [
-            f"{entry.where}: {entry.name}"
+            f"{entry.where}: {entry.name} (status: {entry.status})"
             for entry in all_entries()
             if entry.status in STATUSES_REQUIRING_PYTHON_PATH and not entry.python_paths
         ]
         assert not offenders, (
-            "these entries claim status: ported_differently but name no python_path:\n  "
+            f"{len(offenders)} entr{'y' if len(offenders) == 1 else 'ies'} claim a "
+            "status that asserts a Python counterpart exists, but name no "
+            "python_path:\n  "
             + "\n  ".join(offenders)
             + "\n\nName the module the capability is reached through (a list is fine "
-            "when it really is more than one). If you cannot name one, the entry is "
-            "porting_deferred or matlab_only, not ported_differently."
+            "for ported_differently when it really is more than one). If you cannot "
+            "name one, the entry is porting_deferred or matlab_only."
         )
 
     def test_every_named_python_path_exists(self):
@@ -420,32 +457,28 @@ class TestEveryStatusIsInTheVocabulary:
             "under src/:\n  " + "\n  ".join(missing)
         )
 
-    def test_a_plain_port_is_not_spelled_out(self):
-        """There is exactly one way to say the ordinary thing.
+    def test_every_entry_states_its_status(self):
+        """An absent ``status`` does not announce what it means.
 
-        ``status: ported`` / ``implemented`` alongside an implicit default is
-        how a vocabulary grows two spellings for one claim, and then two
-        meanings for one spelling.
+        These files are read by people far more often than by this test
+        suite, and a reader looking at an entry with no ``status`` cannot tell
+        "this is a normal port" from "nobody filled this in". So the ordinary
+        case is written out as ``regular_port`` rather than left to inference,
+        and an entry that omits it fails here.
         """
-        offenders = [
-            f"{entry.where}: {entry.name} has status: {entry.status}"
+        silent = [
+            f"{entry.where}: {entry.name or '<unnamed>'} -> {entry.matlab_path}"
             for entry in all_entries()
-            if entry.status in ("ported", "implemented")
+            if entry.matlab_path and not entry.status
         ]
-        assert (
-            not offenders
-        ), "a plain 1:1 port carries no status at all -- just a python_path:\n  " + "\n  ".join(
-            offenders
+        assert not silent, (
+            f"{len(silent)} bridge entr{'y' if len(silent) == 1 else 'ies'} record a "
+            "matlab_path but no status:\n  "
+            + "\n  ".join(silent)
+            + "\n\nEvery entry states its status. An ordinary 1:1 port is "
+            "`status: regular_port`; anything else takes the matching value from "
+            "section 6 of docs/developer_notes/" + BRIDGE_FILENAME + " plus a decision_log."
         )
-
-
-class TestEveryRetiredEntryIsATombstone:
-    """``retired`` says the MATLAB function is gone upstream.
-
-    An entry claiming that while still pointing at a live ``.m`` file is
-    making a false claim, and the completeness check cannot see it -- the
-    path resolves, so the entry looks fine.
-    """
 
     def test_retired_entries_do_not_point_at_a_live_matlab_file(self):
         root = require_matlab_root()

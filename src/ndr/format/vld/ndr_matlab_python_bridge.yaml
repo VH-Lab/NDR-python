@@ -9,6 +9,7 @@ functions:
   - name: readvhlvheaderfile
     type: function
     matlab_path: "+ndr/+format/+vld/readvhlvheaderfile.m"
+    status: regular_port
     python_path: "ndr/format/vld/readvhlvheaderfile.py"
     matlab_last_sync_hash: "ac13506"
     input_arguments:
@@ -36,6 +37,7 @@ functions:
   - name: readvhlvdatafile
     type: function
     matlab_path: "+ndr/+format/+vld/readvhlvdatafile.m"
+    status: regular_port
     python_path: "ndr/format/vld/readvhlvdatafile.py"
     matlab_last_sync_hash: "ac13506"
     input_arguments:

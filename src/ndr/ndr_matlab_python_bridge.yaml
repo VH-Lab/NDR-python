@@ -22,6 +22,7 @@ classes:
   - name: reader
     type: class
     matlab_path: "+ndr/reader.m"
+    status: regular_port
     python_path: "ndr/reader_wrapper.py"
     matlab_last_sync_hash: "64d06e4"
     python_class: "ndr_reader"
@@ -199,6 +200,7 @@ functions:
   - name: known_readers
     type: function
     matlab_path: "+ndr/known_readers.m"
+    status: regular_port
     python_path: "ndr/known_readers.py"
     matlab_last_sync_hash: "2b8f53c"
     input_arguments: []
@@ -214,6 +216,7 @@ functions:
   - name: globals
     type: function
     matlab_path: "+ndr/globals.m"
+    status: regular_port
     python_path: "ndr/globals.py"
     matlab_last_sync_hash: "fc1a801"
     input_arguments: []
