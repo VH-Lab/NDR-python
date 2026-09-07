@@ -66,7 +66,9 @@ functions:
       readZArrayMeta). Python has the `zarr` library, so those helpers
       collapse into a single `zarr.open()` call plus numpy slicing --
       about 10 lines total. The `private/*.m` files are recorded in this
-      bridge as `status: not_applicable` for that reason.
+      bridge as `status: ported_elsewhere` for that reason: Python does
+      every one of those jobs, through zarr/numcodecs inside readArray
+      rather than in a file-per-helper mirror of the MATLAB layout.
 
       The Python side supports every codec and byte order the installed
       zarr library supports, which is a superset of the MATLAB scope
@@ -76,55 +78,66 @@ functions:
   - name: decompressBlosc
     matlab_path: "+ndr/+format/+omezarr/private/decompressBlosc.m"
     matlab_last_sync_hash: "a847431"
-    status: not_applicable
+    status: ported_elsewhere
+    python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
-      Not ported: MATLAB helper that unwraps the Blosc container and
-      dispatches to the codec-specific decompressor. Python's `zarr`
-      library reads Blosc containers through `numcodecs.Blosc`, so
-      readArray never needs to see the container bytes.
+      Done by a dependency rather than by a mirrored helper: MATLAB unwraps
+      the Blosc container and dispatches to the codec-specific decompressor
+      by hand, while Python's `zarr` library reads Blosc containers through
+      `numcodecs.Blosc`, so readArray never needs to see the container
+      bytes. Blosc-compressed stores read correctly in Python.
 
   - name: decompressZstd
     matlab_path: "+ndr/+format/+omezarr/private/decompressZstd.m"
     matlab_last_sync_hash: "248f7f2"
-    status: not_applicable
+    status: ported_elsewhere
+    python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
-      Not ported: MATLAB helper that shells out to the system `zstd`
-      binary because MATLAB has no built-in Zstd decoder. Python's `zarr`
-      library uses `numcodecs.Zstd`, which links libzstd directly, so no
-      external process is needed and no equivalent Python file exists.
+      Done by a dependency rather than by a mirrored helper: MATLAB shells
+      out to the system `zstd` binary because it has no built-in Zstd
+      decoder, while Python's `zarr` library uses `numcodecs.Zstd`, which
+      links libzstd directly. No external process and no equivalent Python
+      file; Zstd-compressed stores read correctly in Python.
 
   - name: parseDType
     matlab_path: "+ndr/+format/+omezarr/private/parseDType.m"
     matlab_last_sync_hash: "a847431"
-    status: not_applicable
+    status: ported_elsewhere
+    python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
-      Not ported: MATLAB helper that parses the Zarr dtype string
-      (e.g. '<u2', '>f4') into (MATLAB class name, byte order, item size).
-      Python's `zarr` library resolves dtypes internally and hands back a
-      numpy dtype; there is no equivalent Python file. See the
-      ndr.reader.omezarr class for the small MATLAB-class-name mapping
-      that the reader still exposes.
+      Done by a dependency rather than by a mirrored helper: MATLAB parses
+      the Zarr dtype string (e.g. '<u2', '>f4') into (MATLAB class name,
+      byte order, item size), while Python's `zarr` library resolves dtypes
+      internally and hands back a numpy dtype. See the ndr.reader.omezarr
+      class for the small MATLAB-class-name mapping that the reader still
+      exposes to callers.
 
   - name: readChunk
     matlab_path: "+ndr/+format/+omezarr/private/readChunk.m"
     matlab_last_sync_hash: "248f7f2"
-    status: not_applicable
+    status: ported_elsewhere
+    python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
-      Not ported: MATLAB helper that opens one chunk file, invokes the
-      right decompressor, casts bytes to the array dtype, and reshapes to
-      the chunk's own shape. Python's `zarr.open()` reads and assembles
-      chunks itself; readArray only slices into the returned array-like.
+      Done by a dependency rather than by a mirrored helper: MATLAB opens
+      one chunk file, invokes the right decompressor, casts bytes to the
+      array dtype and reshapes to the chunk's own shape, while Python's
+      `zarr.open()` reads and assembles chunks itself and readArray only
+      slices into the returned array-like.
 
   - name: readZArrayMeta
     matlab_path: "+ndr/+format/+omezarr/private/readZArrayMeta.m"
     matlab_last_sync_hash: "a847431"
-    status: not_applicable
+    status: ported_elsewhere
+    python_path:
+      - "ndr/format/omezarr/readArray.py"
+      - "ndr/format/omezarr/listPyramids.py"
     decision_log: >-
-      Not ported as a standalone helper: MATLAB reads .zarray by hand to
-      get shape/chunks/dtype/order/fill/compressor before decoding chunks.
-      Python obtains the same information from the opened `zarr.Array`
-      (shape, chunks, dtype). listPyramids does still read `shape`,
-      `chunks` and `dtype` from .zarray directly (a small stdlib-json
-      helper inside the module) because it enumerates levels without
-      opening every array; that helper is deliberately inline and does
-      not correspond to a separate file.
+      Reached two ways in Python rather than through one mirrored helper:
+      MATLAB reads .zarray by hand to get shape/chunks/dtype/order/fill/
+      compressor before decoding chunks, while readArray obtains the same
+      information from the opened `zarr.Array` (shape, chunks, dtype).
+      listPyramids does still read `shape`, `chunks` and `dtype` from
+      .zarray directly (a small stdlib-json helper inside the module)
+      because it enumerates levels without opening every array; that
+      helper is deliberately inline and does not correspond to a
+      separate file.

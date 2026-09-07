@@ -18,29 +18,51 @@ NDR-python is a faithful Python port of NDR-matlab (Neuroscience Data Reader).
 ## Workflow
 1. Check the bridge YAML in the target package.
 2. If the function is missing, add it based on the MATLAB source. If it
-   won't be ported, still add an entry with `status: not_yet_ported` or
-   `not_applicable` and a `decision_log` explaining why — the CI
-   completeness check fails on unrecorded `.m` files.
-3. Record the MATLAB git hash in `matlab_last_sync_hash` — the SHORT
-   hash of the latest commit that touched the MATLAB file (get it with
-   `git -C ../NDR-matlab log -n 1 --format=%h -- <path>`). CI enforces
-   that this is the current-latest hash, so when MATLAB edits the file
-   you MUST either port the change and bump the hash, or bump the hash
-   and add a short `decision_log` note saying why the MATLAB change is
-   a no-op here (comment-only, analyzer fix, etc.).
+   won't be ported 1:1, still add an entry with a `status` and a
+   `decision_log` explaining why — the CI completeness check fails on
+   unrecorded `.m` files.
+3. Record the MATLAB commit in `matlab_last_sync_hash`.
 4. Implement the Python code.
 5. Run `black` and `ruff check --fix` before committing.
 6. Run `pytest` to verify.
 
+**The bridge rules live in exactly one place:**
+[`docs/developer_notes/ndr_matlab_python_bridge.yaml`](docs/developer_notes/ndr_matlab_python_bridge.yaml).
+Do not restate them here or anywhere else — a rule written in three
+documents is a rule that will eventually contradict itself, which is how
+NDI-python ended up with a spec that asked for a blob hash in prose and a
+commit hash in the command printed beneath it. Go there for:
+
+- **Section 4** — one entry per MATLAB function, and the one declared
+  exception.
+- **Section 5** — `matlab_last_sync_hash` is a COMMIT (`git -C
+  ../NDR-matlab log -n 1 --format=%h -- <path>`), never a blob, and it must
+  be the latest commit touching the file.
+- **Section 6** — the complete `status` vocabulary: `ported_elsewhere`,
+  `porting_deferred`, `matlab_only`, `retired`. A plain 1:1 port carries no
+  `status` at all. `not_yet_ported` and `not_applicable` are retired
+  spellings and CI rejects them.
+
 ## Testing
 - Unit tests: `pytest tests/`
 - Symmetry tests: `pytest tests/symmetry/` (excluded from default run)
-- Bridge completeness + hash-currency:
-  `NDR_MATLAB_PATH=../NDR-matlab pytest tests/test_matlab_bridge_completeness.py`.
+- Bridge checks — completeness, hash currency and conventions:
+  ```
+  NDR_BRIDGE_CHECK_STRICT=1 NDR_MATLAB_PATH=../NDR-matlab \
+    pytest tests/test_matlab_bridge_completeness.py \
+           tests/test_matlab_bridge_conventions.py
+  ```
   Requires a NON-shallow NDR-matlab checkout (a shallow clone collapses
-  file history to the last merge commit and lies about which hash is
+  file history to the last fetched commit and lies about which hash is
   latest); if you cloned with `--depth`, run `git fetch --unshallow`
-  first. CI does this via `fetch-depth: 0`.
+  first. CI does this via `fetch-depth: 0`, and the tests now fail with
+  one clear message on a shallow clone instead of one false failure per
+  entry.
+
+  A new `tests/test_matlab_bridge_*.py` must be added to the `bridge` job
+  in `.github/workflows/ci.yml` by name. The test matrix has no NDR-matlab
+  checkout, so an unwired bridge test skips everywhere and the skip reads
+  as a pass; `test_matlab_bridge_conventions.py` fails if you forget.
 
 ## Environment
 - Python 3.10+

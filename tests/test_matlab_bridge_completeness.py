@@ -9,10 +9,14 @@ Two properties held by this guard:
 
 **Completeness.** Every ``.m`` file under a bridged MATLAB package has a
 bridge entry. Two ways to satisfy an entry: a real port, or an entry with
-``status: not_yet_ported`` / ``not_applicable`` and a ``decision_log``
-saying why there is none. What is not fine is silence -- a MATLAB file
-that landed with no entry is exactly how NDR-python got behind on the
-recent SmartSPIM / OME-Zarr additions.
+a ``status`` from the vocabulary in section 6 of
+``docs/developer_notes/ndr_matlab_python_bridge.yaml`` plus a
+``decision_log`` saying why there is none. What is not fine is silence --
+a MATLAB file that landed with no entry is exactly how NDR-python got
+behind on the recent SmartSPIM / OME-Zarr additions.
+
+That the recorded status is a LEGAL one, and that no file is recorded
+twice, are checked next door in ``test_matlab_bridge_conventions.py``.
 
 **Hash currency.** Every entry that carries a ``matlab_last_sync_hash``
 must record the LATEST commit that touched its MATLAB file. When MATLAB
@@ -174,6 +178,41 @@ def require_matlab_root() -> Path:
             "and skipping would report that as a pass.)"
         )
     pytest.skip(message)
+
+
+def require_full_history(root: Path) -> None:
+    """Fail loudly when the NDR-matlab checkout is shallow.
+
+    ``actions/checkout`` is shallow by default, and a shallow clone
+    collapses every file's history to the single commit it fetched:
+    ``git log -- <path>`` then names that commit for EVERY file, so every
+    recorded hash reads as stale, and ``git cat-file -t`` reports older
+    commits as missing. That is hundreds of failures none of which is the
+    actual problem. Say the actual problem once, first.
+
+    CI avoids this with ``fetch-depth: 0``; locally, ``git fetch
+    --unshallow``.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--is-shallow-repository"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        shallow = result.stdout.strip() == "true"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Older git without the flag: the marker file is the same signal.
+        shallow = (root / ".git" / "shallow").exists()
+    if shallow:
+        pytest.fail(
+            f"the NDR-matlab checkout at {root} is SHALLOW. Every file's history "
+            "collapses to the commit it fetched, so `git log -- <path>` names the "
+            "wrong latest commit for every entry and older commits read as "
+            "missing -- the bridge hash checks would emit one false failure per "
+            "entry. Run `git -C "
+            f"{root} fetch --unshallow`, or give the checkout step `fetch-depth: 0`."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -360,19 +399,19 @@ class TestTheBridgeFilesAreComplete:
 
         A MATLAB function that is neither recorded nor excluded fails
         here. Two ways to fix it, and both are fine: port it and add a
-        ``functions:`` entry, or add a ``not_yet_ported`` /
-        ``not_applicable`` entry saying why not. What is not fine is
-        silence -- which is how NDR-python got behind on the recent
-        SmartSPIM and OME-Zarr additions.
+        ``functions:`` entry, or add an entry carrying a ``status`` from
+        the documented vocabulary and a ``decision_log`` saying why not.
+        What is not fine is silence -- which is how NDR-python got behind
+        on the recent SmartSPIM and OME-Zarr additions.
         """
         missing = unrecorded(package, require_matlab_root())
         assert not missing, (
             f"{len(missing)} MATLAB function(s) under {package.matlab_dir} have no "
             f"entry in any {BRIDGE_FILENAME} below {package.python_dir}:\n  "
             + "\n  ".join(missing)
-            + "\n\nAdd an entry recording the port, or one with "
-            "status: not_yet_ported / not_applicable and a decision_log "
-            "saying why there is none."
+            + "\n\nAdd an entry recording the port, or one carrying a status "
+            "from section 6 of docs/developer_notes/" + BRIDGE_FILENAME + " and a "
+            "decision_log saying why there is none."
         )
 
     @pytest.mark.parametrize("package", PACKAGES, ids=lambda p: p.id)
@@ -413,7 +452,7 @@ class TestTheBridgeFilesAreComplete:
 
 
 class TestTheDeferralsSayWhy:
-    """``not_yet_ported`` and ``not_applicable`` are decisions, not labels.
+    """A ``status`` is a decision, not a label.
 
     An entry that records a status but no reason passes the
     completeness check while telling the next reader nothing -- so the
@@ -491,6 +530,7 @@ class TestEveryRecordedHashIsCurrent:
 
     def test_all_recorded_hashes_are_the_latest_for_their_file(self):
         root = require_matlab_root()
+        require_full_history(root)
         entries = _collect_hash_entries()
         assert entries, "no matlab_last_sync_hash entries found"
 

@@ -1,6 +1,24 @@
 # The NDR Bridge Protocol: YAML Specification
 
 # =============================================================================
+# 0. THIS FILE IS NORMATIVE
+# =============================================================================
+# This file is the ONE place the bridge contract is defined. AGENTS.md and
+# docs/developer_notes/PYTHON_PORTING_GUIDE.md point here; they do not restate
+# the rules. If you are about to write a bridge rule in another document,
+# write it here instead and link to it -- a rule stated in three places is a
+# rule that will eventually contradict itself.
+#
+# Two parts of this file are LIVE YAML rather than comments, so that
+# tests/test_matlab_bridge_conventions.py can read them and the enforcement
+# cannot drift away from the prose:
+#   * `status_vocabulary` (Section 6) -- the complete set of legal `status:`
+#     values.
+#   * `project_metadata` (Section 2) -- the header every bridge file copies.
+# `status_vocabulary` is spec-only: do NOT copy it into a package's bridge
+# file. Only `project_metadata` is copied.
+
+# =============================================================================
 # 1. File Purpose & Placement
 # =============================================================================
 # Name:     ndr_matlab_python_bridge.yaml
@@ -16,7 +34,7 @@
 # Every bridge file must begin with this metadata to orient the agent:
 
 project_metadata:
-  bridge_version: "1.1"
+  bridge_version: "1.2"
   naming_policy: "Strict MATLAB Mirror"
   indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
 
@@ -28,28 +46,144 @@ project_metadata:
 # 1. Check:  Does the function/class exist in the YAML?
 # 2. Add/Update: If it is missing or the MATLAB signature has changed,
 #    update the YAML first.
-# 3. Record Hash: Store the short git hash of the MATLAB .m file being
-#    ported in the `matlab_last_sync_hash` field. Obtain the hash with:
-#      git log -1 --format="%h" -- <path-to-matlab-file>
+# 3. Record Hash: Store the MATLAB COMMIT in `matlab_last_sync_hash`
+#    (Section 5).
 # 4. Notify: The agent MUST explicitly tell the user:
 #    "I have updated the ndr_matlab_python_bridge.yaml to include
 #    [Function Name]. Please review the interface contract."
-#
-# =============================================================================
-# 3a. Detecting Upstream MATLAB Changes
-# =============================================================================
-# The `matlab_last_sync_hash` field enables efficient change detection:
-#
-# 1. For each entry, compare `matlab_last_sync_hash` against the current
-#    HEAD hash of the corresponding MATLAB .m file:
-#      git log -1 --format="%h" -- <matlab_path>
-# 2. If the hashes differ, the MATLAB file has changed since the last sync
-#    and the Python port may need to be updated.
-# 3. After re-syncing, update `matlab_last_sync_hash` to the new hash and
-#    record the sync date in `decision_log`.
 
 # =============================================================================
-# 4. Structure for Classes and Functions
+# 4. One entry per MATLAB function
+# =============================================================================
+# A MATLAB file gets exactly ONE bridge entry. Duplicate entries are the
+# failure mode the completeness check cannot see: that check asks "is this
+# file recorded?", and a file recorded twice is recorded. Two entries then
+# drift apart -- one saying `porting_deferred` while the other records a real
+# port that exists -- and a reader who finds the wrong one first is misled.
+#
+# Uniqueness is keyed on (`name`, `matlab_path`), NOT on `matlab_path` alone.
+# Several entries may legitimately share a `matlab_path`: a class's methods are
+# recorded off the one .m file that defines the class.
+#
+# THE ONE EXCEPTION. One MATLAB function may be recorded twice when it is
+# genuinely exposed from two Python modules. To declare that, EVERY entry in
+# the group must carry a distinct `python_qualified:` naming its own module
+# path. Half a declaration is not a declaration: if one entry names a
+# `python_qualified` and its twin does not, that is an accident, not a design,
+# and tests/test_matlab_bridge_conventions.py rejects it.
+#
+# NDR-python currently has no such deliberate pair. The rule exists so that the
+# first one is written down rather than discovered.
+
+# =============================================================================
+# 5. matlab_last_sync_hash IS A COMMIT
+# =============================================================================
+# `matlab_last_sync_hash` records a git COMMIT in NDR-matlab -- never a blob
+# hash, never a tree, never a tag. Get it with:
+#
+#     git -C ../NDR-matlab log -n 1 --format=%h -- <matlab_path>
+#
+# NOT with `git hash-object <file>`. The distinction matters because freshness
+# is asked by walking history:
+#
+#     git -C ../NDR-matlab log <hash>..HEAD -- <matlab_path>
+#
+# and `git log` DOES NOT ERROR on a blob -- it happily returns commits. A blob
+# recorded here therefore reads as merely "stale" rather than as unusable, and
+# the wrong diagnosis gets acted on. (`git diff` is the command that rejects a
+# blob outright.) NDI-python accumulated 35 blob hashes exactly this way,
+# because its spec said "the hash of the .m file" while printing a command that
+# yields a commit.
+#
+# NDR-python additionally requires the commit to be the LATEST one touching
+# that file (see Section 5a). This is stricter than NDI-python, which accepts
+# any commit because it also records repo-wide batch-sync commits.
+#
+# RECOVERING A BAD HASH. If an entry ever holds a blob hash, convert it
+# exactly: walk the file's history comparing `git rev-parse <commit>:<path>`
+# against the recorded blob, and record the commit that produced it. Never
+# "fix" it by bumping to HEAD -- that claims an examination nobody performed.
+# If the hash resolves to nothing at all, DELETE the field and say why in the
+# `decision_log`. An absent hash claims nothing; a wrong hash claims something
+# false.
+
+# =============================================================================
+# 5a. Detecting Upstream MATLAB Changes
+# =============================================================================
+# Every recorded `matlab_last_sync_hash` must be the latest commit touching its
+# MATLAB file. `tests/test_matlab_bridge_completeness.py` enforces this, so
+# when MATLAB edits a bridged file CI goes red and you must either:
+#
+#   1. Review the MATLAB diff, port the behavioral change, and bump the hash; or
+#   2. Bump the hash and add a short `decision_log` note saying why the MATLAB
+#      change is a no-op on the Python side (comment-only, analyzer fix, ...).
+#
+# This check needs a NON-SHALLOW NDR-matlab checkout. A shallow clone collapses
+# every file's history to the last merge commit and lies about which commit is
+# latest, so CI checks it out with `fetch-depth: 0` and the test fails loudly
+# rather than emitting one false failure per entry.
+
+# =============================================================================
+# 6. status: THE COMPLETE VOCABULARY
+# =============================================================================
+# `status` says why a MATLAB function has no 1:1 Python counterpart. It is a
+# closed set. `tests/test_matlab_bridge_conventions.py` reads the keys below
+# and rejects any other value, so this table and the enforcement cannot drift.
+#
+# THE DEFAULT IS NOT WRITTEN DOWN. A ported function carries NO `status:` at
+# all -- just a `python_path` (and `python_class` for a class) under the
+# mirrored name. Do not write `status: ported`; there must be exactly one way
+# to say the ordinary thing.
+#
+# Every entry that DOES carry a status needs a `decision_log` explaining it
+# (enforced). A status without a reason passes the completeness check while
+# telling the next reader nothing, so the gap gets re-investigated anyway.
+
+status_vocabulary:
+
+  ported_elsewhere: >-
+    Python HAS this capability, but not as a 1:1 counterpart under the mirrored
+    name -- it lives under a different name, is folded into a class, or is
+    reached through different machinery (including a third-party dependency
+    that does the work MATLAB hand-rolls). REQUIRES a `python_path` naming the
+    Python module through which the capability is reached; when the real work
+    is done by a dependency, the `decision_log` names the dependency. Use this
+    and not `matlab_only` whenever a Python caller can do the thing -- a reader
+    who sees `matlab_only` concludes Python cannot, which is the opposite of
+    the truth.
+
+  porting_deferred: >-
+    No Python counterpart today. The gap is known and may be closed later. The
+    `decision_log` says why not now, or what has to happen first. This is the
+    honest label for "we haven't got to it", and it is not a criticism -- an
+    unported MATLAB function that is written down is a managed gap.
+
+  matlab_only: >-
+    Exists because MATLAB works that way, and will never get a counterpart by
+    design. MATLAB-runtime shims (fopen/fread handle wrappers), MATLAB
+    packaging artifacts (Contents.m), MATLAB-interop helpers, and backend
+    dispatch that Python's single backend makes moot. Not a deferral: nobody
+    is waiting for this.
+
+  retired: >-
+    The MATLAB function no longer exists upstream. A tombstone, kept so the
+    decision is not re-litigated the next time somebody notices the name in an
+    old commit. Set `matlab_path: "N/A"` and say in the `decision_log` which
+    NDR-matlab commit removed it.
+
+# RETIRED STATUS VALUES -- do not reintroduce:
+#   not_yet_ported  -> porting_deferred  (vague: "not yet" by whom, blocked on what?)
+#   not_applicable  -> split by what is actually meant. It conflated three
+#                      incompatible claims: "Python does this another way"
+#                      (ported_elsewhere), "we haven't done it" (porting_deferred)
+#                      and "MATLAB-ism, never will" (matlab_only). Its plain
+#                      reading -- "Python cannot / need not do this" -- was
+#                      flatly wrong for the majority of entries carrying it.
+#   implemented     -> a synonym for the default; omit `status` instead.
+#   does_not_exist  -> retired.
+
+# =============================================================================
+# 7. Structure for Classes and Functions
 # =============================================================================
 
 # --- Example: Class ---
@@ -58,7 +192,7 @@ project_metadata:
 #   matlab_path: "+ndr/+reader/base.m"
 #   python_path: "ndr/reader/base.py"
 #   python_class: "ndr_reader_base"
-#   matlab_last_sync_hash: "a4c9e07"  # Git hash of base.m when last ported/synced
+#   matlab_last_sync_hash: "a4c9e07"  # Latest COMMIT touching base.m (Section 5)
 #
 #   properties:
 #     - name: MightHaveTimeGaps
@@ -104,15 +238,25 @@ project_metadata:
 #       type_python: "str"
 #   decision_log: "Synchronized with MATLAB main as of 2026-04-11."
 
+# --- Example: Function with no 1:1 counterpart ---
+# - name: python_detect
+#   type: function
+#   matlab_path: "+ndr/+fun/python_detect.m"
+#   status: matlab_only
+#   matlab_last_sync_hash: "c1d2e3f"
+#   decision_log: "MATLAB-only helper that locates a Python interpreter for
+#     MATLAB's py.* interop. Python does not need to detect itself."
+
 # =============================================================================
-# 5. Building a New Bridge YAML File
+# 8. Building a New Bridge YAML File
 # =============================================================================
 # When adding a brand-new sub-package to NDR-python (for example
 # `src/ndr/newformat/`), create a fresh `ndr_matlab_python_bridge.yaml`
 # next to the Python source using the following procedure:
 #
 # 1. Create the file at `src/ndr/<namespace>/ndr_matlab_python_bridge.yaml`.
-# 2. Start with the Standard Header from Section 2 (copy verbatim).
+# 2. Start with the Standard Header from Section 2 (copy `project_metadata`
+#    verbatim; do NOT copy `status_vocabulary`, which is spec-only).
 # 3. For each MATLAB class in `+ndr/+<namespace>/`, add a `classes:` entry with:
 #      - `name` (MATLAB class name, e.g. `intan_rhd`)
 #      - `type: class`
@@ -122,15 +266,20 @@ project_metadata:
 #        `docs/developer_notes/PYTHON_PORTING_GUIDE.md`, e.g.
 #        `ndr_reader_intan__rhd`)
 #      - `inherits` (if applicable)
-#      - `matlab_last_sync_hash` (from `git log -1 --format="%h" -- <matlab_path>`)
+#      - `matlab_last_sync_hash` (Section 5)
 #      - `properties:` and `methods:` blocks with `input_arguments` /
 #        `output_arguments`, each argument carrying `name`, `type_matlab`, and
 #        `type_python`.
 # 4. For each standalone MATLAB function, add an entry under `functions:` with
-#    the same fields (minus `properties` and `methods`).
-# 5. Run `python -c "import yaml, pathlib; yaml.safe_load(pathlib.Path('src/ndr/<namespace>/ndr_matlab_python_bridge.yaml').read_text())"`
-#    to validate the YAML parses.
-# 6. Notify the user with a one-line summary of the new contract so they can
+#    the same fields (minus `properties` and `methods`). If it has no 1:1
+#    counterpart, give it a `status` from Section 6 and a `decision_log`.
+# 5. Register the package in `PACKAGES` in
+#    `tests/test_matlab_bridge_completeness.py`, or nothing under it is guarded.
+# 6. Run the bridge checks:
+#      NDR_BRIDGE_CHECK_STRICT=1 NDR_MATLAB_PATH=../NDR-matlab \
+#        pytest tests/test_matlab_bridge_completeness.py \
+#               tests/test_matlab_bridge_conventions.py
+# 7. Notify the user with a one-line summary of the new contract so they can
 #    review it before any Python implementation is written.
 #
 # Refer to `src/ndr/reader/ndr_matlab_python_bridge.yaml` for a concrete,
@@ -138,16 +287,27 @@ project_metadata:
 # `static_methods:` blocks.
 
 # =============================================================================
-# 6. Summary of Field Rules
+# 9. Summary of Field Rules
 # =============================================================================
 # Field                | Rule
 # ---------------------|----------------------------------------------------------
 # name                 | Strict Match. Case-sensitive match to the MATLAB .m file.
-# matlab_last_sync_hash| The short git hash of the MATLAB .m file at the time it
-#                      | was last examined/ported. Used to detect upstream changes.
+# matlab_path          | Path relative to NDR-matlab's repo root, or "N/A" for a
+#                      | `retired` entry. Must name a file that exists.
+# matlab_last_sync_hash| A COMMIT in NDR-matlab, and the latest one touching the
+#                      | file. See Section 5. Never a blob.
+# status               | One of Section 6's vocabulary, or absent for a plain
+#                      | port. Requires a `decision_log`.
+# python_path          | Where the Python counterpart lives. Required for a plain
+#                      | port and for `ported_elsewhere`. A plain port names one
+#                      | file; a `ported_elsewhere` entry MAY name a list when
+#                      | the capability is genuinely reached through more than
+#                      | one module (see +ndr/+reader/imagestack.m).
+# python_qualified     | Dotted module path. Required on EVERY member of a
+#                      | deliberate two-module pair (Section 4).
 # input_arguments      | Used to generate Pydantic @validate_call.
 # output_arguments     | Defines the order of the Return Tuple.
 # type_python          | Use Python 3.10+ syntax (e.g., str | int).
-# decision_log         | Mandatory for any divergence. Should include the sync
-#                      | date (e.g., "Synchronized with MATLAB main as of
-#                      | 2026-04-11.").
+# decision_log         | Mandatory for any divergence and for any `status`.
+#                      | Should include the sync date (e.g., "Synchronized with
+#                      | MATLAB main as of 2026-04-11.").

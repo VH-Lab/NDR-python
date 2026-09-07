@@ -73,7 +73,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pyyaml
 
-      - name: Check bridge completeness and hash currency
+      - name: Check bridge completeness, hash currency and conventions
         working-directory: NDR-python
         env:
           # Both repos are checked out above, so an absent MATLAB tree
@@ -81,7 +81,17 @@ jobs:
           # a check that could not run must not report a pass.
           NDR_BRIDGE_CHECK_STRICT: "1"
           NDR_MATLAB_PATH: ${{ github.workspace }}/NDR-matlab
-        run: pytest tests/test_matlab_bridge_completeness.py -v --tb=short
+        # Every bridge test file is named EXPLICITLY. The test matrix has no
+        # NDR-matlab checkout, so anything not listed here does not run
+        # anywhere -- it skips in the matrix and the skip reads as a pass.
+        # test_matlab_bridge_conventions.py enforces that this list stays
+        # complete, so a new tests/test_matlab_bridge_*.py that nobody wired
+        # in fails here instead of silently checking nothing.
+        run: |
+          pytest \
+            tests/test_matlab_bridge_completeness.py \
+            tests/test_matlab_bridge_conventions.py \
+            -v --tb=short
 
   test:
     name: Test (Python ${{ matrix.python-version }})

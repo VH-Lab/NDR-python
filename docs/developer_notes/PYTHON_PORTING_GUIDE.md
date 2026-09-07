@@ -36,10 +36,17 @@ Function and class names must match MATLAB exactly.
 ## 3. The Porting Workflow (The Bridge Protocol)
 1. **Check the Bridge:** Open the `ndr_matlab_python_bridge.yaml` in the target package.
 2. **Sync the Interface:** If the function is missing or outdated, update the YAML first.
-3. **Record the Sync Hash:** Store the short git hash of the MATLAB `.m` file:
-   `git log -1 --format="%h" -- <path-to-matlab-file>`
+3. **Record the Sync Hash:** Store the MATLAB **commit** in `matlab_last_sync_hash`.
 4. **Implement:** Write Python code to satisfy the interface defined in the YAML.
 5. **Log & Notify:** Record the sync date in the YAML's `decision_log`.
+
+> **The bridge file format is specified in exactly one place:**
+> [`ndr_matlab_python_bridge.yaml`](ndr_matlab_python_bridge.yaml) in this
+> directory. This guide covers *how to write the Python*; that spec covers
+> *what goes in the YAML* — the `status` vocabulary (section 6), what
+> `matlab_last_sync_hash` is and how to get it (section 5), and the
+> one-entry-per-function rule (section 4). It is deliberately not repeated
+> here.
 
 ## 4. Input Validation: Pydantic is Mandatory
 Use `@pydantic.validate_call` on all public-facing API functions.

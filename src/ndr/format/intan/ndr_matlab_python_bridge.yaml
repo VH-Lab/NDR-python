@@ -131,7 +131,7 @@ functions:
   - name: detectRHD2000FileMode
     matlab_path: "+ndr/+format/+intan/detectRHD2000FileMode.m"
     matlab_last_sync_hash: "a938988"
-    status: not_yet_ported
+    status: porting_deferred
     decision_log: >
       Detects whether an .rhd filename follows the Intan
       '<prefix>_<YYMMDD>_<HHMMSS>.rhd' multi-file convention. Not yet ported:
@@ -142,7 +142,7 @@ functions:
   - name: getRHD2000FileList
     matlab_path: "+ndr/+format/+intan/getRHD2000FileList.m"
     matlab_last_sync_hash: "a938988"
-    status: not_yet_ported
+    status: porting_deferred
     decision_log: >
       Companion to detectRHD2000FileMode: returns the sorted list of .rhd
       files that make up a recording. Same porting status: waits until a
