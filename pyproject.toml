@@ -23,6 +23,11 @@ dev = [
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
+    # PyYAML is a transitive dep on Python 3.11/3.12 (pulled in by matplotlib
+    # + friends) but not on 3.10, and tests/test_matlab_bridge_completeness.py
+    # imports it at module load. Making it explicit here keeps the 3.10 test
+    # job from failing at collection.
+    "pyyaml>=6.0",
     "tifffile>=2021.7.2",
 ]
 formats = [

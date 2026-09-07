@@ -7,7 +7,7 @@ functions:
   - name: about
     matlab_path: "+ndr/+format/+textSignal/about.m"
     python_path: "ndr/format/textSignal/about.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "006a434"
     input_arguments: []
     output_arguments: []
     notes: "Documentation-only module describing the textSignal file format."
@@ -15,7 +15,7 @@ functions:
   - name: readData
     matlab_path: "+ndr/+format/+textSignal/readData.m"
     python_path: "ndr/format/textSignal/readData.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "25c69a7"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -38,7 +38,7 @@ functions:
   - name: readHeader
     matlab_path: "+ndr/+format/+textSignal/readHeader.m"
     python_path: "ndr/format/textSignal/readHeader.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "006a434"
     input_arguments:
       - name: filename
         type_python: "str | Path"

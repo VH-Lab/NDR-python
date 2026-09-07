@@ -200,7 +200,7 @@ functions:
     type: function
     matlab_path: "+ndr/known_readers.m"
     python_path: "ndr/known_readers.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "2b8f53c"
     input_arguments: []
     output_arguments:
       - name: str
@@ -215,7 +215,7 @@ functions:
     type: function
     matlab_path: "+ndr/globals.m"
     python_path: "ndr/globals.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "fc1a801"
     input_arguments: []
     output_arguments:
       - name: ndr_globals

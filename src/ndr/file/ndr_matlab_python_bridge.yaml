@@ -11,7 +11,7 @@ functions:
     type: function
     matlab_path: "+ndr/+file/textfile2char.m"
     python_path: "ndr/file/textfile2char.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "4abee5d"
     input_arguments:
       - name: filename
         type_matlab: "char"
@@ -24,7 +24,7 @@ functions:
   - name: fileobj
     type: class
     matlab_path: "+ndr/+file/fileobj.m"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "4abee5d"
     status: not_applicable
     decision_log: >
       Wraps MATLAB's fopen/fread file-handle semantics (byte order, machine

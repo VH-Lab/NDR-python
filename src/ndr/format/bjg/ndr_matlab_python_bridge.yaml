@@ -7,7 +7,7 @@ functions:
   - name: read
     matlab_path: "+ndr/+format/+bjg/read.m"
     python_path: "ndr/format/bjg/read.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "011c188"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -28,7 +28,7 @@ functions:
   - name: read_bjg_header
     matlab_path: "+ndr/+format/+bjg/read_bjg_header.m"
     python_path: "ndr/format/bjg/read_bjg_header.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "011c188"
     input_arguments:
       - name: filename
         type_python: "str | Path"

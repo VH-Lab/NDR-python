@@ -7,26 +7,26 @@ functions:
   - name: bitDepth
     matlab_path: "+ndr/+fun/bitDepth.m"
     python_path: "ndr/fun/bitDepth.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "fce9dbb"
 
   - name: getDataTypeString
     matlab_path: "+ndr/+fun/getDataTypeString.m"
     python_path: "ndr/fun/getDataTypeString.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "fce9dbb"
 
   - name: ndrpath
     matlab_path: "+ndr/+fun/ndrpath.m"
     python_path: "ndr/fun/ndrpath.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "9cfcea2"
 
   - name: ndrresource
     matlab_path: "+ndr/+fun/ndrresource.m"
     python_path: "ndr/fun/ndrresource.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "6ff7dd6"
 
   - name: python_detect
     matlab_path: "+ndr/+fun/python_detect.m"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "35d5bbe"
     status: not_applicable
     decision_log: >
       MATLAB-only helper that locates a Python interpreter for MATLAB's

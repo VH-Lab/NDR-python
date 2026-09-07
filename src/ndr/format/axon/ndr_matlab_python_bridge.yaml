@@ -7,7 +7,7 @@ functions:
   - name: abfTimeToDatetime
     matlab_path: "+ndr/+format/+axon/abfTimeToDatetime.m"
     python_path: "ndr/format/axon/abfTimeToDatetime.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "2a46bbb"
     input_arguments:
       - name: uFileStartDate
         type_python: "float"
@@ -20,7 +20,7 @@ functions:
   - name: read_abf
     matlab_path: "+ndr/+format/+axon/read_abf.m"
     python_path: "ndr/format/axon/read_abf.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "09da4db"
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -41,7 +41,7 @@ functions:
   - name: read_abf_header
     matlab_path: "+ndr/+format/+axon/read_abf_header.m"
     python_path: "ndr/format/axon/read_abf_header.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "1b9c73b"
     input_arguments:
       - name: filename
         type_python: "str | Path"

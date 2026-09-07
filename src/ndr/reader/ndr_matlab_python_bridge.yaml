@@ -335,7 +335,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/somecompany_someformat.m"
     python_path: "ndr/reader/somecompany_someformat.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "94c5232"
     python_class: "ndr_reader_somecompany__someformat"
     inherits: base
     notes: "Template/example reader class for creating new format readers."
@@ -845,7 +845,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/bjg.m"
     python_path: "ndr/reader/bjg.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "011c188"
     python_class: "ndr_reader_bjg"
     inherits: base
     decision_log: >-
@@ -894,7 +894,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/dabrowska.m"
     python_path: "ndr/reader/dabrowska.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "e9da7bb"
     python_class: "ndr_reader_dabrowska"
     inherits: base
     decision_log: >-
@@ -943,7 +943,7 @@ classes:
     type: class
     matlab_path: "+ndr/+reader/whitematter.m"
     python_path: "ndr/reader/whitematter.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "f4f2c6d"
     python_class: "ndr_reader_whitematter"
     inherits: base
     decision_log: >-

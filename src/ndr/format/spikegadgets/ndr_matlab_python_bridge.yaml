@@ -26,7 +26,7 @@ functions:
   - name: copy_rec_files
     matlab_path: "+ndr/+format/+spikegadgets/copy_rec_files.m"
     python_path: "ndr/format/spikegadgets/copy_rec_files.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "94c5232"
     input_arguments:
       - name: filename_in
         type_python: "str | Path"

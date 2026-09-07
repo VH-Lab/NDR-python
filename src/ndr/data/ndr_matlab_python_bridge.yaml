@@ -7,7 +7,7 @@ functions:
   - name: assign
     matlab_path: "+ndr/+data/assign.m"
     python_path: "ndr/data/assign.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "fc1a801"
     input_arguments:
       - name: target
         type_python: "dict[str, Any]"
@@ -20,7 +20,7 @@ functions:
   - name: colvec
     matlab_path: "+ndr/+data/colvec.m"
     python_path: "ndr/data/colvec.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "94c5232"
     input_arguments:
       - name: x
         type_python: "numpy.ndarray"
@@ -31,7 +31,7 @@ functions:
   - name: rowvec
     matlab_path: "+ndr/+data/rowvec.m"
     python_path: "ndr/data/rowvec.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "94c5232"
     input_arguments:
       - name: x
         type_python: "numpy.ndarray"
@@ -42,7 +42,7 @@ functions:
   - name: struct2namevaluepair
     matlab_path: "+ndr/+data/struct2namevaluepair.m"
     python_path: "ndr/data/struct2namevaluepair.py"
-    matlab_last_sync_hash: "f78c56e"
+    matlab_last_sync_hash: "fc1a801"
     input_arguments:
       - name: thestruct
         type_python: "dict[str, Any]"
