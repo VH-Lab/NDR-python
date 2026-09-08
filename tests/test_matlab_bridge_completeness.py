@@ -555,6 +555,37 @@ def _commits_touching_since(root: Path, matlab_path: str, since: str) -> list[st
     return result.stdout.split()
 
 
+def _commits_with_subjects(root: Path, matlab_path: str, since: str) -> list[str]:
+    """The drifting commits as ``<short hash> <subject>``, newest first.
+
+    A bare list of hashes tells a reader nothing: ``cae4b00`` could be a
+    comment fix or a behaviour change, and finding out means leaving CI and
+    running git. The subject line usually settles it on sight --
+    "Normalize Intan digital_in/digital_out reads to 0/1" is obviously
+    behavioural. The whole point of the failure message is to make the
+    RIGHT remedy the easy one, and that starts with showing what changed.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "log",
+                "--format=%h %s",
+                f"{since}..HEAD",
+                "--",
+                matlab_path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return []
+    return [line for line in result.stdout.splitlines() if line.strip()]
+
+
 class TestNoEntryHasDrifted:
     """An entry DRIFTS when NDR-matlab has commits touching its
     ``matlab_path`` after the recorded hash. Drift fails CI.
@@ -606,11 +637,17 @@ class TestNoEntryHasDrifted:
                 unresolvable.append(f"{src_rel}: {entry.matlab_path}  recorded: {entry.hash}")
                 continue
             if since:
-                shown = ", ".join(since[:5]) + (", ..." if len(since) > 5 else "")
+                subjects = _commits_with_subjects(root, entry.matlab_path, entry.hash)
+                shown = "\n".join(f"        {line}" for line in subjects[:5])
+                if len(subjects) > 5:
+                    shown += f"\n        ... and {len(subjects) - 5} more"
                 drifted.append(
                     f"{src_rel}: {entry.matlab_path}\n"
                     f"      recorded: {entry.hash}   "
-                    f"commits touching it since: {len(since)} ({shown})"
+                    f"commits touching it since: {len(since)}\n"
+                    f"{shown}\n"
+                    f"      read them:  git -C <NDR-matlab> diff {entry.hash}..HEAD "
+                    f"-- {entry.matlab_path}"
                 )
 
         assert not unresolvable, (
@@ -625,11 +662,21 @@ class TestNoEntryHasDrifted:
             "DRIFTED -- NDR-matlab has commits touching the MATLAB file after the "
             "recorded matlab_last_sync_hash:\n\n  "
             + "\n  ".join(drifted)
-            + "\n\nReview the MATLAB diff between the recorded hash and HEAD, port "
-            "any behavioral changes to Python, and update matlab_last_sync_hash. If "
-            "nothing needs to change on the Python side, bump the hash and add a "
-            "short note in the decision_log explaining why the MATLAB change is a "
-            "no-op here (e.g. comment-only, MATLAB-analyzer fix)."
+            + "\n\nTHE REMEDY IS TO READ THE DIFF AND PORT THE CHANGE, then update "
+            "matlab_last_sync_hash to the commit you examined.\n\n"
+            "Bumping the hash on its own is NOT a remedy. It converts a red build "
+            "into a false record -- the entry then claims the port was reviewed "
+            "against a change nobody read, and nothing can contradict it "
+            "afterwards. That is how NDR-matlab a938988 (Intan multi-file "
+            "recordings) went missing from Python while CI stayed green; see "
+            "issue #23.\n\n"
+            "If the MATLAB change genuinely needs nothing on the Python side -- "
+            "comment-only, an analyzer fix, a rename this port does not mirror -- "
+            "that is a real outcome, but it is a DECISION and must be written "
+            "down: update the hash AND add a decision_log note naming the "
+            "commit(s) you read and why they are a no-op here. "
+            "test_matlab_bridge_conventions.py enforces that, so a bare bump "
+            "trades this failure for another one."
         )
 
 

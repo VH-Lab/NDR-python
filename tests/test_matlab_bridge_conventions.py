@@ -48,6 +48,7 @@ unless ``NDR_BRIDGE_CHECK_STRICT`` is set, which CI does.
 from __future__ import annotations
 
 import collections
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -141,6 +142,11 @@ class Entry:
     @property
     def status(self) -> str:
         value = self.node.get("status")
+        return value.strip() if isinstance(value, str) else ""
+
+    @property
+    def decision_log(self) -> str:
+        value = self.node.get("decision_log")
         return value.strip() if isinstance(value, str) else ""
 
     @property
@@ -660,6 +666,154 @@ class TestTheWorkflowActuallyRunsTheBridgeChecks:
             "every NDR-matlab checkout in the `bridge` job needs `fetch-depth: 0`. "
             f"Found {checkouts} checkout(s) and {job.count('fetch-depth: 0')} "
             "fetch-depth setting(s)."
+        )
+
+
+# ---------------------------------------------------------------------------
+# A hash written without a review
+# ---------------------------------------------------------------------------
+
+
+#: Bases to diff this branch against, in order of preference.
+MERGE_BASE_CANDIDATES = ("origin/main", "origin/master", "main", "master")
+
+
+def _git(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", "-C", str(REPO_ROOT), *args], capture_output=True, text=True, check=False
+    )
+
+
+def _merge_base() -> str | None:
+    """The commit this branch diverged from, or None if git cannot say.
+
+    None on a shallow clone with no base ref -- which is why the workflow
+    checks this repo out with ``fetch-depth: 0``.
+    """
+    for candidate in MERGE_BASE_CANDIDATES:
+        if _git("rev-parse", "--verify", "--quiet", candidate).returncode != 0:
+            continue
+        result = _git("merge-base", candidate, "HEAD")
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    return None
+
+
+def _entries_by_key(data: Any, source: Path) -> dict[tuple[str, str], Entry]:
+    """Entries keyed by ``(name, matlab_path)`` so two revisions can be compared."""
+    keyed: dict[tuple[str, str], Entry] = {}
+    for entry in _walk(data, source):
+        if entry.matlab_path:
+            keyed[(entry.name, entry.matlab_path)] = entry
+    return keyed
+
+
+class TestAHashChangeIsJustified:
+    """Changing a ``matlab_last_sync_hash`` without touching Python must say why.
+
+    THE FAILURE THIS CATCHES. A hash is supposed to mean "I examined this
+    version of this file". Nothing in the drift check can tell that claim from
+    a guess: writing a current-looking hash turns a red build green and leaves
+    a record nothing can contradict afterwards. That is not hypothetical --
+    commit 6377973 added ``matlab_last_sync_hash`` to 20 bridge files in one
+    go, touching no Python at all, and in doing so asserted that NDR-matlab
+    a938988 had been reviewed. It had not; the Intan multi-file feature it
+    introduced is still missing. See issue #23.
+
+    THE RULE. If a change alters an entry's hash but touches none of that
+    entry's ``python_path`` files, the entry's ``decision_log`` must change in
+    the same diff and name the commit being accounted for. Porting the change
+    is the ordinary path and needs nothing extra -- this only bites the
+    "nothing to do here" case, which is a decision and belongs in writing.
+
+    WHAT IT CANNOT DO. It cannot verify anybody read the diff. It makes the
+    claim explicit, specific and attributable -- a sentence in the entry,
+    naming a commit, visible in review -- which is the honest ceiling for a
+    check like this. 6377973 made its claim 1148 times without writing a
+    word; it could not have under this rule.
+    """
+
+    def test_a_hash_change_without_a_port_carries_a_reason(self):
+        base = _merge_base()
+        if base is None:
+            message = (
+                "no merge-base against "
+                f"{'/'.join(MERGE_BASE_CANDIDATES)} -- cannot tell which entries "
+                "this change touches. A shallow clone causes this; CI checks this "
+                "repo out with fetch-depth: 0."
+            )
+            if os.environ.get(STRICT_ENV_VAR, "").strip():
+                pytest.fail(
+                    f"{message} ({STRICT_ENV_VAR} is set, so history was supposed "
+                    "to be there -- skipping would report a check that could not "
+                    "run as one that passed.)"
+                )
+            pytest.skip(message)
+
+        # base against the WORKING TREE, not base..HEAD: the new state of each
+        # entry is read from the working tree, so the file list must come from
+        # the same place or the two disagree. In CI they are identical; locally
+        # this is what makes the check answer for edits you have not committed
+        # yet -- which is when you want to hear about them.
+        changed = {
+            line.strip()
+            for line in _git("diff", "--name-only", base).stdout.splitlines()
+            if line.strip()
+        }
+        if not changed:
+            return  # nothing in this branch to judge
+
+        offenders: list[str] = []
+        for source in all_bridge_files():
+            rel = source.relative_to(REPO_ROOT).as_posix()
+            if rel not in changed:
+                continue
+            before = _git("show", f"{base}:{rel}")
+            if before.returncode != 0:
+                continue  # the file is new in this branch; nothing to compare
+            old_entries = _entries_by_key(yaml.safe_load(before.stdout) or {}, source)
+            new_entries = _entries_by_key(
+                yaml.safe_load(source.read_text(encoding="utf-8")) or {}, source
+            )
+            for key, entry in new_entries.items():
+                previous = old_entries.get(key)
+                if previous is None:
+                    continue  # a brand-new entry, judged by the other guards
+                if entry.matlab_last_sync_hash == previous.matlab_last_sync_hash:
+                    continue
+                if any(f"src/{path}" in changed for path in entry.python_paths):
+                    continue  # the port moved with the hash: the ordinary path
+                log = entry.decision_log
+                if log == previous.decision_log:
+                    offenders.append(
+                        f"{entry.where}: {entry.name} -> {entry.matlab_path}\n"
+                        f"      hash {previous.matlab_last_sync_hash or '(none)'} -> "
+                        f"{entry.matlab_last_sync_hash}, no Python change, "
+                        f"decision_log unchanged"
+                    )
+                elif entry.matlab_last_sync_hash[:7].lower() not in log.lower():
+                    offenders.append(
+                        f"{entry.where}: {entry.name} -> {entry.matlab_path}\n"
+                        f"      decision_log changed but does not name "
+                        f"{entry.matlab_last_sync_hash}"
+                    )
+
+        assert not offenders, (
+            f"{len(offenders)} entr{'y' if len(offenders) == 1 else 'ies'} changed a "
+            "matlab_last_sync_hash without porting anything and without saying "
+            "why:\n  "
+            + "\n  ".join(offenders)
+            + '\n\nA hash means "I examined this version of this file". Moving it '
+            "with no Python change asserts the MATLAB change needed nothing here -- "
+            "which may well be true, but it is a DECISION, and an unrecorded one is "
+            "indistinguishable from nobody having looked.\n\n"
+            "Either port the change, or add to that entry's decision_log a note "
+            "naming the commit and why it is a no-op on the Python side, e.g.\n"
+            "    decision_log: >\n"
+            "      ... NDR-matlab abc1234 renamed a local variable; no behavioural\n"
+            "      change, nothing to port.\n\n"
+            "This is issue #23: commit 6377973 wrote 1148 such claims in one commit "
+            "and the Intan multi-file feature went missing behind them."
         )
 
 

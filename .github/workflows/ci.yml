@@ -38,6 +38,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: NDR-python
+          # fetch-depth: 0 so the hash-justification check can diff this PR
+          # against its merge-base. A shallow clone has no merge-base, and
+          # that check must not be reachable only on some clones.
+          fetch-depth: 0
 
       - name: Check out NDR-matlab (matching branch, fall back to main)
         uses: actions/checkout@v4
@@ -102,6 +106,11 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The hash-justification check needs a merge-base to diff against,
+          # and it runs here too -- deselecting it would put a skip back in
+          # every matrix job, which is what we just removed.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
