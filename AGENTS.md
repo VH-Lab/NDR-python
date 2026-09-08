@@ -42,14 +42,10 @@ commit hash in the command printed beneath it. Go there for:
   the companion rule that every entry naming a `matlab_path` carries a hash.
   It is one rule for all three bridge repos, and it names whose text
   governs and where that text lives.
-- **Section 6** — the complete `status` vocabulary: `regular_port`,
-  `ported_differently`, `porting_deferred`, `matlab_only`, `retired`. EVERY
-  entry states its status, including the ordinary one: a plain 1:1 port is
-  written `status: regular_port`, never left blank, so a human reading the
-  YAML can tell a finished entry from an unfilled one. Every status except
-  `regular_port` also needs a `decision_log`. `ported_elsewhere`,
-  `not_yet_ported`, `not_applicable`, `ported` and `implemented` are retired
-  spellings and CI rejects them.
+- **Section 6** — the closed `status` vocabulary: every legal value and what
+  it means, which of them need a `decision_log`, and the retired spellings
+  CI rejects. The section is machine-read, so it cannot fall behind the
+  check that enforces it — which a copy here could.
 
 ## Testing
 - Unit tests: `pytest tests/`
