@@ -862,6 +862,36 @@ CROSS_REFERRING_DOCS = (
 #: "Section 6", "section 5a", "§ 4" -- however a document spells it.
 SECTION_REFERENCE = re.compile(r"(?:section|§)\s*(\d+[a-z]?)", re.IGNORECASE)
 
+#: The other two bridge repos, whose specs are cited by name, never by number.
+FOREIGN_REPO = re.compile(r"\b(?:NDI|DID)-(?:python|matlab)\b", re.IGNORECASE)
+
+#: This spec, as the cross-referring documents spell its path.
+SPEC_REL = "docs/developer_notes/ndr_matlab_python_bridge.yaml"
+
+
+def _sentences(text: str) -> list[str]:
+    """Prose sentences, with comment and markdown furniture removed.
+
+    Both file kinds wrap prose across lines, so a per-line scan would miss a
+    repo name and a section number that a reader sees side by side. Blank
+    lines, bullets and headings end a block; sentence-enders and colons split
+    within one.
+    """
+    blocks: list[list[str]] = [[]]
+    for raw in text.splitlines():
+        line = re.sub(r"^\s*(?:#+|>)\s?", "", raw).rstrip()
+        if not line.strip() or re.match(r"^\s*(?:[-*]|\d+\.)\s", line):
+            blocks.append([])
+            line = re.sub(r"^\s*(?:[-*]|\d+\.)\s", "", line)
+        if line.strip():
+            blocks[-1].append(line.strip())
+    joined = [" ".join(block) for block in blocks if block]
+    out: list[str] = []
+    for block in joined:
+        out.extend(part for part in re.split(r"(?<=[.;:])\s+", block) if part.strip())
+    return out
+
+
 #: A spec section heading: a numbered line directly under a banner rule. The
 #: banner is what distinguishes a heading from a numbered list item, which is
 #: spelled the same way inside the spec's comment blocks.
@@ -888,6 +918,39 @@ class TestTheCrossReferencesResolve:
             f"only found sections {sorted(sections)} in "
             f"{SPEC_PATH.relative_to(REPO_ROOT)} -- the heading pattern this test "
             "keys on has probably changed."
+        )
+
+    @pytest.mark.parametrize("doc", CROSS_REFERRING_DOCS + (SPEC_REL,))
+    def test_no_section_number_is_used_for_another_repos_spec(self, doc: str):
+        """A bare "section N" always means THIS spec, so never write one for
+        NDI-python's or DID-python's.
+
+        The check above validates every section reference against this file --
+        which is the right thing to do while every reference means this file,
+        and a silent lie the moment one does not. "See NDI-python section 7"
+        resolves happily against NDR's own Section 7 (Structure for Classes and
+        Functions), and the reader lands somewhere plausible and wrong. That is
+        worse than a dangling pointer, which at least announces itself.
+
+        So cite another repo's spec by FILE and by the NAME of its section.
+        Their numbering is theirs to change, which is the same staleness that
+        got a description of NDI-python's rule deleted from Section 5 in the
+        first place.
+        """
+        text = (REPO_ROOT / doc).read_text(encoding="utf-8")
+        offenders = [
+            sentence.strip()
+            for sentence in _sentences(text)
+            if FOREIGN_REPO.search(sentence) and SECTION_REFERENCE.search(sentence)
+        ]
+        assert not offenders, (
+            f"{doc} names another repo and a numbered section in the same "
+            "sentence:\n  "
+            + "\n  ".join(offenders)
+            + f"\n\nA section number reads as a pointer into "
+            f"{SPEC_PATH.relative_to(REPO_ROOT)}, so this either says something "
+            "false or resolves to the wrong section here. Cite the other repo's "
+            "spec by file and by the name of the section instead."
         )
 
     @pytest.mark.parametrize("doc", CROSS_REFERRING_DOCS)
@@ -990,6 +1053,34 @@ class TestTheGuardsWouldActuallyCatchOne:
     def test_the_retired_vocabulary_is_not_quietly_accepted(self):
         for dropped in REPLACED_STATUSES:
             assert dropped not in ALLOWED_STATUSES
+
+    def test_a_foreign_section_number_is_caught_across_a_line_break(self):
+        """The sentence a reader sees is not always the line a scan sees."""
+        wrapped = "# The rule lives in NDI-python's spec,\n# section 7. Read it there.\n"
+        flagged = [
+            sentence
+            for sentence in _sentences(wrapped)
+            if FOREIGN_REPO.search(sentence) and SECTION_REFERENCE.search(sentence)
+        ]
+        assert flagged == ["The rule lives in NDI-python's spec, section 7."]
+
+    def test_naming_a_foreign_section_rather_than_numbering_it_is_allowed(self):
+        """The remedy has to pass, or the guard just bans the cross-reference."""
+        named = "# Settled in NDI-python#211; see the DRIFT section of its spec.\n"
+        assert not [
+            sentence
+            for sentence in _sentences(named)
+            if FOREIGN_REPO.search(sentence) and SECTION_REFERENCE.search(sentence)
+        ]
+
+    def test_this_repos_own_section_numbers_are_left_alone(self):
+        """Section 5a is this file's, and citing it is the whole point."""
+        ours = "# What counts as out of date is Section 5a.\n"
+        assert not [
+            sentence
+            for sentence in _sentences(ours)
+            if FOREIGN_REPO.search(sentence) and SECTION_REFERENCE.search(sentence)
+        ]
 
     def test_a_string_python_path_and_a_list_both_read(self):
         assert self._entry(python_path="ndr/reader/base.py").python_paths == ["ndr/reader/base.py"]
