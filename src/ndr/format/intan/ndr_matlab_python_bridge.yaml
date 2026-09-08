@@ -9,6 +9,15 @@ functions:
     status: regular_port
     python_path: "ndr/format/intan/read_Intan_RHD2000_header.py"
     matlab_last_sync_hash: "a938988"
+    decision_log: >
+      Multi-file support (NDR-matlab 034f210) and its 'detect' default
+      (a938988) are ported: fileMode parameter, aggregation across the file
+      set, and header['fileinfo']['multifile']. This entry's hash was written
+      by the 6377973 backfill before any of that existed (see issue #23); it
+      is now a claim someone has actually checked. fileinfo here carries only
+      filesize, headersize and multifile -- MATLAB's also repeats version
+      numbers and notes, which this port already exposes at the top level of
+      header.
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -21,6 +30,11 @@ functions:
     status: regular_port
     python_path: "ndr/format/intan/read_Intan_RHD2000_datafile.py"
     matlab_last_sync_hash: "cae4b00"
+    decision_log: >
+      Dispatches a request across the constituent files of a multi-file
+      recording and concatenates, so the set reads as one continuous stream
+      (NDR-matlab 034f210/a938988). Hash was backfilled by 6377973 (issue
+      #23); now genuinely examined.
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -43,6 +57,12 @@ functions:
     status: regular_port
     python_path: "ndr/format/intan/read_Intan_RHD2000_datafile.py"
     matlab_last_sync_hash: "a938988"
+    decision_log: >
+      Returns per-file block counts as a fifth value (file_blocks) and sums
+      bytes and blocks across a multi-file set, as MATLAB does. Also restores
+      MATLAB's truncation warning, which this port had silently dropped. Hash
+      was backfilled by 6377973 before the multi-file work existed (issue
+      #23); now genuinely examined.
     input_arguments:
       - name: filename
         type_python: "str | Path"
@@ -138,24 +158,21 @@ functions:
 
   - name: detectRHD2000FileMode
     matlab_path: "+ndr/+format/+intan/detectRHD2000FileMode.m"
+    status: regular_port
+    python_path: "ndr/format/intan/detectRHD2000FileMode.py"
     matlab_last_sync_hash: "a938988"
-    status: porting_deferred
-    decision_log: >
-      Detects whether an .rhd filename follows the Intan
-      '<prefix>_<YYMMDD>_<HHMMSS>.rhd' multi-file convention. Not yet ported:
-      the Python side currently reads .rhd files individually and does not
-      auto-assemble multi-file recordings. Landed in NDR-matlab a938988
-      (2026-05-06). Port when a multi-file dataset needs Python coverage.
 
   - name: getRHD2000FileList
     matlab_path: "+ndr/+format/+intan/getRHD2000FileList.m"
+    status: regular_port
+    python_path: "ndr/format/intan/getRHD2000FileList.py"
     matlab_last_sync_hash: "a938988"
-    status: porting_deferred
     decision_log: >
-      Companion to detectRHD2000FileMode: returns the sorted list of .rhd
-      files that make up a recording. Same porting status: waits until a
-      Python caller needs multi-file assembly. Landed in NDR-matlab a938988
-      (2026-05-06).
+      Mirrors MATLAB's sort key exactly: the concatenated YYMMDD+HHMMSS
+      string, which is lexicographic on a two-digit year and so orders
+      correctly within a century but not across 99 -> 00. Kept rather than
+      corrected, because MATLAB is the source of truth and fixing one side
+      would put the two languages out of step on the same directory.
 
 # ---------------------------------------------------------------------------
 # The +manufacturer subpackage: Intan's stock demo reader, vendored so the
