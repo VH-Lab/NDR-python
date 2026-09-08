@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: read
     matlab_path: "+ndr/+format/+binarymatrix/read.m"
+    status: regular_port
     python_path: "ndr/format/binarymatrix/read.py"
     matlab_last_sync_hash: "39433be"
     input_arguments:

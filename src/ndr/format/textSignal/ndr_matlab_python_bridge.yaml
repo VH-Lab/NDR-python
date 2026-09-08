@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: about
     matlab_path: "+ndr/+format/+textSignal/about.m"
+    status: regular_port
     python_path: "ndr/format/textSignal/about.py"
     matlab_last_sync_hash: "006a434"
     input_arguments: []
@@ -14,6 +15,7 @@ functions:
 
   - name: readData
     matlab_path: "+ndr/+format/+textSignal/readData.m"
+    status: regular_port
     python_path: "ndr/format/textSignal/readData.py"
     matlab_last_sync_hash: "25c69a7"
     input_arguments:
@@ -37,6 +39,7 @@ functions:
 
   - name: readHeader
     matlab_path: "+ndr/+format/+textSignal/readHeader.m"
+    status: regular_port
     python_path: "ndr/format/textSignal/readHeader.py"
     matlab_last_sync_hash: "006a434"
     input_arguments:

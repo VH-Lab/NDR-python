@@ -10,6 +10,7 @@ functions:
   - name: textfile2char
     type: function
     matlab_path: "+ndr/+file/textfile2char.m"
+    status: regular_port
     python_path: "ndr/file/textfile2char.py"
     matlab_last_sync_hash: "4abee5d"
     input_arguments:

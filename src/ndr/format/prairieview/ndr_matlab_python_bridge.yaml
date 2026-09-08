@@ -12,6 +12,7 @@ functions:
   - name: configfilename
     type: function
     matlab_path: "+ndr/+format/+prairieview/configfilename.m"
+    status: regular_port
     python_path: "ndr/format/prairieview/configfilename.py"
     matlab_last_sync_hash: "bda24e6"
     input_arguments:
@@ -26,6 +27,7 @@ functions:
   - name: elementvalue
     type: function
     matlab_path: "+ndr/+format/+prairieview/elementvalue.m"
+    status: regular_port
     python_path: "ndr/format/prairieview/elementvalue.py"
     matlab_last_sync_hash: "60ddbe2"
     input_arguments:
@@ -46,6 +48,7 @@ functions:
   - name: keyvalue
     type: function
     matlab_path: "+ndr/+format/+prairieview/keyvalue.m"
+    status: regular_port
     python_path: "ndr/format/prairieview/keyvalue.py"
     matlab_last_sync_hash: "8997947"
     input_arguments:
@@ -64,6 +67,7 @@ functions:
   - name: readxml
     type: function
     matlab_path: "+ndr/+format/+prairieview/readxml.m"
+    status: regular_port
     python_path: "ndr/format/prairieview/readxml.py"
     matlab_last_sync_hash: "848442b"
     input_arguments:
@@ -83,6 +87,7 @@ functions:
   - name: readconfig
     type: function
     matlab_path: "+ndr/+format/+prairieview/readconfig.m"
+    status: regular_port
     python_path: "ndr/format/prairieview/readconfig.py"
     matlab_last_sync_hash: "60ddbe2"
     input_arguments:

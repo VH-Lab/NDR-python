@@ -13,6 +13,7 @@ functions:
   - name: readmeta
     type: function
     matlab_path: "+ndr/+format/+neuropixelsGLX/readmeta.m"
+    status: regular_port
     python_path: "ndr/format/neuropixelsGLX/readmeta.py"
     matlab_last_sync_hash: "9b4e1f5"
     input_arguments:
@@ -30,6 +31,7 @@ functions:
   - name: header
     type: function
     matlab_path: "+ndr/+format/+neuropixelsGLX/header.m"
+    status: regular_port
     python_path: "ndr/format/neuropixelsGLX/header.py"
     matlab_last_sync_hash: "c17191a"
     input_arguments:
@@ -44,6 +46,7 @@ functions:
   - name: probeGeometry
     type: function
     matlab_path: "+ndr/+format/+neuropixelsGLX/probeGeometry.m"
+    status: regular_port
     python_path: "ndr/format/neuropixelsGLX/probeGeometry.py"
     matlab_last_sync_hash: "b64d1c7"
     input_arguments:
@@ -58,6 +61,7 @@ functions:
   - name: samples2volts
     type: function
     matlab_path: "+ndr/+format/+neuropixelsGLX/samples2volts.m"
+    status: regular_port
     python_path: "ndr/format/neuropixelsGLX/samples2volts.py"
     matlab_last_sync_hash: "b3e4e84"
     input_arguments:
@@ -75,6 +79,7 @@ functions:
   - name: read
     type: function
     matlab_path: "+ndr/+format/+neuropixelsGLX/read.m"
+    status: regular_port
     python_path: "ndr/format/neuropixelsGLX/read.py"
     matlab_last_sync_hash: "c3fa512"
     input_arguments:

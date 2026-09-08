@@ -68,6 +68,10 @@ addopts = "-v --tb=short --ignore=tests/symmetry"
 markers = [
     "slow: marks tests as slow",
     "symmetry: marks cross-language symmetry tests",
+    # Applied automatically by tests/conftest.py to any test calling
+    # require_matlab_root(). The bridge job runs these; the test matrix, which
+    # has no NDR-matlab checkout, deselects them rather than skipping them.
+    "needs_matlab: requires an NDR-matlab checkout",
 ]
 
 [tool.black]

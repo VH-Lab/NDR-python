@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: read
     matlab_path: "+ndr/+format/+bjg/read.m"
+    status: regular_port
     python_path: "ndr/format/bjg/read.py"
     matlab_last_sync_hash: "011c188"
     input_arguments:
@@ -27,6 +28,7 @@ functions:
 
   - name: read_bjg_header
     matlab_path: "+ndr/+format/+bjg/read_bjg_header.m"
+    status: regular_port
     python_path: "ndr/format/bjg/read_bjg_header.py"
     matlab_last_sync_hash: "011c188"
     input_arguments:

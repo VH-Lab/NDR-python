@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: header
     matlab_path: "+ndr/+format/+dabrowska/header.m"
+    status: regular_port
     python_path: "ndr/format/dabrowska/header.py"
     matlab_last_sync_hash: "e9da7bb"
     input_arguments:
@@ -17,6 +18,7 @@ functions:
 
   - name: read
     matlab_path: "+ndr/+format/+dabrowska/read.m"
+    status: regular_port
     python_path: "ndr/format/dabrowska/read.py"
     matlab_last_sync_hash: "0df3ac7"
     input_arguments:

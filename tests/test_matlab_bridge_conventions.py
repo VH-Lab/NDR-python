@@ -59,6 +59,7 @@ import yaml
 from tests.test_matlab_bridge_completeness import (
     BRIDGE_FILENAME,
     REPO_ROOT,
+    STATUSES_NEEDING_NO_DECISION_LOG,
     STRICT_ENV_VAR,
     all_bridge_files,
     normalize_matlab_path,
@@ -79,7 +80,8 @@ CI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 #: silent widening of what CI accepts.
 ALLOWED_STATUSES = frozenset(
     {
-        "ported_elsewhere",
+        "regular_port",
+        "ported_differently",
         "porting_deferred",
         "matlab_only",
         "retired",
@@ -89,18 +91,23 @@ ALLOWED_STATUSES = frozenset(
 #: Retired spellings, mapped to what to use instead. A value here gets a
 #: better error message than "not in the vocabulary".
 REPLACED_STATUSES = {
+    "ported_elsewhere": (
+        "ported_differently -- the label names the manner, not the location, "
+        "since python_path already answers where"
+    ),
     "not_yet_ported": "porting_deferred",
     "not_applicable": (
-        "one of ported_elsewhere / porting_deferred / matlab_only -- decide "
+        "one of ported_differently / porting_deferred / matlab_only -- decide "
         "which of the three it actually meant by reading the decision_log"
     ),
-    "implemented": "no status at all (a plain port is the default)",
+    "implemented": "regular_port",
     "does_not_exist": "retired",
-    "ported": "no status at all (a plain port is the default)",
+    "ported": "regular_port",
 }
 
-#: Statuses that must say where the Python capability lives.
-STATUSES_REQUIRING_PYTHON_PATH = frozenset({"ported_elsewhere"})
+#: Statuses that must say where the Python capability lives. A
+#: ``regular_port`` that names no module is not a recorded port at all.
+STATUSES_REQUIRING_PYTHON_PATH = frozenset({"regular_port", "ported_differently"})
 
 
 # ---------------------------------------------------------------------------
@@ -137,6 +144,17 @@ class Entry:
         return value.strip() if isinstance(value, str) else ""
 
     @property
+    def matlab_last_sync_hash(self) -> str:
+        """The entry's OWN recorded hash.
+
+        Deliberately not inherited from an enclosing entry: this gate asks
+        whether THIS entry records what was examined, and a hash borrowed from
+        a parent is a claim the parent made about a different file.
+        """
+        value = self.node.get("matlab_last_sync_hash")
+        return value.strip() if isinstance(value, str) else ""
+
+    @property
     def python_qualified(self) -> str:
         value = self.node.get("python_qualified")
         return value.strip() if isinstance(value, str) else ""
@@ -145,7 +163,7 @@ class Entry:
     def python_paths(self) -> list[str]:
         """``python_path`` as a list.
 
-        A plain port names one file. A ``ported_elsewhere`` entry may name
+        A plain port names one file. A ``ported_differently`` entry may name
         several when the capability really is reached through more than one
         module (``+ndr/+reader/imagestack.m`` is covered by four readers), so
         both a string and a list are accepted here.
@@ -351,6 +369,33 @@ class TestTheVocabularyIsTheDocumentedOne:
             "Update both together."
         )
 
+    def test_the_decision_log_exemption_is_documented(self):
+        """Which status is exempt from ``decision_log`` is a rule too.
+
+        ``regular_port`` is exempt because mirroring MATLAB is the default and
+        there is no decision to record. That exemption is enforced in
+        ``test_matlab_bridge_completeness.py``; this pins it to what the spec
+        actually tells a reader, so the exemption cannot quietly widen to a
+        status that really does owe an explanation.
+        """
+        vocabulary = spec_vocabulary()
+        assert STATUSES_NEEDING_NO_DECISION_LOG <= frozenset(vocabulary), (
+            "a status exempt from decision_log is not in the vocabulary: "
+            f"{sorted(STATUSES_NEEDING_NO_DECISION_LOG - frozenset(vocabulary))}"
+        )
+        documented_exempt = {
+            status
+            for status, description in vocabulary.items()
+            if "no `decision_log`" in str(description)
+        }
+        assert documented_exempt == set(STATUSES_NEEDING_NO_DECISION_LOG), (
+            "the spec and the code disagree about which statuses need no "
+            "decision_log.\n"
+            f"  spec says exempt:    {sorted(documented_exempt)}\n"
+            f"  code treats exempt:  {sorted(STATUSES_NEEDING_NO_DECISION_LOG)}\n"
+            "Every other status records a divergence and owes a reason."
+        )
+
     def test_every_documented_status_explains_itself(self):
         """A one-word gloss is not a definition; the whole point of the table
         is that a reader can tell the four apart without guessing."""
@@ -386,21 +431,61 @@ class TestEveryStatusIsInTheVocabulary:
             "find-and-replace would just move the ambiguity."
         )
 
-    def test_ported_elsewhere_says_where(self):
-        """``ported_elsewhere`` without a ``python_path`` is a worse
-        ``porting_deferred``: it asserts the capability exists and then
-        declines to say where, so the next reader has to search for it."""
+    def test_a_status_that_claims_a_port_says_where(self):
+        """A status asserting the capability exists must name the module.
+
+        ``regular_port`` and ``ported_differently`` both claim Python can do
+        the thing. Either one without a ``python_path`` is a worse
+        ``porting_deferred``: it makes the claim and then declines to say
+        where, so the next reader has to go searching for a module that may
+        not exist.
+        """
         offenders = [
-            f"{entry.where}: {entry.name}"
+            f"{entry.where}: {entry.name} (status: {entry.status})"
             for entry in all_entries()
             if entry.status in STATUSES_REQUIRING_PYTHON_PATH and not entry.python_paths
         ]
         assert not offenders, (
-            "these entries claim status: ported_elsewhere but name no python_path:\n  "
+            f"{len(offenders)} entr{'y' if len(offenders) == 1 else 'ies'} claim a "
+            "status that asserts a Python counterpart exists, but name no "
+            "python_path:\n  "
             + "\n  ".join(offenders)
             + "\n\nName the module the capability is reached through (a list is fine "
-            "when it really is more than one). If you cannot name one, the entry is "
-            "porting_deferred or matlab_only, not ported_elsewhere."
+            "for ported_differently when it really is more than one). If you cannot "
+            "name one, the entry is porting_deferred or matlab_only."
+        )
+
+    def test_every_entry_naming_a_matlab_path_carries_a_hash(self):
+        """An entry with no ``matlab_last_sync_hash`` can never drift.
+
+        That is the failure this gate exists for, and it is worse than a stale
+        hash rather than milder: a stale hash goes red and gets fixed, while a
+        missing one asserts "this port is current" forever and nothing can
+        contradict it. Silent false assurance instead of a red build.
+        NDI-python#211 decision 2 gates it.
+
+        Deliberately NOT dependent on an NDR-matlab checkout -- it reads only
+        this repo's YAML -- so it runs in every test-matrix job, not just the
+        bridge job. A rule this cheap should not be reachable from only one
+        job.
+
+        A ``retired`` entry sets ``matlab_path: "N/A"``, naming no file, so
+        there is nothing for it to drift against and it is exempt.
+        """
+        hashless = [
+            f"{entry.where}: {entry.name or '<unnamed>'} -> {entry.matlab_path}"
+            for entry in all_entries()
+            if entry.matlab_path and not entry.matlab_last_sync_hash
+        ]
+        assert not hashless, (
+            f"{len(hashless)} bridge entr{'y names' if len(hashless) == 1 else 'ies name'} "
+            "a matlab_path but record no matlab_last_sync_hash:\n  "
+            + "\n  ".join(hashless)
+            + "\n\nRecord the commit you examined:\n"
+            "    git -C ../NDR-matlab log -n 1 --format=%h -- <matlab_path>\n"
+            "An entry without a hash cannot drift, so it claims to be current "
+            "forever and nothing can contradict it. See section 5a of "
+            "docs/developer_notes/" + BRIDGE_FILENAME + "."
         )
 
     def test_every_named_python_path_exists(self):
@@ -416,32 +501,28 @@ class TestEveryStatusIsInTheVocabulary:
             "under src/:\n  " + "\n  ".join(missing)
         )
 
-    def test_a_plain_port_is_not_spelled_out(self):
-        """There is exactly one way to say the ordinary thing.
+    def test_every_entry_states_its_status(self):
+        """An absent ``status`` does not announce what it means.
 
-        ``status: ported`` / ``implemented`` alongside an implicit default is
-        how a vocabulary grows two spellings for one claim, and then two
-        meanings for one spelling.
+        These files are read by people far more often than by this test
+        suite, and a reader looking at an entry with no ``status`` cannot tell
+        "this is a normal port" from "nobody filled this in". So the ordinary
+        case is written out as ``regular_port`` rather than left to inference,
+        and an entry that omits it fails here.
         """
-        offenders = [
-            f"{entry.where}: {entry.name} has status: {entry.status}"
+        silent = [
+            f"{entry.where}: {entry.name or '<unnamed>'} -> {entry.matlab_path}"
             for entry in all_entries()
-            if entry.status in ("ported", "implemented")
+            if entry.matlab_path and not entry.status
         ]
-        assert (
-            not offenders
-        ), "a plain 1:1 port carries no status at all -- just a python_path:\n  " + "\n  ".join(
-            offenders
+        assert not silent, (
+            f"{len(silent)} bridge entr{'y' if len(silent) == 1 else 'ies'} record a "
+            "matlab_path but no status:\n  "
+            + "\n  ".join(silent)
+            + "\n\nEvery entry states its status. An ordinary 1:1 port is "
+            "`status: regular_port`; anything else takes the matching value from "
+            "section 6 of docs/developer_notes/" + BRIDGE_FILENAME + " plus a decision_log."
         )
-
-
-class TestEveryRetiredEntryIsATombstone:
-    """``retired`` says the MATLAB function is gone upstream.
-
-    An entry claiming that while still pointing at a live ``.m`` file is
-    making a false claim, and the completeness check cannot see it -- the
-    path resolves, so the entry looks fine.
-    """
 
     def test_retired_entries_do_not_point_at_a_live_matlab_file(self):
         root = require_matlab_root()
@@ -475,14 +556,31 @@ class TestTheWorkflowActuallyRunsTheBridgeChecks:
     test of its own rather than a comment asking the next person to remember.
     """
 
-    def _bridge_job(self) -> str:
+    def _job(self, name: str) -> str:
+        """The YAML text of one top-level job in the CI workflow."""
         text = CI_WORKFLOW.read_text(encoding="utf-8")
-        marker = "\n  bridge:\n"
-        assert marker in text, f"{CI_WORKFLOW.relative_to(REPO_ROOT)} has no `bridge:` job"
+        marker = f"\n  {name}:\n"
+        assert marker in text, f"{CI_WORKFLOW.relative_to(REPO_ROOT)} has no `{name}:` job"
         after = text.split(marker, 1)[1]
         # Up to the next top-level job key (two-space indent at line start).
         following = re.search(r"\n  [a-zA-Z0-9_-]+:\n", after)
         return after[: following.start()] if following else after
+
+    def _job_commands(self, name: str) -> str:
+        """A job's text with COMMENT LINES STRIPPED.
+
+        Guards about what a job *runs* must read what it runs. Matching raw
+        job text lets a comment mentioning the flag satisfy an assertion the
+        command no longer does -- which is how the first version of
+        :meth:`test_the_test_matrix_deselects_matlab_dependent_tests` passed
+        while the matrix had stopped deselecting anything.
+        """
+        return "\n".join(
+            line for line in self._job(name).splitlines() if not line.lstrip().startswith("#")
+        )
+
+    def _bridge_job(self) -> str:
+        return self._job("bridge")
 
     def test_every_bridge_test_file_is_named_by_the_bridge_job(self):
         job = self._bridge_job()
@@ -506,6 +604,48 @@ class TestTheWorkflowActuallyRunsTheBridgeChecks:
             f"the `bridge` job does not set {STRICT_ENV_VAR}. Without it, a broken "
             "NDR-matlab checkout makes every bridge test skip, and the job goes "
             "green having checked nothing."
+        )
+
+    def test_the_test_matrix_deselects_matlab_dependent_tests(self):
+        """The matrix jobs have no NDR-matlab checkout, so tests needing one
+        must be DESELECTED there, not skipped.
+
+        Skipping would work, and that is the problem: it leaves a standing
+        pile of skips in every matrix job, which trains a reader to scroll
+        past skips -- so the next one, a real one, goes unnoticed. Same
+        reasoning the whole bridge guard rests on.
+        """
+        commands = self._job_commands("test")
+        assert "not needs_matlab" in commands, (
+            "the `test` matrix job does not deselect MATLAB-dependent tests. "
+            'Add -m "not needs_matlab" to its pytest invocation; without it '
+            "those tests skip there instead, and a standing pile of skips is "
+            "what this repo's bridge guard exists to avoid."
+        )
+
+    def test_the_bridge_job_does_not_deselect_them(self):
+        """The corollary, and the one that actually matters.
+
+        Deselecting in the matrix is only safe because the bridge job runs
+        them. If that job ever grew the same filter, the port-synchrony core
+        -- drift, the commit-object check, completeness -- would run NOWHERE
+        while every job stayed green.
+        """
+        commands = self._job_commands("bridge")
+        assert "needs_matlab" not in commands, (
+            "the `bridge` job filters on the needs_matlab marker. It must not: "
+            "it is the only job with an NDR-matlab checkout, so filtering there "
+            "would leave drift and completeness running in no job at all, with "
+            "CI still green."
+        )
+
+    def test_the_marker_is_registered(self):
+        """An unregistered marker is a warning, not an error -- so a typo in
+        the filter would silently deselect nothing at all."""
+        pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        assert "needs_matlab:" in pyproject, (
+            "the needs_matlab marker is not registered in pyproject.toml's "
+            "[tool.pytest.ini_options] markers list"
         )
 
     def test_the_matlab_checkout_is_not_shallow(self):

@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: channelstring2channels
     matlab_path: "+ndr/+string/channelstring2channels.m"
+    status: regular_port
     python_path: "ndr/string/channelstring2channels.py"
     matlab_last_sync_hash: "e4c5a25"
     input_arguments:
@@ -17,6 +18,7 @@ functions:
 
   - name: intseq2str
     matlab_path: "+ndr/+string/intseq2str.m"
+    status: regular_port
     python_path: "ndr/string/intseq2str.py"
     matlab_last_sync_hash: "e4c5a25"
     input_arguments:
@@ -28,6 +30,7 @@ functions:
 
   - name: str2intseq
     matlab_path: "+ndr/+string/str2intseq.m"
+    status: regular_port
     python_path: "ndr/string/str2intseq.py"
     matlab_last_sync_hash: "e4c5a25"
     input_arguments:

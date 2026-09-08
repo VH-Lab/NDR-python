@@ -6,6 +6,7 @@ project_metadata:
 functions:
   - name: isOMEZarr
     matlab_path: "+ndr/+format/+omezarr/isOMEZarr.m"
+    status: regular_port
     matlab_last_sync_hash: "21eedad"
     python_path: "ndr/format/omezarr/isOMEZarr.py"
     decision_log: >-
@@ -17,6 +18,7 @@ functions:
 
   - name: listPyramids
     matlab_path: "+ndr/+format/+omezarr/listPyramids.m"
+    status: regular_port
     matlab_last_sync_hash: "21eedad"
     python_path: "ndr/format/omezarr/listPyramids.py"
     decision_log: >-
@@ -30,6 +32,7 @@ functions:
 
   - name: readAttrs
     matlab_path: "+ndr/+format/+omezarr/readAttrs.m"
+    status: regular_port
     matlab_last_sync_hash: "21eedad"
     python_path: "ndr/format/omezarr/readAttrs.py"
     decision_log: >-
@@ -40,6 +43,7 @@ functions:
 
   - name: resolveArrayPath
     matlab_path: "+ndr/+format/+omezarr/resolveArrayPath.m"
+    status: regular_port
     matlab_last_sync_hash: "21eedad"
     python_path: "ndr/format/omezarr/resolveArrayPath.py"
     decision_log: >-
@@ -51,6 +55,7 @@ functions:
 
   - name: readArray
     matlab_path: "+ndr/+format/+omezarr/readArray.m"
+    status: regular_port
     matlab_last_sync_hash: "a847431"
     python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
@@ -66,7 +71,7 @@ functions:
       readZArrayMeta). Python has the `zarr` library, so those helpers
       collapse into a single `zarr.open()` call plus numpy slicing --
       about 10 lines total. The `private/*.m` files are recorded in this
-      bridge as `status: ported_elsewhere` for that reason: Python does
+      bridge as `status: ported_differently` for that reason: Python does
       every one of those jobs, through zarr/numcodecs inside readArray
       rather than in a file-per-helper mirror of the MATLAB layout.
 
@@ -78,7 +83,7 @@ functions:
   - name: decompressBlosc
     matlab_path: "+ndr/+format/+omezarr/private/decompressBlosc.m"
     matlab_last_sync_hash: "a847431"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
       Done by a dependency rather than by a mirrored helper: MATLAB unwraps
@@ -90,7 +95,7 @@ functions:
   - name: decompressZstd
     matlab_path: "+ndr/+format/+omezarr/private/decompressZstd.m"
     matlab_last_sync_hash: "248f7f2"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
       Done by a dependency rather than by a mirrored helper: MATLAB shells
@@ -102,7 +107,7 @@ functions:
   - name: parseDType
     matlab_path: "+ndr/+format/+omezarr/private/parseDType.m"
     matlab_last_sync_hash: "a847431"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
       Done by a dependency rather than by a mirrored helper: MATLAB parses
@@ -115,7 +120,7 @@ functions:
   - name: readChunk
     matlab_path: "+ndr/+format/+omezarr/private/readChunk.m"
     matlab_last_sync_hash: "248f7f2"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
       Done by a dependency rather than by a mirrored helper: MATLAB opens
@@ -127,7 +132,7 @@ functions:
   - name: readZArrayMeta
     matlab_path: "+ndr/+format/+omezarr/private/readZArrayMeta.m"
     matlab_last_sync_hash: "a847431"
-    status: ported_elsewhere
+    status: ported_differently
     python_path:
       - "ndr/format/omezarr/readArray.py"
       - "ndr/format/omezarr/listPyramids.py"

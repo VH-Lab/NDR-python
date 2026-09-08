@@ -83,6 +83,13 @@ project_metadata:
 #
 #     git -C ../NDR-matlab log -n 1 --format=%h -- <matlab_path>
 #
+# BOTH FORMS OF COMMIT ARE LEGAL (NDI-python#211). The command above gives the
+# file's own last-touching commit -- the default, and the more informative of
+# the two, because it says "I examined this version of this file". A repo-wide
+# commit is equally legal, e.g. NDR-matlab HEAD recorded when a batch of files
+# was examined together: a broader claim, "I examined as of this repo state".
+# Drift (Section 5a) is sound under both, so neither needs rewriting.
+#
 # NOT with `git hash-object <file>`. The distinction matters because freshness
 # is asked by walking history:
 #
@@ -95,9 +102,15 @@ project_metadata:
 # because its spec said "the hash of the .m file" while printing a command that
 # yields a commit.
 #
-# NDR-python additionally requires the commit to be the LATEST one touching
-# that file (see Section 5a). This is stricter than NDI-python, which accepts
-# any commit because it also records repo-wide batch-sync commits.
+# WHAT COUNTS AS OUT OF DATE is Section 5a, and the rule is set for all three
+# bridge repos by the coordinating issue, NDI-python#211 -- not here. This
+# spec deliberately does NOT restate another repo's policy: an earlier draft
+# said NDR-python was "stricter than NDI-python, which accepts any commit",
+# which was a description of somebody else's rule that goes stale the moment
+# they change it. NDI-python#211 asked for exactly that sentence to be
+# deleted and cross-referenced instead. Read the policy there; read how
+# NDR-python enforces it in Section 5a and in
+# tests/test_matlab_bridge_completeness.py.
 #
 # RECOVERING A BAD HASH. If an entry ever holds a blob hash, convert it
 # exactly: walk the file's history comparing `git rev-parse <commit>:<path>`
@@ -108,49 +121,95 @@ project_metadata:
 # false.
 
 # =============================================================================
-# 5a. Detecting Upstream MATLAB Changes
+# 5a. DRIFT: detecting upstream MATLAB changes
 # =============================================================================
-# Every recorded `matlab_last_sync_hash` must be the latest commit touching its
-# MATLAB file. `tests/test_matlab_bridge_completeness.py` enforces this, so
-# when MATLAB edits a bridged file CI goes red and you must either:
+# An entry DRIFTS when NDR-matlab has commits touching its `matlab_path` after
+# the recorded hash:
+#
+#     git -C ../NDR-matlab log <matlab_last_sync_hash>..HEAD -- <matlab_path>
+#
+# Non-empty means drift, and drift fails CI. The rule is set for all three
+# bridge repos by NDI-python#211; `tests/test_matlab_bridge_completeness.py`
+# enforces it here.
+#
+# THE CHECK IS FILE-SCOPED, ALWAYS. `-- <matlab_path>` restricts the walk to
+# commits touching that ONE file, so unrelated NDR-matlab activity never makes
+# an entry drift, whatever form the recorded hash takes.
+#
+# NOT "the hash equals the file's last-touching commit". That older rule asked
+# about the hash's FORM rather than about the file, and so rejected records
+# that were TRUE -- an entry recording a repo-wide batch-sync commit failed it
+# even when nothing had touched the file since. The only way to clear the red
+# build was to rewrite a correct record with a different, equally correct
+# value. NDI-python had 103 entries of that shape. A check that demands
+# busywork on true records is a check contributors learn to ignore.
+#
+# When an entry does drift, the file really has changed since it was examined,
+# and you must either:
 #
 #   1. Review the MATLAB diff, port the behavioral change, and bump the hash; or
 #   2. Bump the hash and add a short `decision_log` note saying why the MATLAB
 #      change is a no-op on the Python side (comment-only, analyzer fix, ...).
 #
 # This check needs a NON-SHALLOW NDR-matlab checkout. A shallow clone collapses
-# every file's history to the last merge commit and lies about which commit is
-# latest, so CI checks it out with `fetch-depth: 0` and the test fails loudly
-# rather than emitting one false failure per entry.
+# every file's history to the commit it fetched, so the drift walk cannot see
+# the real history and every entry reads as wrong. CI checks it out with
+# `fetch-depth: 0`, and the test fails loudly on a shallow clone rather than
+# emitting one false failure per entry.
+#
+# EVERY ENTRY NAMING A `matlab_path` MUST CARRY A HASH (NDI-python#211
+# decision 2, enforced). An entry without one can never drift, so it asserts
+# its port is current forever and nothing can contradict it -- the same false
+# assurance as a stale hash, but silent instead of red. A `retired` entry sets
+# `matlab_path: "N/A"`, names no file, and is exempt.
+#
+# That gate reads only this repo, needing no NDR-matlab checkout, so it runs in
+# every test-matrix job rather than only the bridge job.
 
 # =============================================================================
 # 6. status: THE COMPLETE VOCABULARY
 # =============================================================================
-# `status` says why a MATLAB function has no 1:1 Python counterpart. It is a
-# closed set. `tests/test_matlab_bridge_conventions.py` reads the keys below
-# and rejects any other value, so this table and the enforcement cannot drift.
+# `status` says how a MATLAB function is (or is not) represented in Python.
+# It is a closed set. `tests/test_matlab_bridge_conventions.py` reads the keys
+# below and rejects any other value, so this table and the enforcement cannot
+# drift.
 #
-# THE DEFAULT IS NOT WRITTEN DOWN. A ported function carries NO `status:` at
-# all -- just a `python_path` (and `python_class` for a class) under the
-# mirrored name. Do not write `status: ported`; there must be exactly one way
-# to say the ordinary thing.
+# EVERY ENTRY STATES ITS STATUS, INCLUDING THE ORDINARY ONE. A plain 1:1 port
+# is written `status: regular_port`, not left blank. These files are read by
+# people far more often than by the test suite, and an absent field does not
+# announce what it means: a reader looking at an entry with no `status` cannot
+# tell "this is a normal port" from "nobody filled this in". Spelling it out
+# costs one line and removes the guess. This is enforced -- an entry with a
+# `matlab_path` and no `status` fails.
 #
-# Every entry that DOES carry a status needs a `decision_log` explaining it
-# (enforced). A status without a reason passes the completeness check while
-# telling the next reader nothing, so the gap gets re-investigated anyway.
+# Every status EXCEPT `regular_port` needs a `decision_log` explaining it
+# (enforced). A divergence without a reason passes the completeness check while
+# telling the next reader nothing, so the gap gets re-investigated anyway. A
+# regular port needs no justification -- mirroring MATLAB is the default -- so
+# requiring 105 boilerplate decision_logs would only devalue the ones that
+# carry real reasoning.
 
 status_vocabulary:
 
-  ported_elsewhere: >-
-    Python HAS this capability, but not as a 1:1 counterpart under the mirrored
-    name -- it lives under a different name, is folded into a class, or is
-    reached through different machinery (including a third-party dependency
-    that does the work MATLAB hand-rolls). REQUIRES a `python_path` naming the
-    Python module through which the capability is reached; when the real work
-    is done by a dependency, the `decision_log` names the dependency. Use this
-    and not `matlab_only` whenever a Python caller can do the thing -- a reader
-    who sees `matlab_only` concludes Python cannot, which is the opposite of
-    the truth.
+  regular_port: >-
+    The ordinary case, and by far the most common: a 1:1 Python counterpart
+    under the mirrored name. REQUIRES a `python_path` (and `python_class` for
+    a class). Needs no `decision_log` -- there is no decision to record, since
+    mirroring MATLAB is what the port does by default. Written out rather than
+    left blank so that a human reading the YAML can tell a finished entry from
+    an unfinished one at a glance.
+
+  ported_differently: >-
+    Python HAS this capability, but does the job a DIFFERENT WAY rather than as
+    a 1:1 counterpart under the mirrored name: under a different name, folded
+    into a class or another function, or through different machinery -- very
+    often a third-party dependency doing work MATLAB hand-rolls. The label
+    names the manner, not the location: `python_path` already answers WHERE,
+    and REQUIRES an answer here (a list when the capability genuinely spans
+    modules). When the real work is done by a dependency, the `decision_log`
+    names it. Use this and not `matlab_only` whenever a Python caller can do
+    the thing -- a reader who sees `matlab_only` concludes Python cannot, which
+    is the opposite of the truth.
 
   porting_deferred: >-
     No Python counterpart today. The gap is known and may be closed later. The
@@ -172,15 +231,28 @@ status_vocabulary:
     NDR-matlab commit removed it.
 
 # RETIRED STATUS VALUES -- do not reintroduce:
+#   ported_elsewhere -> ported_differently. "Elsewhere" names a PLACE, but
+#                      `python_path` already answers where. Of the nine entries
+#                      carrying it, six had not moved anywhere at all: zarr and
+#                      numcodecs simply do what MATLAB hand-rolls, and four
+#                      native readers cover what +ndr/+reader/imagestack.m
+#                      delegates to NANSEN. What a reader cannot recover from
+#                      any other field is the MANNER, so the label names that.
+#                      Renamed across NDI-python, NDR-python and DID-python
+#                      together; see NDR-python issue #21.
 #   not_yet_ported  -> porting_deferred  (vague: "not yet" by whom, blocked on what?)
 #   not_applicable  -> split by what is actually meant. It conflated three
 #                      incompatible claims: "Python does this another way"
-#                      (ported_elsewhere), "we haven't done it" (porting_deferred)
+#                      (ported_differently), "we haven't done it" (porting_deferred)
 #                      and "MATLAB-ism, never will" (matlab_only). Its plain
 #                      reading -- "Python cannot / need not do this" -- was
 #                      flatly wrong for the majority of entries carrying it.
-#   implemented     -> a synonym for the default; omit `status` instead.
+#   implemented     -> regular_port (one spelling for the ordinary case).
+#   ported          -> regular_port (ditto).
 #   does_not_exist  -> retired.
+#
+# NOTE: an ABSENT `status` used to mean "regular port". It no longer does --
+# it now means the entry is incomplete, and fails. See the preamble above.
 
 # =============================================================================
 # 7. Structure for Classes and Functions
@@ -190,6 +262,7 @@ status_vocabulary:
 # - name: base                        # Exact MATLAB Name
 #   type: class
 #   matlab_path: "+ndr/+reader/base.m"
+#   status: regular_port
 #   python_path: "ndr/reader/base.py"
 #   python_class: "ndr_reader_base"
 #   matlab_last_sync_hash: "a4c9e07"  # Latest COMMIT touching base.m (Section 5)
@@ -229,6 +302,7 @@ status_vocabulary:
 # - name: ndrpath
 #   type: function
 #   matlab_path: "+ndr/+fun/ndrpath.m"
+#   status: regular_port
 #   python_path: "ndr/fun/ndrpath.py"
 #   matlab_last_sync_hash: "8f3a2b1"
 #   input_arguments: []
@@ -261,6 +335,7 @@ status_vocabulary:
 #      - `name` (MATLAB class name, e.g. `intan_rhd`)
 #      - `type: class`
 #      - `matlab_path` (e.g. `"+ndr/+reader/intan_rhd.m"`)
+#      - `status` (Section 6 -- `regular_port` for an ordinary 1:1 port)
 #      - `python_path` (e.g. `"ndr/reader/intan_rhd.py"`)
 #      - `python_class` (derived using the Class Name Mirror Rule from
 #        `docs/developer_notes/PYTHON_PORTING_GUIDE.md`, e.g.
@@ -272,7 +347,8 @@ status_vocabulary:
 #        `type_python`.
 # 4. For each standalone MATLAB function, add an entry under `functions:` with
 #    the same fields (minus `properties` and `methods`). If it has no 1:1
-#    counterpart, give it a `status` from Section 6 and a `decision_log`.
+#    counterpart, give it the matching `status` from Section 6 and a
+#    `decision_log` saying why.
 # 5. Register the package in `PACKAGES` in
 #    `tests/test_matlab_bridge_completeness.py`, or nothing under it is guarded.
 # 6. Run the bridge checks:
@@ -294,13 +370,15 @@ status_vocabulary:
 # name                 | Strict Match. Case-sensitive match to the MATLAB .m file.
 # matlab_path          | Path relative to NDR-matlab's repo root, or "N/A" for a
 #                      | `retired` entry. Must name a file that exists.
-# matlab_last_sync_hash| A COMMIT in NDR-matlab, and the latest one touching the
-#                      | file. See Section 5. Never a blob.
-# status               | One of Section 6's vocabulary, or absent for a plain
-#                      | port. Requires a `decision_log`.
-# python_path          | Where the Python counterpart lives. Required for a plain
-#                      | port and for `ported_elsewhere`. A plain port names one
-#                      | file; a `ported_elsewhere` entry MAY name a list when
+# matlab_last_sync_hash| A COMMIT in NDR-matlab -- either the file's own
+#                      | last-touching commit or a repo-wide one. Must not have
+#                      | DRIFTED (Section 5a). See Section 5. Never a blob.
+# status               | REQUIRED on every entry. One of Section 6's vocabulary;
+#                      | `regular_port` for an ordinary 1:1 port. Requires a
+#                      | `decision_log` for every value except `regular_port`.
+# python_path          | Where the Python counterpart lives. Required for
+#                      | `regular_port` and for `ported_differently`. A plain port names one
+#                      | file; a `ported_differently` entry MAY name a list when
 #                      | the capability is genuinely reached through more than
 #                      | one module (see +ndr/+reader/imagestack.m).
 # python_qualified     | Dotted module path. Required on EVERY member of a
@@ -308,6 +386,7 @@ status_vocabulary:
 # input_arguments      | Used to generate Pydantic @validate_call.
 # output_arguments     | Defines the order of the Return Tuple.
 # type_python          | Use Python 3.10+ syntax (e.g., str | int).
-# decision_log         | Mandatory for any divergence and for any `status`.
+# decision_log         | Mandatory for any divergence and for every `status`
+#                      | except `regular_port`.
 #                      | Should include the sync date (e.g., "Synchronized with
 #                      | MATLAB main as of 2026-04-11.").

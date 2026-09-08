@@ -6,21 +6,25 @@ project_metadata:
 functions:
   - name: bitDepth
     matlab_path: "+ndr/+fun/bitDepth.m"
+    status: regular_port
     python_path: "ndr/fun/bitDepth.py"
     matlab_last_sync_hash: "fce9dbb"
 
   - name: getDataTypeString
     matlab_path: "+ndr/+fun/getDataTypeString.m"
+    status: regular_port
     python_path: "ndr/fun/getDataTypeString.py"
     matlab_last_sync_hash: "fce9dbb"
 
   - name: ndrpath
     matlab_path: "+ndr/+fun/ndrpath.m"
+    status: regular_port
     python_path: "ndr/fun/ndrpath.py"
     matlab_last_sync_hash: "9cfcea2"
 
   - name: ndrresource
     matlab_path: "+ndr/+fun/ndrresource.m"
+    status: regular_port
     python_path: "ndr/fun/ndrresource.py"
     matlab_last_sync_hash: "6ff7dd6"
 

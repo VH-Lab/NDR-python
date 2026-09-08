@@ -7,6 +7,7 @@ classes:
   - name: clocktype
     type: class
     matlab_path: "+ndr/+time/clocktype.m"
+    status: regular_port
     python_path: "ndr/time/clocktype.py"
     matlab_last_sync_hash: "3cf7866"
     python_class: "ClockType"
@@ -14,6 +15,7 @@ classes:
   - name: timereference
     type: class
     matlab_path: "+ndr/+time/timereference.m"
+    status: regular_port
     python_path: "ndr/time/timereference.py"
     matlab_last_sync_hash: "93ffb18"
     python_class: "TimeReference"
@@ -37,6 +39,7 @@ classes:
 functions:
   - name: samples2times
     matlab_path: "+ndr/+time/+fun/samples2times.m"
+    status: regular_port
     python_path: "ndr/time/fun/samples2times.py"
     matlab_last_sync_hash: "d6680e8"
     input_arguments:
@@ -52,6 +55,7 @@ functions:
 
   - name: times2samples
     matlab_path: "+ndr/+time/+fun/times2samples.m"
+    status: regular_port
     python_path: "ndr/time/fun/times2samples.py"
     matlab_last_sync_hash: "d6680e8"
     input_arguments:

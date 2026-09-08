@@ -29,6 +29,7 @@ project_metadata:
 functions:
   - name: read_SOMSMR_datafile
     matlab_path: "+ndr/+format/+ced/read_SOMSMR_datafile.m"
+    status: regular_port
     python_path: "ndr/format/ced/read_SOMSMR_datafile.py"
     matlab_last_sync_hash: "7745c1b"
     input_arguments:
@@ -56,6 +57,7 @@ functions:
 
   - name: read_SOMSMR_header
     matlab_path: "+ndr/+format/+ced/read_SOMSMR_header.m"
+    status: regular_port
     python_path: "ndr/format/ced/read_SOMSMR_header.py"
     matlab_last_sync_hash: "7745c1b"
     input_arguments:
@@ -67,6 +69,7 @@ functions:
 
   - name: read_SOMSMR_sampleinterval
     matlab_path: "+ndr/+format/+ced/read_SOMSMR_sampleinterval.m"
+    status: regular_port
     python_path: "ndr/format/ced/read_SOMSMR_sampleinterval.py"
     matlab_last_sync_hash: "7745c1b"
     input_arguments:
@@ -106,6 +109,7 @@ functions:
 sonpipe:
   - name: read_SOMSMR_header
     matlab_path: "+ndr/+format/+ced/+sonpipe/read_SOMSMR_header.m"
+    status: regular_port
     python_path: "ndr/format/ced/sonpipe/read_SOMSMR_header.py"
     matlab_last_sync_hash: "d5953d7"
     decision_log: >
@@ -114,6 +118,7 @@ sonpipe:
 
   - name: read_SOMSMR_datafile
     matlab_path: "+ndr/+format/+ced/+sonpipe/read_SOMSMR_datafile.m"
+    status: regular_port
     python_path: "ndr/format/ced/sonpipe/read_SOMSMR_datafile.py"
     matlab_last_sync_hash: "d5953d7"
     decision_log: >
@@ -122,6 +127,7 @@ sonpipe:
 
   - name: read_SOMSMR_sampleinterval
     matlab_path: "+ndr/+format/+ced/+sonpipe/read_SOMSMR_sampleinterval.m"
+    status: regular_port
     python_path: "ndr/format/ced/sonpipe/read_SOMSMR_sampleinterval.py"
     matlab_last_sync_hash: "d5953d7"
     decision_log: >
@@ -131,6 +137,7 @@ sonpipe:
 
   - name: channelinfo
     matlab_path: "+ndr/+format/+ced/+sonpipe/channelinfo.m"
+    status: regular_port
     python_path: "ndr/format/ced/sonpipe/channelinfo.py"
     matlab_last_sync_hash: "d5953d7"
     decision_log: >
@@ -139,6 +146,7 @@ sonpipe:
 
   - name: executable
     matlab_path: "+ndr/+format/+ced/+sonpipe/executable.m"
+    status: regular_port
     python_path: "ndr/format/ced/sonpipe/executable.py"
     matlab_last_sync_hash: "d5953d7"
     decision_log: >
@@ -148,7 +156,7 @@ sonpipe:
   - name: runcmd
     matlab_path: "+ndr/+format/+ced/+sonpipe/runcmd.m"
     matlab_last_sync_hash: "d5953d7"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/ced/sonpipe/_invoke.py"
     decision_log: >
       Ported under a different name: MATLAB shells to the CLI through
@@ -170,7 +178,7 @@ sonpipe:
   - name: invoke_binary
     matlab_path: "+ndr/+format/+ced/+sonpipe/private/invoke_binary.m"
     matlab_last_sync_hash: "a32c4f5"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/ced/sonpipe/_invoke.py"
     decision_log: >
       Folded into _invoke rather than given its own module: MATLAB reads the
@@ -181,7 +189,7 @@ sonpipe:
   - name: invoke_text
     matlab_path: "+ndr/+format/+ced/+sonpipe/private/invoke_text.m"
     matlab_last_sync_hash: "a32c4f5"
-    status: ported_elsewhere
+    status: ported_differently
     python_path: "ndr/format/ced/sonpipe/_invoke.py"
     decision_log: >
       Folded into _invoke rather than given its own module: MATLAB reads the

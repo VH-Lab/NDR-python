@@ -114,7 +114,14 @@ jobs:
         run: pip install -e ".[dev,formats]"
 
       - name: Run tests
-        run: pytest tests/ src/ndr/test/ -v --tb=short
+        # -m "not needs_matlab" DESELECTS the bridge tests that need an
+        # NDR-matlab checkout, which this job does not have. Deselecting, not
+        # skipping: a standing pile of skips trains a reader to scroll past
+        # them, and the next skip -- a real one -- goes unnoticed. That is the
+        # same reasoning the bridge guard itself rests on. tests/conftest.py
+        # applies the marker automatically; the `bridge` job checks out
+        # NDR-matlab and runs every one of them.
+        run: pytest tests/ src/ndr/test/ -m "not needs_matlab" -v --tb=short
 
   ced-integration:
     name: CED integration (real sonpipe)
