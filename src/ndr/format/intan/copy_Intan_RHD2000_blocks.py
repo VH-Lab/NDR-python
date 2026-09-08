@@ -48,8 +48,8 @@ def copy_Intan_RHD2000_blocks(
     filename_out = Path(filename_out)
 
     header = read_Intan_RHD2000_header(filename_in)
-    blockinfo, bytes_per_block, bytes_present, num_data_blocks = Intan_RHD2000_blockinfo(
-        filename_in, header
+    blockinfo, bytes_per_block, bytes_present, num_data_blocks, _file_blocks = (
+        Intan_RHD2000_blockinfo(filename_in, header)
     )
     header_size = blockinfo["header_size"]
 

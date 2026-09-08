@@ -13,6 +13,9 @@ import struct
 from pathlib import Path
 from typing import Any
 
+from ndr.format.intan.detectRHD2000FileMode import detectRHD2000FileMode
+from ndr.format.intan.getRHD2000FileList import getRHD2000FileList
+
 
 def _fread_QString(f) -> str:
     """Read a Qt QString from a binary file (port of fread_QString.m)."""
@@ -47,23 +50,59 @@ def _read_channel_header(f, data_file_main_version: int) -> dict[str, Any]:
     return ch
 
 
-def read_Intan_RHD2000_header(filename: str | Path) -> dict[str, Any]:
+def read_Intan_RHD2000_header(filename: str | Path, fileMode: str = "detect") -> dict[str, Any]:
     """Read the header from an Intan RHD2000 file.
 
     Parameters
     ----------
     filename : str or Path
         Path to the .rhd file.
+    fileMode : str, optional
+        ``"detect"`` (default) checks whether FILENAME has Intan sibling
+        files in the same directory matching
+        ``<prefix>_<YYMMDD>_<HHMMSS>.rhd`` and resolves to either
+        ``"multiFile"`` or ``"singleFile"`` (see
+        :func:`detectRHD2000FileMode`). Pass ``"singleFile"`` to force
+        reading a single file, or ``"multiFile"`` to force treating
+        FILENAME as one member of a set that together represents a
+        continuous recording.
 
     Returns
     -------
     dict
-        Header information including frequency parameters and channel lists.
+        Header information including frequency parameters and channel
+        lists. ``header["fileinfo"]["multifile"]`` carries the constituent
+        files, their sizes and the shared header size, so the block and
+        data readers can treat the recording as one continuous file; in
+        single-file mode it holds the single-file equivalents.
+
+    Notes
+    -----
+    The header is parsed from the FIRST (chronologically earliest) file
+    only. Acquisition parameters are identical across the files of a
+    multi-file recording, so one parse characterises the layout; only the
+    per-file sizes need measuring.
+
+    ``header["fileinfo"]`` here carries only ``filesize``, ``headersize``
+    and ``multifile``. MATLAB's ``fileinfo`` additionally repeats the
+    version numbers, eval board mode and notes, but this port already
+    exposes those at the top level of ``header``; duplicating them inside
+    ``fileinfo`` would create two sources of truth in one dict, which is
+    worse than the divergence it would remove.
+
+    See Also
+    --------
+    detectRHD2000FileMode, getRHD2000FileList, read_Intan_RHD2000_datafile
     """
-    filename = Path(filename)
+    if fileMode == "detect":
+        fileMode = detectRHD2000FileMode(filename)
+    files = getRHD2000FileList(filename, fileMode)
+
+    # Parse from the first file; the rest share its acquisition parameters.
+    primary = Path(files[0])
     header: dict[str, Any] = {}
 
-    with open(filename, "rb") as f:
+    with open(primary, "rb") as f:
         # Magic number
         magic = struct.unpack("<I", f.read(4))[0]
         if magic != 0xC6912702:
@@ -173,5 +212,27 @@ def read_Intan_RHD2000_header(filename: str | Path) -> dict[str, Any]:
                         header["board_dig_in_channels"].append(ch)
                     elif signal_type == 5:
                         header["board_dig_out_channels"].append(ch)
+
+        # The next byte to be read is where the data blocks begin. Assumed
+        # identical across the files of a recording, as MATLAB assumes.
+        headersize = f.tell()
+
+    file_sizes = []
+    for member in files:
+        member_path = Path(member)
+        if not member_path.exists():
+            raise FileNotFoundError(f"Could not stat file {member_path}.")
+        file_sizes.append(member_path.stat().st_size)
+
+    header["fileinfo"] = {
+        "filesize": primary.stat().st_size,
+        "headersize": headersize,
+        "multifile": {
+            "fileMode": fileMode,
+            "files": [str(member) for member in files],
+            "file_sizes": file_sizes,
+            "headersize": headersize,
+        },
+    }
 
     return header

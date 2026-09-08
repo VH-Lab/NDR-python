@@ -138,7 +138,7 @@ class ndr_reader_intan__rhd(ndr_reader_base):
         header = read_Intan_RHD2000_header(filename)
 
         if not isdirectory:
-            _blockinfo, _bpb, _bp, num_data_blocks = Intan_RHD2000_blockinfo(filename, header)
+            _blockinfo, _bpb, _bp, num_data_blocks, _fb = Intan_RHD2000_blockinfo(filename, header)
             total_samples = int(header["num_samples_per_data_block"]) * num_data_blocks
         else:
             time_dat = Path(parentdir) / "time.dat"

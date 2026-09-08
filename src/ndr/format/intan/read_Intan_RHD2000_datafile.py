@@ -6,6 +6,7 @@ Port of +ndr/+format/+intan/read_Intan_RHD2000_datafile.m
 from __future__ import annotations
 
 import struct
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,7 @@ from ndr.time.fun.times2samples import matlab_round
 
 def Intan_RHD2000_blockinfo(
     filename: str | Path, header: dict[str, Any]
-) -> tuple[dict[str, Any], int, int, int]:
+) -> tuple[dict[str, Any], int, int, int, list[int]]:
     """Get block structure information for an RHD file.
 
     Parameters
@@ -29,7 +30,12 @@ def Intan_RHD2000_blockinfo(
 
     Returns
     -------
-    tuple of (blockinfo, bytes_per_block, bytes_present, num_data_blocks)
+    tuple of (blockinfo, bytes_per_block, bytes_present, num_data_blocks, file_blocks)
+        ``bytes_present`` and ``num_data_blocks`` are summed across every
+        file when HEADER describes a multi-file recording. ``file_blocks``
+        holds the per-file block counts -- length 1 in single-file mode,
+        length N in multi-file mode -- which is what lets the data reader
+        map a global sample range onto the file that holds it.
     """
     filename = Path(filename)
     filesize = filename.stat().st_size
@@ -92,8 +98,38 @@ def Intan_RHD2000_blockinfo(
     # We need to find where the header ends
     header_size = _get_header_size(filename, header)
 
-    bytes_present = filesize - header_size
-    num_data_blocks = bytes_present // bytes_per_block
+    multifile = (header.get("fileinfo") or {}).get("multifile") or {}
+    if multifile.get("fileMode") == "multiFile":
+        # Count blocks per constituent file and sum. The header size is
+        # shared -- the acquisition parameters match across the set -- so
+        # only the file sizes differ. MATLAB warns on a partial trailing
+        # block rather than failing; the same recording is usually still
+        # readable up to the last whole block, so mirror that.
+        mf_headersize = multifile.get("headersize", header_size)
+        file_blocks: list[int] = []
+        bytes_present = 0
+        for member, member_size in zip(multifile.get("files", []), multifile.get("file_sizes", [])):
+            member_bytes = member_size - mf_headersize
+            member_blocks = member_bytes // bytes_per_block
+            if member_bytes % bytes_per_block:
+                warnings.warn(
+                    f"File {member} may be truncated or corrupted. Proceeding with "
+                    f"{member_blocks} of {member_bytes / bytes_per_block} data blocks.",
+                    stacklevel=2,
+                )
+            file_blocks.append(member_blocks)
+            bytes_present += member_bytes
+        num_data_blocks = sum(file_blocks)
+    else:
+        bytes_present = filesize - header_size
+        num_data_blocks = bytes_present // bytes_per_block
+        if bytes_present % bytes_per_block:
+            warnings.warn(
+                f"File {filename} may be truncated or corrupted. Proceeding with "
+                f"{num_data_blocks} of {bytes_present / bytes_per_block} data blocks.",
+                stacklevel=2,
+            )
+        file_blocks = [num_data_blocks]
 
     blockinfo = {
         "samples_per_block": samples_per_block,
@@ -108,7 +144,7 @@ def Intan_RHD2000_blockinfo(
         "header_size": header_size,
     }
 
-    return blockinfo, bytes_per_block, bytes_present, num_data_blocks
+    return blockinfo, bytes_per_block, bytes_present, num_data_blocks, file_blocks
 
 
 def _get_header_size(filename: Path, header: dict[str, Any]) -> int:
@@ -214,8 +250,8 @@ def read_Intan_RHD2000_datafile(
     """
     filename = Path(filename)
     header = read_Intan_RHD2000_header(filename)
-    blockinfo, bytes_per_block, bytes_present, num_data_blocks = Intan_RHD2000_blockinfo(
-        filename, header
+    blockinfo, bytes_per_block, bytes_present, num_data_blocks, file_blocks = (
+        Intan_RHD2000_blockinfo(filename, header)
     )
 
     if isinstance(channel, int):

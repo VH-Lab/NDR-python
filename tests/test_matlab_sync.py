@@ -145,7 +145,7 @@ class TestIntanBlockAccounting:
 
     def test_block_size_divides_the_data_exactly(self):
         header = read_Intan_RHD2000_header(EXAMPLE_RHD)
-        _bi, bytes_per_block, bytes_present, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        _bi, bytes_per_block, bytes_present, _n, _fb = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
         assert (
             bytes_present % bytes_per_block == 0
         ), "data section is not a whole number of blocks; bytes_per_block is wrong"
@@ -153,7 +153,7 @@ class TestIntanBlockAccounting:
     def test_temp_bytes_follow_the_temp_channel_count(self):
         """Supply-voltage channels must not imply a temp-sensor sample."""
         header = read_Intan_RHD2000_header(EXAMPLE_RHD)
-        blockinfo, bytes_per_block, _bp, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        blockinfo, bytes_per_block, _bp, _n, _fb = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
         # This fixture is the interesting case: supply present, temp absent.
         assert blockinfo["num_supply"] > 0
         assert blockinfo["num_temp"] == 0
@@ -175,7 +175,7 @@ class TestIntanBlockAccounting:
         """t0_t1 must span all blocks, not lose the last partial-looking one."""
         reader = ndr_reader_intan__rhd()
         header = read_Intan_RHD2000_header(EXAMPLE_RHD)
-        _bi, _bpb, bytes_present, num_blocks = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        _bi, _bpb, bytes_present, num_blocks, _fb = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
         sr = header["frequency_parameters"]["amplifier_sample_rate"]
         spb = header["num_samples_per_data_block"]
         t0t1 = reader.t0_t1([EXAMPLE_RHD], 1)
@@ -205,7 +205,7 @@ class TestIntanSamplesPerDataBlockVersion:
 
     def test_blockinfo_uses_the_header_value(self):
         header = read_Intan_RHD2000_header(EXAMPLE_RHD)
-        blockinfo, _bpb, _bp, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        blockinfo, _bpb, _bp, _n, _fb = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
         assert blockinfo["samples_per_block"] == header["num_samples_per_data_block"]
 
     @pytest.mark.parametrize("main_version,expected", [(1, 60), (2, 128), (3, 128)])
@@ -216,7 +216,7 @@ class TestIntanSamplesPerDataBlockVersion:
         header["data_file_main_version_number"] = main_version
         header["num_samples_per_data_block"] = 60 if main_version == 1 else 128
 
-        blockinfo, bytes_per_block, _bp, _n = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
+        blockinfo, bytes_per_block, _bp, _n, _fb = Intan_RHD2000_blockinfo(EXAMPLE_RHD, header)
         assert blockinfo["samples_per_block"] == expected
 
         # The block must grow with the sample count, not stay pinned at the
