@@ -6,6 +6,7 @@ Port of +ndr/+format/+intan/read_Intan_RHD2000_datafile.m
 from __future__ import annotations
 
 import struct
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,7 @@ from ndr.time.fun.times2samples import matlab_round
 
 def Intan_RHD2000_blockinfo(
     filename: str | Path, header: dict[str, Any]
-) -> tuple[dict[str, Any], int, int, int]:
+) -> tuple[dict[str, Any], int, int, int, list[int]]:
     """Get block structure information for an RHD file.
 
     Parameters
@@ -29,7 +30,12 @@ def Intan_RHD2000_blockinfo(
 
     Returns
     -------
-    tuple of (blockinfo, bytes_per_block, bytes_present, num_data_blocks)
+    tuple of (blockinfo, bytes_per_block, bytes_present, num_data_blocks, file_blocks)
+        ``bytes_present`` and ``num_data_blocks`` are summed across every
+        file when HEADER describes a multi-file recording. ``file_blocks``
+        holds the per-file block counts -- length 1 in single-file mode,
+        length N in multi-file mode -- which is what lets the data reader
+        map a global sample range onto the file that holds it.
     """
     filename = Path(filename)
     filesize = filename.stat().st_size
@@ -92,8 +98,38 @@ def Intan_RHD2000_blockinfo(
     # We need to find where the header ends
     header_size = _get_header_size(filename, header)
 
-    bytes_present = filesize - header_size
-    num_data_blocks = bytes_present // bytes_per_block
+    multifile = (header.get("fileinfo") or {}).get("multifile") or {}
+    if multifile.get("fileMode") == "multiFile":
+        # Count blocks per constituent file and sum. The header size is
+        # shared -- the acquisition parameters match across the set -- so
+        # only the file sizes differ. MATLAB warns on a partial trailing
+        # block rather than failing; the same recording is usually still
+        # readable up to the last whole block, so mirror that.
+        mf_headersize = multifile.get("headersize", header_size)
+        file_blocks: list[int] = []
+        bytes_present = 0
+        for member, member_size in zip(multifile.get("files", []), multifile.get("file_sizes", [])):
+            member_bytes = member_size - mf_headersize
+            member_blocks = member_bytes // bytes_per_block
+            if member_bytes % bytes_per_block:
+                warnings.warn(
+                    f"File {member} may be truncated or corrupted. Proceeding with "
+                    f"{member_blocks} of {member_bytes / bytes_per_block} data blocks.",
+                    stacklevel=2,
+                )
+            file_blocks.append(member_blocks)
+            bytes_present += member_bytes
+        num_data_blocks = sum(file_blocks)
+    else:
+        bytes_present = filesize - header_size
+        num_data_blocks = bytes_present // bytes_per_block
+        if bytes_present % bytes_per_block:
+            warnings.warn(
+                f"File {filename} may be truncated or corrupted. Proceeding with "
+                f"{num_data_blocks} of {bytes_present / bytes_per_block} data blocks.",
+                stacklevel=2,
+            )
+        file_blocks = [num_data_blocks]
 
     blockinfo = {
         "samples_per_block": samples_per_block,
@@ -108,7 +144,7 @@ def Intan_RHD2000_blockinfo(
         "header_size": header_size,
     }
 
-    return blockinfo, bytes_per_block, bytes_present, num_data_blocks
+    return blockinfo, bytes_per_block, bytes_present, num_data_blocks, file_blocks
 
 
 def _get_header_size(filename: Path, header: dict[str, Any]) -> int:
@@ -189,6 +225,7 @@ def read_Intan_RHD2000_datafile(
     channel: int | list[int] = 1,
     t0: float = 0.0,
     t1: float = float("inf"),
+    fileMode: str = "detect",
 ) -> np.ndarray:
     """Read data from an Intan RHD2000 single-file format.
 
@@ -206,6 +243,11 @@ def read_Intan_RHD2000_datafile(
         Start time in seconds.
     t1 : float
         End time in seconds.
+    fileMode : str, optional
+        ``"detect"`` (default), ``"singleFile"`` or ``"multiFile"``. In
+        multi-file mode the request is dispatched across the constituent
+        files and the results concatenated, so the recording reads as one
+        continuous stream. See :func:`detectRHD2000FileMode`.
 
     Returns
     -------
@@ -213,9 +255,9 @@ def read_Intan_RHD2000_datafile(
         Data array with one column per channel.
     """
     filename = Path(filename)
-    header = read_Intan_RHD2000_header(filename)
-    blockinfo, bytes_per_block, bytes_present, num_data_blocks = Intan_RHD2000_blockinfo(
-        filename, header
+    header = read_Intan_RHD2000_header(filename, fileMode)
+    blockinfo, bytes_per_block, bytes_present, num_data_blocks, file_blocks = (
+        Intan_RHD2000_blockinfo(filename, header)
     )
 
     if isinstance(channel, int):
@@ -243,6 +285,44 @@ def read_Intan_RHD2000_datafile(
     num_samples = s1 - s0 + 1
     if num_samples <= 0:
         return np.array([]).reshape(0, len(channel))
+
+    # Multi-file mode: map the requested global sample range onto the files
+    # that hold it, read each one in single-file mode, and concatenate. The
+    # recursion is what keeps this small -- every file is an ordinary
+    # single-file read, so only the range arithmetic lives here.
+    multifile = (header.get("fileinfo") or {}).get("multifile") or {}
+    if multifile.get("fileMode") == "multiFile":
+        members = multifile.get("files", [])
+        # Samples per block for THIS channel type: aux is recorded at a
+        # quarter of the amplifier rate, so its blocks hold a quarter as
+        # many samples.
+        spb_type = samples_per_block // 4 if channeltype == "aux" else samples_per_block
+
+        parts: list[np.ndarray] = []
+        file_start = 0  # first global sample index held by the current file
+        for member, member_blocks in zip(members, file_blocks):
+            file_stop = file_start + member_blocks * spb_type - 1  # inclusive
+            if file_stop < s0 or file_start > s1:
+                file_start = file_stop + 1
+                continue
+            local_lo = max(file_start, s0) - file_start
+            local_hi = min(file_stop, s1) - file_start
+            parts.append(
+                read_Intan_RHD2000_datafile(
+                    member,
+                    "",
+                    channeltype,
+                    channel,
+                    local_lo / sr_actual,
+                    local_hi / sr_actual,
+                    fileMode="singleFile",
+                )
+            )
+            file_start = file_stop + 1
+
+        if not parts:
+            return np.array([]).reshape(0, len(channel))
+        return np.concatenate(parts, axis=0)
 
     # Read the entire data section and extract requested channels
     num_amplifier = blockinfo["num_amplifier"]

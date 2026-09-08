@@ -84,8 +84,8 @@ class ndr_reader_intan__rhd(ndr_reader_base):
         """Convert DAQ channel prefixes/numbers to internal channel structures."""
         channelstruct: list[dict[str, Any]] = []
 
-        filename = self.filenamefromepochfiles(epochstreams)[0]
-        header = read_Intan_RHD2000_header(filename)
+        filename, _parentdir, _isdirectory, fileMode = self.filenamefromepochfiles(epochstreams)
+        header = read_Intan_RHD2000_header(filename, fileMode)
 
         for c in range(len(channelnumber)):
             intan_type, absolute = ndr_reader_intan__rhd.intananychannelname2intanchanneltype(
@@ -134,11 +134,11 @@ class ndr_reader_intan__rhd(ndr_reader_base):
 
     def t0_t1(self, epochstreams: list[str], epoch_select: int = 1) -> list[list[float]]:
         """Return the beginning and end epoch times."""
-        filename, parentdir, isdirectory = self.filenamefromepochfiles(epochstreams)
-        header = read_Intan_RHD2000_header(filename)
+        filename, parentdir, isdirectory, fileMode = self.filenamefromepochfiles(epochstreams)
+        header = read_Intan_RHD2000_header(filename, fileMode)
 
         if not isdirectory:
-            _blockinfo, _bpb, _bp, num_data_blocks = Intan_RHD2000_blockinfo(filename, header)
+            _blockinfo, _bpb, _bp, num_data_blocks, _fb = Intan_RHD2000_blockinfo(filename, header)
             total_samples = int(header["num_samples_per_data_block"]) * num_data_blocks
         else:
             time_dat = Path(parentdir) / "time.dat"
@@ -172,8 +172,8 @@ class ndr_reader_intan__rhd(ndr_reader_base):
             "board_dig_out_channels",
         ]
 
-        filename = self.filenamefromepochfiles(epochstreams)[0]
-        header = read_Intan_RHD2000_header(filename)
+        filename, _parentdir, _isdirectory, fileMode = self.filenamefromepochfiles(epochstreams)
+        header = read_Intan_RHD2000_header(filename, fileMode)
 
         channels: list[dict[str, Any]] = []
 
@@ -240,7 +240,7 @@ class ndr_reader_intan__rhd(ndr_reader_base):
         other readers and ``ndr.reader.readevents_epochsamples`` pass down.
         This reader reads one channel type per call.
         """
-        filename, parentdir, isdirectory = self.filenamefromepochfiles(epochstreams)
+        filename, parentdir, isdirectory, fileMode = self.filenamefromepochfiles(epochstreams)
 
         if isinstance(channeltype, list):
             if not all(ct == channeltype[0] for ct in channeltype):
@@ -268,7 +268,9 @@ class ndr_reader_intan__rhd(ndr_reader_base):
             channel = [1]
 
         if not isdirectory:
-            data = read_Intan_RHD2000_datafile(filename, "", intanchanneltype, channel, t0, t1)
+            data = read_Intan_RHD2000_datafile(
+                filename, "", intanchanneltype, channel, t0, t1, fileMode=fileMode
+            )
         else:
             # Directory-based reading (one-file-per-channel mode)
             # For now, delegate to the single file reader
@@ -299,8 +301,8 @@ class ndr_reader_intan__rhd(ndr_reader_base):
         if epoch_select != 1:
             raise ValueError("Intan RHD files have 1 epoch per file.")
 
-        filename = self.filenamefromepochfiles(epochstreams)[0]
-        header = read_Intan_RHD2000_header(filename)
+        filename, _parentdir, _isdirectory, fileMode = self.filenamefromepochfiles(epochstreams)
+        header = read_Intan_RHD2000_header(filename, fileMode)
 
         if isinstance(channel, int):
             channel = [channel]
@@ -333,31 +335,47 @@ class ndr_reader_intan__rhd(ndr_reader_base):
             return sr_list[0]
         return np.array(sr_list)
 
-    def filenamefromepochfiles(self, filename_array: list[str]) -> tuple[str, str, bool]:
+    def filenamefromepochfiles(self, filename_array: list[str]) -> tuple[str, str, bool, str]:
         """Find the .rhd file from a list of epoch files.
+
+        If MORE THAN ONE .rhd file is supplied, the recording is treated as
+        one contiguous multi-file recording -- Intan starts a new file each
+        time its file-length threshold is reached -- and FILENAME is the
+        chronologically earliest of them. Previously this raised
+        ``"Need only 1 .rhd file per epoch."``; accepting the set is the
+        behaviour change from NDR-matlab 034f210.
 
         Returns
         -------
-        tuple of (filename, parentdir, isdirectory)
+        tuple of (filename, parentdir, isdirectory, fileMode)
+            ``fileMode`` is ``"multiFile"`` when several files were
+            supplied, otherwise ``"detect"`` -- which lets the format layer
+            find siblings on disk that the caller did not list.
         """
         rhd_files = [f for f in filename_array if f.lower().endswith(".rhd")]
 
-        if len(rhd_files) > 1:
-            raise ValueError("Need only 1 .rhd file per epoch.")
-        elif len(rhd_files) == 0:
-            raise ValueError("Need 1 .rhd file per epoch.")
+        if len(rhd_files) == 0:
+            raise ValueError("Need at least 1 .rhd file per epoch.")
 
-        filename = rhd_files[0]
-        parentdir = str(Path(filename).parent)
+        fileMode = "detect"
         isdirectory = False
 
-        # Check if this is the one-file-per-channel format
-        if Path(filename).stem == "info":
-            time_dat_files = [f for f in filename_array if f.endswith("time.dat")]
-            if time_dat_files:
-                isdirectory = True
+        if len(rhd_files) > 1:
+            # Plain lexicographic sort, as MATLAB does: the Intan timestamp
+            # suffix sorts chronologically as text within a century, so a
+            # name sort and a time sort agree on any real recording.
+            filename = sorted(rhd_files)[0]
+            fileMode = "multiFile"
+        else:
+            filename = rhd_files[0]
+            # Check if this is the one-file-per-channel format
+            if Path(filename).stem == "info":
+                time_dat_files = [f for f in filename_array if f.endswith("time.dat")]
+                if time_dat_files:
+                    isdirectory = True
 
-        return filename, parentdir, isdirectory
+        parentdir = str(Path(filename).parent)
+        return filename, parentdir, isdirectory, fileMode
 
     # ------------------------------------------------------------------
     # Static helper methods

@@ -82,19 +82,44 @@ class Testndr_reader_intan__rhdStatic:
 
     def test_filenamefromepochfiles(self):
         reader = ndr_reader_intan__rhd()
-        fn, pdir, isdir = reader.filenamefromepochfiles(["/path/to/data.rhd"])
+        fn, pdir, isdir, fileMode = reader.filenamefromepochfiles(["/path/to/data.rhd"])
         assert fn == "/path/to/data.rhd"
         assert isdir is False
+        # One file supplied: the format layer still looks for siblings on
+        # disk that the caller did not list, so 'detect', not 'singleFile'.
+        assert fileMode == "detect"
 
     def test_filenamefromepochfiles_no_rhd(self):
         reader = ndr_reader_intan__rhd()
-        with pytest.raises(ValueError, match="Need 1 .rhd"):
+        with pytest.raises(ValueError, match="Need at least 1 .rhd"):
             reader.filenamefromepochfiles(["/path/to/data.abf"])
 
     def test_filenamefromepochfiles_multiple_rhd(self):
+        """Several .rhd files are a multi-file recording, not an error.
+
+        This test previously asserted that a second .rhd RAISED
+        "Need only 1". NDR-matlab 034f210 changed that: Intan starts a new
+        file whenever its length threshold is reached, so a set of them is
+        one continuous recording. The assertion is not weakened here -- it
+        now pins the replacement contract, which says strictly more than
+        "this raises".
+        """
         reader = ndr_reader_intan__rhd()
-        with pytest.raises(ValueError, match="Need only 1"):
-            reader.filenamefromepochfiles(["/path/a.rhd", "/path/b.rhd"])
+        fn, pdir, isdir, fileMode = reader.filenamefromepochfiles(
+            ["/path/b_240101_120100.rhd", "/path/a_240101_120000.rhd"]
+        )
+        assert fileMode == "multiFile"
+        # The chronologically earliest of the supplied files, regardless of
+        # the order the caller listed them in.
+        assert fn == "/path/a_240101_120000.rhd"
+        assert pdir == "/path"
+        assert isdir is False
+
+    def test_filenamefromepochfiles_single_is_not_multifile(self):
+        """The boundary: one file is not a set, however it is named."""
+        reader = ndr_reader_intan__rhd()
+        _fn, _pdir, _isdir, fileMode = reader.filenamefromepochfiles(["/path/a_240101_120000.rhd"])
+        assert fileMode == "detect"
 
 
 class TestKnownReaders:
