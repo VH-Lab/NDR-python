@@ -74,6 +74,43 @@ commit hash in the command printed beneath it. Go there for:
   checkout, so an unwired bridge test skips everywhere and the skip reads
   as a pass; `test_matlab_bridge_conventions.py` fails if you forget.
 
+### A skip is a silent pass — a note for whoever works on these next
+
+The bridge guard exists because *a check that could not run must not report
+the same result as a check that ran and passed*. The subtle part is that this
+applies to the guard's own tests, and it is easy to violate while writing
+something careful. It has now happened three times in this repo:
+
+1. The `bridge` job named one test file, so a new one would have skipped in
+   every job and read as green.
+2. MATLAB-dependent tests **skipped** in the three matrix jobs — 79 each —
+   until they were deselected instead. A standing pile of skips trains a
+   reader to scroll past skips, so the next one, a real one, goes unnoticed.
+3. The drift self-tests — the positive controls proving the drift rule
+   actually discriminates — carried three `pytest.skip` calls gated on
+   nothing. Had NDR-matlab's history made their fixture conditions true,
+   the proof that the rule works would have stopped running, silently.
+
+None of these was careless in isolation; each was a reasonable local decision
+(*a test that cannot build its fixture should not fail*) that became a hole in
+CI. So the rule here is not "never skip" — it is:
+
+> **A `pytest.skip` in a bridge test must be conditional on
+> `NDR_BRIDGE_CHECK_STRICT`, or it will hide.** In CI every bridge check is
+> expected to be *able* to run, so a skip there is a gap, not a courtesy.
+
+`tests/conftest.py` now enforces this as a backstop: under
+`NDR_BRIDGE_CHECK_STRICT`, **any** skip in a `test_matlab_bridge_*.py` module
+becomes a failure — including one nobody thought to gate. It is derived rather
+than enumerated for the same reason the `needs_matlab` marker is: a list of
+exceptions is a list somebody has to remember to extend.
+
+If it fires on you, the fix is to make the condition hold in CI, or to gate
+the skip yourself with a message saying why the check could not run. Deleting
+the assertion to get green is the one thing that is never the answer — that is
+precisely the move that put the Intan multi-file feature behind a green build
+for four months (see issues #20 and #23).
+
 ## Environment
 - Python 3.10+
 - NumPy for all numerical data
