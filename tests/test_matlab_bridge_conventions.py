@@ -654,6 +654,35 @@ class TestTheWorkflowActuallyRunsTheBridgeChecks:
             "[tool.pytest.ini_options] markers list"
         )
 
+    def test_the_skip_backstop_uses_the_same_env_var(self):
+        """tests/conftest.py duplicates STRICT_ENV_VAR rather than importing
+        it, to avoid a conftest that imports a test module at collection
+        time. Duplication is fine; drifting is not -- if the two ever
+        disagreed, the backstop would arm on an env var CI never sets and
+        would protect nothing while looking installed.
+        """
+        from tests import conftest
+
+        assert conftest.STRICT_ENV_VAR == STRICT_ENV_VAR, (
+            "tests/conftest.py and test_matlab_bridge_completeness.py disagree "
+            f"about the strict env var: {conftest.STRICT_ENV_VAR!r} vs "
+            f"{STRICT_ENV_VAR!r}. The skip backstop would arm on a variable CI "
+            "does not set."
+        )
+
+    def test_the_backstop_covers_this_module(self):
+        """The backstop keys on the test FILE NAME. A bridge test file named
+        outside that convention would sit outside the net -- so assert the
+        convention holds for the files that exist."""
+        from tests import conftest
+
+        for path in sorted((REPO_ROOT / "tests").glob("test_matlab_bridge_*.py")):
+            assert path.name.startswith(conftest.BRIDGE_TEST_PREFIX), (
+                f"{path.name} is a bridge test file but does not start with "
+                f"{conftest.BRIDGE_TEST_PREFIX!r}, so tests/conftest.py's skip "
+                "backstop does not cover it."
+            )
+
     def test_the_matlab_checkout_is_not_shallow(self):
         """``actions/checkout`` is shallow by default, and a shallow
         NDR-matlab collapses every file's history to the last merge commit --
