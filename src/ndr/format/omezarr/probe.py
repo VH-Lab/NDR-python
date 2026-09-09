@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from ndr.format.omezarr.isOMEZarr import isOMEZarr
 from ndr.format.omezarr.listPyramids import listPyramids
@@ -26,15 +25,15 @@ class OMEZarrProbe:
 
     ok: bool = False
     n_pyramids: int = 0
-    pyramid_names: List[str] = field(default_factory=list)
-    pyramid_types: List[str] = field(default_factory=list)
+    pyramid_names: list[str] = field(default_factory=list)
+    pyramid_types: list[str] = field(default_factory=list)
     axes_order: str = ""
-    axes_units: List[str] = field(default_factory=list)
-    level0_shape: List[int] = field(default_factory=list)
-    level0_chunks: List[int] = field(default_factory=list)
-    level0_scale: List[float] = field(default_factory=list)
+    axes_units: list[str] = field(default_factory=list)
+    level0_shape: list[int] = field(default_factory=list)
+    level0_chunks: list[int] = field(default_factory=list)
+    level0_scale: list[float] = field(default_factory=list)
     dtype: str = ""
-    n_levels_per_pyramid: List[int] = field(default_factory=list)
+    n_levels_per_pyramid: list[int] = field(default_factory=list)
 
 
 def probe(zarr_path: str) -> OMEZarrProbe:
