@@ -80,6 +80,36 @@ functions:
       (v2, C-order, Blosc/Zstd or uncompressed, fixed-length numeric
       dtypes). A store the MATLAB reader accepts is also accepted here.
 
+  - name: probe
+    matlab_path: "+ndr/+format/+omezarr/probe.m"
+    status: regular_port
+    matlab_last_sync_hash: "82e1d58"
+    python_path: "ndr/format/omezarr/probe.py"
+    decision_log: >-
+      Cheap metadata-only summary of an OME-Zarr store: pyramid count,
+      names, types, first-pyramid axes order and units, and the first
+      pyramid's level-0 shape, chunks, scale and dtype. Wraps isOMEZarr
+      and listPyramids for callers that only need a "should we accept
+      this?" answer (an ingest / GUI confirmation screen). Straight port;
+      Python returns an OMEZarrProbe dataclass where MATLAB returns a
+      struct, field-for-field equivalent (Python snake_case, MATLAB
+      camelCase per the Strict MATLAB Mirror policy for user-facing
+      names).
+
+  - name: reduce
+    matlab_path: "+ndr/+format/+omezarr/reduce.m"
+    status: regular_port
+    matlab_last_sync_hash: "82e1d58"
+    python_path: "ndr/format/omezarr/reduce.py"
+    decision_log: >-
+      Block-reduce a numeric array by a scalar or per-axis factor with
+      reduction 'mean' or 'max', used when materializing a coarser pyramid
+      level. Trailing partial blocks are kept so level sizing matches
+      bioformats2raw / the lab's make_zarr_levels.py. Straight port; both
+      sides preserve dtype for 'max' and promote to float64 for 'mean'.
+      Python uses numpy indexing where MATLAB uses ind2sub; the block
+      boundaries and reduction semantics are identical.
+
   - name: decompressBlosc
     matlab_path: "+ndr/+format/+omezarr/private/decompressBlosc.m"
     matlab_last_sync_hash: "a847431"
