@@ -7,14 +7,14 @@ lightsheet NGFF layout the lab writes.
 
 from __future__ import annotations
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import numpy as np
 
 
 def reduce(
     arr: np.ndarray,
-    factor: Union[int, Sequence[int]],
+    factor: int | Sequence[int],
     reduction: str,
 ) -> np.ndarray:
     """Downsample ``arr`` by ``factor`` using ``reduction``.
