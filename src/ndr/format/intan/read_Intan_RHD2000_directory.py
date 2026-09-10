@@ -11,6 +11,25 @@ from typing import Any
 import numpy as np
 
 from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
+from ndr.format.intan.read_IntanRHD2000_one_file_per_channel_type import (
+    read_IntanRHD2000_one_file_per_channel_type,
+)
+
+
+def _fixdatfilename(path: Path) -> Path | None:
+    """Resolve a filename that may carry an Intan timestamp or lab prefix.
+
+    Returns the exact path if it exists, otherwise the first sibling matching
+    ``*<basename>`` in the same directory, otherwise ``None``. Mirrors the
+    ``fixdatfilename`` helper in the MATLAB reader so recordings named
+    ``<prefix>_amplifier.dat`` (Intan timestamp or lab prefix) still resolve.
+    """
+    if path.is_file():
+        return path
+    matches = sorted(path.parent.glob(f"*{path.name}"))
+    if matches:
+        return matches[0]
+    return None
 
 
 def read_Intan_RHD2000_directory(
@@ -64,15 +83,22 @@ def read_Intan_RHD2000_directory(
     directoryname = Path(directoryname)
 
     if header is None:
-        header = read_Intan_RHD2000_header(directoryname / "info.rhd")
+        info_rhd = _fixdatfilename(directoryname / "info.rhd")
+        if info_rhd is None:
+            raise FileNotFoundError(
+                f"Could not find info.rhd (or a *info.rhd variant) in {directoryname}."
+            )
+        header = read_Intan_RHD2000_header(info_rhd)
 
     if isinstance(channel_numbers, int):
         channel_numbers = [channel_numbers]
 
     # Determine total samples from time.dat file size
-    time_file = directoryname / "time.dat"
-    if not time_file.exists():
-        raise FileNotFoundError(f"No file {time_file}, required file.")
+    time_file = _fixdatfilename(directoryname / "time.dat")
+    if time_file is None:
+        raise FileNotFoundError(
+            f"No file {directoryname / 'time.dat'} (or a *time.dat variant), required file."
+        )
 
     total_samples = time_file.stat().st_size // 4  # int32 = 4 bytes
     sr = header["frequency_parameters"]["amplifier_sample_rate"]
@@ -160,6 +186,15 @@ def read_Intan_RHD2000_directory(
         conversion_shift[6] = -32768
         conversion_scale[6] = 0.0003125
 
+    # Detect the on-disk layout. "one file per signal type" writes one .dat
+    # per signal type (amplifier.dat, auxiliary.dat, supply.dat, analogin.dat,
+    # digitalin.dat, digitalout.dat) with all channels of that type
+    # interleaved sample-by-sample; "one file per channel" writes one .dat
+    # per channel (amp-A-000.dat, aux-A-AUX1.dat, ...). The presence of a
+    # *amplifier.dat file (possibly with an Intan timestamp or lab prefix)
+    # distinguishes them.
+    one_file_per_signal_type = _fixdatfilename(directoryname / "amplifier.dat") is not None
+
     data = np.empty((num_samples, 0), dtype=np.float64)
 
     if channel_type_int == 1:
@@ -189,21 +224,41 @@ def read_Intan_RHD2000_directory(
                     f"Channel {ch_num} not in range 1 ... {len(hinfo)} listed in header."
                 )
             ch_info = hinfo[ch_num - 1]  # convert 1-based to 0-based
-            fname = f"{prefix}{ch_info['custom_channel_name']}.dat"
-            fpath = directoryname / fname
-            with open(fpath, "rb") as fid:
-                fid.seek(sbytes * s0)
-                raw = np.fromfile(fid, dtype=dtype, count=num_samples)
-            raw_f = raw.astype(np.float64)
-            if shift != 0:
-                raw_f -= shift
-            if channel_type_int in (7, 8):
-                # Per-channel files store the 16-bit packed word with only the
-                # corresponding native_order bit potentially set; normalize
-                # to 0/1 rather than applying the analog conversion scale.
-                raw_f = (raw_f != 0).astype(np.float64)
+            if one_file_per_signal_type:
+                raw = read_IntanRHD2000_one_file_per_channel_type(
+                    directoryname,
+                    channel_type_int,
+                    ch_num,
+                    len(hinfo),
+                    s0 + 1,  # helper is 1-based like the MATLAB source
+                    s1 + 1,
+                )
+                raw_f = raw.astype(np.float64)
+                if channel_type_int in (7, 8):
+                    # "one file per signal type" digital files store the
+                    # full 16-bit packed word each sample; extract this
+                    # channel's bit using its native_order (0..15).
+                    bit_pos = int(ch_info["native_order"])
+                    raw_f = (
+                        (np.asarray(raw, dtype=np.uint16) & np.uint16(1 << bit_pos)) != 0
+                    ).astype(np.float64)
             else:
-                raw_f *= scale
+                fname = f"{prefix}{ch_info['custom_channel_name']}.dat"
+                fpath = directoryname / fname
+                with open(fpath, "rb") as fid:
+                    fid.seek(sbytes * s0)
+                    raw = np.fromfile(fid, dtype=dtype, count=num_samples)
+                raw_f = raw.astype(np.float64)
+                if channel_type_int in (7, 8):
+                    # Per-channel files store the 16-bit packed word with only
+                    # the corresponding native_order bit potentially set;
+                    # normalize to 0/1 rather than applying the analog
+                    # conversion scale.
+                    raw_f = (raw_f != 0).astype(np.float64)
+            if shift != 0:
+                raw_f = raw_f - shift
+            if channel_type_int not in (7, 8):
+                raw_f = raw_f * scale
             columns.append(raw_f)
 
         data = np.column_stack(columns) if columns else np.empty((num_samples, 0))
