@@ -94,7 +94,16 @@ functions:
     matlab_path: "+ndr/+format/+intan/read_Intan_RHD2000_directory.m"
     status: regular_port
     python_path: "ndr/format/intan/read_Intan_RHD2000_directory.py"
-    matlab_last_sync_hash: "cae4b00"
+    matlab_last_sync_hash: "b461bf6"
+    decision_log: >
+      Adds "one file per signal type" support alongside the existing
+      "one file per channel" path (NDR-matlab #138). Layout is detected
+      from a *amplifier.dat probe; on hit the reader dispatches to
+      read_IntanRHD2000_one_file_per_channel_type and, for digital
+      channels, extracts each requested channel's bit from the packed
+      16-bit word using its native_order. info.rhd and time.dat are
+      resolved through a local fixdatfilename helper so a lab or Intan
+      timestamp prefix (e.g., "febc0_u000_000_") still matches.
     input_arguments:
       - name: directoryname
         type_python: "str | Path"
@@ -115,6 +124,33 @@ functions:
         type_python: "int"
       - name: total_time
         type_python: "float"
+
+  - name: read_IntanRHD2000_one_file_per_channel_type
+    matlab_path: "+ndr/+format/+intan/read_IntanRHD2000_one_file_per_channel_type.m"
+    status: regular_port
+    python_path: "ndr/format/intan/read_IntanRHD2000_one_file_per_channel_type.py"
+    matlab_last_sync_hash: "b461bf6"
+    decision_log: >
+      New helper introduced in NDR-matlab #138 that reads one interleaved
+      signal-type file at a time from the Intan "one file per signal type"
+      layout, resolving optional filename prefixes and returning the raw
+      packed 16-bit word for digital channels (the caller extracts the bit).
+    input_arguments:
+      - name: directory_name
+        type_python: "str | Path"
+      - name: channel_type
+        type_python: "int"
+      - name: channel_index
+        type_python: "int"
+      - name: num_channels
+        type_python: "int"
+      - name: s0
+        type_python: "int"
+      - name: s1
+        type_python: "int"
+    output_arguments:
+      - name: data
+        type_python: "numpy.ndarray"
 
   - name: cat_Intan_RHD2000_files
     matlab_path: "+ndr/+format/+intan/cat_Intan_RHD2000_files.m"

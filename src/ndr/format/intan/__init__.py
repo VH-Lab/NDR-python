@@ -15,3 +15,6 @@ from ndr.format.intan.read_Intan_RHD2000_datafile import (
 )
 from ndr.format.intan.read_Intan_RHD2000_directory import read_Intan_RHD2000_directory
 from ndr.format.intan.read_Intan_RHD2000_header import read_Intan_RHD2000_header
+from ndr.format.intan.read_IntanRHD2000_one_file_per_channel_type import (
+    read_IntanRHD2000_one_file_per_channel_type,
+)
