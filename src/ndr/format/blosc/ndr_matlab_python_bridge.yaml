@@ -1,0 +1,81 @@
+# ndr_matlab_python_bridge.yaml -- src/ndr/format/blosc/
+# The Primary Contract for the +ndr/+format/+blosc MATLAB package.
+
+project_metadata:
+  bridge_version: "1.1"
+  naming_policy: "Strict MATLAB Mirror"
+  indexing_policy: "Semantic Parity (1-based for user concepts, 0-based for internal data)"
+
+# =========================================================================
+# +ndr/+format/+blosc -- Blosc v1 container codec (encode + decode)
+# (VH-Lab/NDR-matlab claude/lightsheet-zarr-ndi-viewer-djp5vk).
+#
+# The MATLAB package is deliberately a thin surface over `numcodecs.Blosc`
+# invoked as a subprocess against a private venv NDR-matlab sets up on
+# first use (see +ndr/+util/+blosc). It exists so that MATLAB callers
+# (chiefly the lightsheet document builder in NDI-matlab) do not need a
+# system `zstd` binary and do not need to touch MATLAB's `pyenv`, which
+# is process-global and would fight the customer's Python setup.
+#
+# THE PYTHON SIDE HAS NO MIRROR AND IS NOT PLANNED. Python callers that
+# need to write or read a Blosc container should use `numcodecs.Blosc`
+# directly:
+#
+#     from numcodecs import Blosc
+#     codec = Blosc(cname='zstd', clevel=5, shuffle=Blosc.SHUFFLE)
+#     container_bytes = codec.encode(numpy_buffer)   # bytes-out
+#     raw_bytes = codec.decode(container_bytes)      # bytes-in
+#
+# The MATLAB `encode` / `decode` calls are byte-identical to the
+# corresponding numcodecs Blosc.encode / Blosc.decode calls, because
+# they ARE those calls (over a subprocess). A wrapper here would only
+# add a rename.
+# =========================================================================
+functions:
+
+  - name: encode
+    matlab_path: "+ndr/+format/+blosc/encode.m"
+    matlab_last_sync_hash: "9a87c0a"
+    status: matlab_only
+    decision_log: >-
+      Delegates to numcodecs.Blosc.encode via a subprocess. The MATLAB
+      argument list mirrors the numcodecs constructor: cname (default
+      'zstd'), clevel (default 5), shuffle (0/1/2, default 1),
+      blocksize (default 0 = auto), typesize (element size in bytes,
+      inferred from a typed array's class or supplied explicitly for
+      raw uint8). Python callers use numcodecs.Blosc().encode(buf)
+      directly; no port planned.
+
+  - name: decode
+    matlab_path: "+ndr/+format/+blosc/decode.m"
+    matlab_last_sync_hash: "9a87c0a"
+    status: matlab_only
+    decision_log: >-
+      Delegates to numcodecs.Blosc.decode via a subprocess. Reads
+      typesize out of the container header (numcodecs handles it), so
+      the MATLAB signature is just `decode(container)`. Python callers
+      use numcodecs.Blosc().decode(bytes) directly; no port planned.
+
+  - name: isBlosc
+    matlab_path: "+ndr/+format/+blosc/isBlosc.m"
+    matlab_last_sync_hash: "9a87c0a"
+    status: matlab_only
+    decision_log: >-
+      Informed header sniff: checks the first byte is a supported Blosc
+      version (1 or 2) and that the cbytes field in the header equals
+      the buffer length. Blosc v1 has no fixed magic number so this is
+      a probe, not a proof. Python callers usually decide from
+      .zarray.compressor.id and would inline the same check with
+      numpy.frombuffer; no port planned.
+
+  - name: header
+    matlab_path: "+ndr/+format/+blosc/header.m"
+    matlab_last_sync_hash: "9a87c0a"
+    status: matlab_only
+    decision_log: >-
+      Metadata-only header parser: returns version, versionlz, flags,
+      shuffle bits, memcpy bit, typesize, nbytes, blocksize, cbytes.
+      Codec identity is NOT reported because the Blosc flag encoding of
+      it has drifted across versions and .zarray.compressor.cname is
+      the source of truth. Python callers should read the header with
+      struct.unpack when they need it; no port planned.
