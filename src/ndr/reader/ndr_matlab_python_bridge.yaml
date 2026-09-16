@@ -303,7 +303,12 @@ classes:
     matlab_path: "+ndr/+reader/intan_rhd.m"
     status: regular_port
     python_path: "ndr/reader/intan_rhd.py"
-    matlab_last_sync_hash: "67addc7"
+    matlab_last_sync_hash: "b461bf6"
+    decision_log: >
+      filenamefromepochfiles now recognizes a "<prefix>_info.rhd" variant
+      as the directory-mode header (NDR-matlab #138) in addition to the
+      bare info.rhd, matching how KJNielsen-style Intan recordings put
+      their per-signal-type files on disk.
     python_class: "ndr_reader_intan__rhd"
     inherits: base
     methods:

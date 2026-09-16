@@ -368,8 +368,11 @@ class ndr_reader_intan__rhd(ndr_reader_base):
             fileMode = "multiFile"
         else:
             filename = rhd_files[0]
-            # Check if this is the one-file-per-channel format
-            if Path(filename).stem == "info":
+            # Directory mode when the .rhd is Intan's per-signal-type header
+            # ("info.rhd" or a "<prefix>_info.rhd" variant) AND a sibling
+            # *time.dat is present in the epoch file list.
+            stem = Path(filename).stem
+            if stem == "info" or stem.endswith("info"):
                 time_dat_files = [f for f in filename_array if f.endswith("time.dat")]
                 if time_dat_files:
                     isdirectory = True
