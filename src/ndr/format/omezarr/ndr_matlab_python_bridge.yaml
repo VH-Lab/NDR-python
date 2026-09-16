@@ -56,7 +56,7 @@ functions:
   - name: readArray
     matlab_path: "+ndr/+format/+omezarr/readArray.m"
     status: regular_port
-    matlab_last_sync_hash: "a847431"
+    matlab_last_sync_hash: "8bea2d2"
     python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
       Reads pixels for one region of one pyramid level and returns an n-D
@@ -79,6 +79,13 @@ functions:
       zarr library supports, which is a superset of the MATLAB scope
       (v2, C-order, Blosc/Zstd or uncompressed, fixed-length numeric
       dtypes). A store the MATLAB reader accepts is also accepted here.
+
+      Hash bumped 2026-09-16 to include 8bea2d2, which restructured
+      the MATLAB reader into three passes (plan, batched fread,
+      batched blosc.decodeMany) to amortize Python-subprocess spawn
+      cost. Python's zarr.open() already reads and decodes chunks in
+      one call with no subprocess round-trip, so there is no MATLAB
+      change to port here.
 
   - name: probe
     matlab_path: "+ndr/+format/+omezarr/probe.m"
@@ -112,7 +119,7 @@ functions:
 
   - name: decompressBlosc
     matlab_path: "+ndr/+format/+omezarr/private/decompressBlosc.m"
-    matlab_last_sync_hash: "a847431"
+    matlab_last_sync_hash: "5a44303"
     status: ported_differently
     python_path: "ndr/format/omezarr/readArray.py"
     decision_log: >-
@@ -121,6 +128,13 @@ functions:
       by hand, while Python's `zarr` library reads Blosc containers through
       `numcodecs.Blosc`, so readArray never needs to see the container
       bytes. Blosc-compressed stores read correctly in Python.
+
+      Hash bumped 2026-09-16 to include 5a44303, which replaces the
+      MATLAB hand-rolled codec-per-block loop with a one-line
+      delegation to ndr.format.blosc.decode (which itself routes
+      through numcodecs.Blosc in a MATLAB-owned venv). Python has
+      always been on numcodecs.Blosc directly, so there is nothing
+      new to port.
 
   - name: decompressZstd
     matlab_path: "+ndr/+format/+omezarr/private/decompressZstd.m"

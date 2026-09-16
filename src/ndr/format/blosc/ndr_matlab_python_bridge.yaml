@@ -35,7 +35,7 @@ functions:
 
   - name: encode
     matlab_path: "+ndr/+format/+blosc/encode.m"
-    matlab_last_sync_hash: "9a87c0a"
+    matlab_last_sync_hash: "aa89463"
     status: matlab_only
     decision_log: >-
       Delegates to numcodecs.Blosc.encode via a subprocess. The MATLAB
@@ -46,15 +46,28 @@ functions:
       raw uint8). Python callers use numcodecs.Blosc().encode(buf)
       directly; no port planned.
 
+      Hash bumped 2026-09-16 across four MATLAB-only commits
+      (f9cb0a2 args-string cleanup, b5ae537 clevel cap at 9,
+      8bea2d2 batch API + persistent server plumbing, aa89463 blosc
+      MEX preference). Every one is MATLAB-side subprocess or MEX
+      plumbing; Python uses numcodecs.Blosc directly, so there is
+      nothing to port.
+
   - name: decode
     matlab_path: "+ndr/+format/+blosc/decode.m"
-    matlab_last_sync_hash: "9a87c0a"
+    matlab_last_sync_hash: "aa89463"
     status: matlab_only
     decision_log: >-
       Delegates to numcodecs.Blosc.decode via a subprocess. Reads
       typesize out of the container header (numcodecs handles it), so
       the MATLAB signature is just `decode(container)`. Python callers
       use numcodecs.Blosc().decode(bytes) directly; no port planned.
+
+      Hash bumped 2026-09-16 across two MATLAB-only commits
+      (8bea2d2 batch API + persistent server plumbing,
+      aa89463 blosc MEX preference). Both are MATLAB-side subprocess
+      or MEX plumbing; Python uses numcodecs.Blosc directly, so there
+      is nothing to port.
 
   - name: isBlosc
     matlab_path: "+ndr/+format/+blosc/isBlosc.m"
