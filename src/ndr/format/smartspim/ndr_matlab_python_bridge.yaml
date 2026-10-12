@@ -76,7 +76,7 @@ functions:
   - name: readTileInfo
     matlab_path: "+ndr/+format/+smartspim/readTileInfo.m"
     status: regular_port
-    matlab_last_sync_hash: "d329021"
+    matlab_last_sync_hash: "3e300e5"
     python_path: "ndr/format/smartspim/readTileInfo.py"
     decision_log: >-
       Cheap-per-tile probe: converts the tile id (forward-slash DIR_NAME)
@@ -88,7 +88,11 @@ functions:
       string. The MATLAB helper accepts an uppercase-glob fallback for
       case-insensitive filesystems; Python's pathlib.suffix comparison
       is already case-insensitive against a lowercased tuple, so the
-      fallback collapses into one pass.
+      fallback collapses into one pass. MATLAB commit 3e300e5 fixed
+      tiffDtype reporting int16 for TIFFs that store SampleFormat = 1
+      (imfinfo's 'Unsigned integer' contains 'signed integer'); the
+      Python port never had that bug because tifffile returns the numpy
+      dtype directly, so the sync needs no code change here.
 
   - name: readTileVolume
     matlab_path: "+ndr/+format/+smartspim/readTileVolume.m"
