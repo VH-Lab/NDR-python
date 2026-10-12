@@ -29,6 +29,8 @@ dev = [
     # job from failing at collection.
     "pyyaml>=6.0",
     "tifffile>=2021.7.2",
+    # LZW codec for SmartSPIM All_Channels slices (tests write LZW TIFFs).
+    "imagecodecs>=2021.11.20",
 ]
 formats = [
     # ndr.format.stereoseq.readGEF reads Stereo-seq .gef files, which are HDF5.
@@ -37,6 +39,9 @@ formats = [
     "neo>=0.12.0",
     "tdt>=0.5.0",
     "tifffile>=2021.7.2",
+    # SmartSPIM All_Channels slices are LZW-compressed; tifffile decodes
+    # LZW through imagecodecs.
+    "imagecodecs>=2021.11.20",
     "scipy>=1.7.0",
     # ndr.format.omezarr uses the zarr library so we do not need to
     # hand-roll chunk reading or Blosc/Zstd decoding.

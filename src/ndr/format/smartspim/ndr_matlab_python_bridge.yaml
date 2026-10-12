@@ -76,7 +76,7 @@ functions:
   - name: readTileInfo
     matlab_path: "+ndr/+format/+smartspim/readTileInfo.m"
     status: regular_port
-    matlab_last_sync_hash: "d329021"
+    matlab_last_sync_hash: "3e300e5"
     python_path: "ndr/format/smartspim/readTileInfo.py"
     decision_log: >-
       Cheap-per-tile probe: converts the tile id (forward-slash DIR_NAME)
@@ -88,7 +88,11 @@ functions:
       string. The MATLAB helper accepts an uppercase-glob fallback for
       case-insensitive filesystems; Python's pathlib.suffix comparison
       is already case-insensitive against a lowercased tuple, so the
-      fallback collapses into one pass.
+      fallback collapses into one pass. MATLAB commit 3e300e5 fixed
+      tiffDtype reporting int16 for TIFFs that store SampleFormat = 1
+      (imfinfo's 'Unsigned integer' contains 'signed integer'); the
+      Python port never had that bug because tifffile returns the numpy
+      dtype directly, so the sync needs no code change here.
 
   - name: readTileVolume
     matlab_path: "+ndr/+format/+smartspim/readTileVolume.m"
@@ -104,3 +108,49 @@ functions:
       slice locks the dtype, matching the MATLAB behavior. Stitching /
       cross-tile assembly is deliberately out of scope on both sides
       (issue #128).
+
+  - name: hasAllChannels
+    matlab_path: "+ndr/+format/+smartspim/hasAllChannels.m"
+    status: regular_port
+    matlab_last_sync_hash: "b8f0e4b"
+    python_path: "ndr/format/smartspim/hasAllChannels.py"
+    decision_log: >-
+      Cheap non-throwing probe: TRUE iff rootDir/All_Channels holds
+      "*_ch<k>.tif(f)" slices for every channel (file names only, via
+      readAllChannelsInfo with ReadHeader false). Like isSmartSPIM it
+      takes any input and returns FALSE rather than raising, so it has no
+      validate_call. Readers use it to prefer the stitched volume and
+      fall back to the per-tile Ex_* layout.
+
+  - name: readAllChannelsInfo
+    matlab_path: "+ndr/+format/+smartspim/readAllChannelsInfo.m"
+    status: regular_port
+    matlab_last_sync_hash: "b8f0e4b"
+    python_path: "ndr/format/smartspim/readAllChannelsInfo.py"
+    decision_log: >-
+      Indexes SmartSPIM AutoStitch's stitched output
+      All_Channels/<Y>_<X>_<z*10>_ch<k>.tiff (ferret-lightsheet
+      formats/SmartSPIM.md). Channel -> ch<k> comes from the single
+      _ch<k> suffix in <channel>_MIP_stitched, else the stable rank of
+      the filter-channel number (same rule as ferret-lightsheet's
+      SmartSPIMVolume.all_channels_ch_index). Slices sort by the numeric
+      z field. Field names match the MATLAB struct; channels is a list of
+      dicts, voxelSizeUm a list. ReadHeader is a keyword-only argument
+      (MATLAB name/value). MATLAB reads the header with imfinfo, Python
+      with tifffile; dtype is the MATLAB class name on both sides. Error
+      identifiers map to NotADirectoryError / FileNotFoundError (missing
+      folder, slices or channel) / ValueError (duplicate ch<k>, bad
+      header).
+
+  - name: readAllChannelsVolume
+    matlab_path: "+ndr/+format/+smartspim/readAllChannelsVolume.m"
+    status: regular_port
+    matlab_last_sync_hash: "b8f0e4b"
+    python_path: "ndr/format/smartspim/readAllChannelsVolume.py"
+    decision_log: >-
+      Reads one channel of the stitched All_Channels volume as (z, y, x),
+      the same layout as readTileVolume. ZRange is a 1-based inclusive
+      keyword-only argument (MATLAB name/value). MATLAB decodes the LZW
+      slices with imread; Python with tifffile, which needs the
+      imagecodecs package for LZW, so a decode error naming imagecodecs
+      gets an install hint appended.
