@@ -1375,23 +1375,25 @@ classes:
     matlab_path: "+ndr/+reader/smartspim.m"
     status: regular_port
     python_path: "ndr/reader/smartspim.py"
-    matlab_last_sync_hash: "34759c7"
+    matlab_last_sync_hash: "b8f0e4b"
     python_class: "ndr_reader_smartspim"
     inherits: base
     decision_log: >-
-      Ported 2026-09-06. Native SmartSPIM (LifeCanvas raw acquisition)
-      image reader; sibling of omezarr/tiffstack, implements the frame
-      API only. One (channel, tile) pair per epoch: stitching is
-      deliberately out of scope on both sides (issue #128). MATLAB uses
-      imfinfo/imread through ndr.format.smartspim.readTileVolume; the
-      Python port uses tifffile (an optional dependency, imported
-      lazily).
-
-      Epochstream shape mirrors MATLAB's cell array: either a str path
-      (which errors with the channel list), or a list of
-      [rootDir, channelName] (errors with the tile list), or a list of
-      [rootDir, channelName, tileId] that pins the epoch, optionally
-      nested inside a larger list with sidecar entries.
+      Ported 2026-09-06; All_Channels support synced 2026-10-12. Native
+      SmartSPIM (LifeCanvas) image reader; sibling of omezarr/tiffstack,
+      implements the frame API only. The reader prefers SmartSPIM
+      AutoStitch's stitched, flat-field-corrected All_Channels volume:
+      [rootDir] reads it with every channel on the C axis (ordered by
+      ch<k>), [rootDir, channelName] reads one channel of it. A list of
+      [rootDir, channelName, tileId] still reads one destriped Ex_* tile,
+      optionally nested inside a larger list with sidecar entries.
+      Without a usable All_Channels folder the first two forms keep
+      erroring with the channel / tile list. Stitching tiles itself is
+      out of scope on both sides (issue #128). MATLAB uses imfinfo/imread
+      through ndr.format.smartspim; the Python port uses tifffile (an
+      optional dependency, imported lazily; LZW slices need imagecodecs).
+      Error identifiers map to ValueError (not pinned, unknown channel,
+      slice-count mismatch), NotADirectoryError and IndexError.
     methods:
       - name: resolveepoch
         input_arguments:

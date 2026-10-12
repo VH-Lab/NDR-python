@@ -8,6 +8,13 @@ one root directory holding ``metadata.json``, ``sequence.json``, and one
 channel folder holds ``xml_import.xml``, ``xml_merging.xml``, and one
 tile directory per stack; each tile directory holds a small stack of
 zero-padded 2D TIFF z-slices with pixel_value = 100*channelIndex + z.
+
+With ``all_channels=True`` it also writes an ``All_Channels`` folder
+shaped like SmartSPIM AutoStitch's stitched output: one LZW-compressed
+106x13 uint16 TIFF per (z, channel) named
+``200000_100000_<z*10>_ch<k>.tiff`` plus ``ImageList.txt``, with
+pixel_value = 1000*(k + 1) + z. No ``_MIP_stitched`` folders are written,
+so ``k`` follows the filter-channel rank (Ch2 -> ch0, Ch3 -> ch1).
 """
 
 from __future__ import annotations
@@ -173,7 +180,26 @@ def _sequence(channels: list[dict[str, Any]]) -> dict[str, Any]:
     return {"objective": "LCT 1.625x", "immersion": "1.52+", "steps": [step]}
 
 
-def make_example_fixture(parent_dir: str | Path) -> Path:
+_STITCHED_HEIGHT = 106  # xml_merging.xml mosaic of the two tiles: 98 + 8 rows
+_STITCHED_WIDTH = 13  # and 3 + 10 columns
+
+
+def _write_all_channels(fixture_dir: Path, num_channels: int) -> None:
+    import tifffile
+
+    all_dir = fixture_dir / "All_Channels"
+    all_dir.mkdir()
+    names = []
+    for k in range(num_channels):
+        for z in range(_NUM_SLICES):
+            img = np.full((_STITCHED_HEIGHT, _STITCHED_WIDTH), 1000 * (k + 1) + z, dtype=np.uint16)
+            name = f"200000_100000_{z * 10:06d}_ch{k}.tiff"
+            tifffile.imwrite(all_dir / name, img, compression="lzw")
+            names.append(name)
+    (all_dir / "ImageList.txt").write_text("\n".join(names))
+
+
+def make_example_fixture(parent_dir: str | Path, *, all_channels: bool = False) -> Path:
     """Write a synthetic SmartSPIM directory and return its root path.
 
     Pixel values encode ``(channelIndex, z)`` so tests can verify a read
@@ -213,5 +239,8 @@ def make_example_fixture(parent_dir: str | Path) -> Path:
 
     (fixture_dir / "metadata.json").write_text(json.dumps(_metadata(_CHANNELS, _STACKS_IMPORT)))
     (fixture_dir / "sequence.json").write_text(json.dumps(_sequence(_CHANNELS)))
+
+    if all_channels:
+        _write_all_channels(fixture_dir, len(_CHANNELS))
 
     return fixture_dir

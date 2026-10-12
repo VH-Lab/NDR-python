@@ -1,30 +1,49 @@
-"""Reader class for LifeCanvas SmartSPIM raw acquisitions (one tile per epoch).
+"""Reader class for LifeCanvas SmartSPIM acquisitions.
 
 Port of ``+ndr/+reader/smartspim.m``.
 
-This class exposes one SmartSPIM tile through NDR's image (frame) API.
-It is a native NDR image reader, sibling of :class:`ndr.reader.omezarr`
+This class exposes a SmartSPIM acquisition through NDR's image (frame)
+API. It is a native NDR image reader, sibling of :class:`ndr.reader.omezarr`
 and :class:`ndr.reader.tiffstack.ndr_reader_tiffstack`.
 
-Epoch layout: a SmartSPIM epoch is ONE (channel, tile) pair inside a
-SmartSPIM acquisition directory. The epochstream pins all three:
-``[ROOTDIR, CHANNELNAME, TILEID]``. Sidecar files may accompany it
-inside a larger list. Anything less specific errors with a list of what
-could complete the pinning.
+Image sources. A processed SmartSPIM acquisition holds two images of the
+same brain (ferret-lightsheet ``formats/SmartSPIM.md``):
 
-Stitching / cross-tile assembly is deliberately out of scope: this
-reader returns ONE tile per epoch and reports it as-is. See issue #128.
+- ``All_Channels/`` -- SmartSPIM AutoStitch's stitched volume: the
+  destriped tiles merged by TeraStitcher with flat-field and left/right
+  illumination correction and blended overlaps. This is the
+  better-stitched, harmonized data (and what Imaris shows), so the reader
+  PREFERS it whenever it is present for every channel.
+- ``Ex_*/`` -- the destriped per-tile stacks, not flat-corrected and not
+  stitched. They stay readable tile by tile (they are the source of truth
+  and keep the destriper's unscaled intensities), and they are the only
+  image source of acquisitions without ``All_Channels``.
+
+The reader never stitches tiles itself: stitched data comes only from
+SmartSPIM's own ``All_Channels`` output (issue #128).
+
+Epoch layout. The epochstream names what to read:
+
+- ``[ROOTDIR]`` -- stitched volume, every channel on the C axis
+- ``[ROOTDIR, CHANNELNAME]`` -- stitched volume of one channel (C = 1)
+- ``[ROOTDIR, CHANNELNAME, TILEID]`` -- one destriped tile (C = 1)
+
+Sidecar files may accompany it inside a larger list. Without a usable
+``All_Channels`` folder the first two forms fall back to the per-tile
+layout and error with a list of what could complete the pinning.
 
 Dimension model:
 
-- T <- Z axis of the tile (each z-slice TIFF is a "frame")
-- Y, X <- Y, X axes of the plane
-- C = 1 (one channel per epoch; multi-channel data pins a different
-  epoch per channel)
+- T <- Z axis of the volume (each z-slice TIFF is a "frame")
+- Y, X <- Y, X axes of the plane (for ``All_Channels`` the whole
+  stitched canvas)
+- C = number of channels in the epoch; for ``[ROOTDIR]`` they are
+  ordered by their ``_ch<k>`` index and named in
+  ``resolveepoch(...)["channelNames"]``
 - Z = 1
 
-Frames are returned in ``'YXCZT'`` order: size ``[Y X 1 1 nFrames]``.
-Timing: SmartSPIM raw acquisitions do not carry per-slice timestamps.
+Frames are returned in ``'YXCZT'`` order: size ``[Y X C 1 nFrames]``.
+Timing: SmartSPIM acquisitions do not carry per-slice timestamps.
 ``epochclock`` is ``'no_time'`` and ``frametimes`` returns NaN.
 """
 
@@ -36,9 +55,12 @@ from typing import Any
 import numpy as np
 
 from ndr.format.smartspim import (
+    hasAllChannels,
     isSmartSPIM,
     listChannels,
     listTiles,
+    readAllChannelsInfo,
+    readAllChannelsVolume,
     readTileInfo,
     readTileVolume,
 )
@@ -49,7 +71,7 @@ _NUMPY_DTYPE = {"single": "float32", "double": "float64"}
 
 
 class ndr_reader_smartspim(ndr_reader_base):
-    """Reader for one SmartSPIM tile per epoch."""
+    """Reader for SmartSPIM stitched volumes (All_Channels) and tiles."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -59,12 +81,19 @@ class ndr_reader_smartspim(ndr_reader_base):
     # ------------------------------------------------------------------
 
     def resolveepoch(self, epochstreams: Any) -> dict[str, Any]:
-        """Resolve an epoch to ``(rootDir, channelName, tileId)`` plus tile info.
+        """Resolve an epoch to its image source.
 
-        Returns a dict with ``rootDir``, ``channelName``, ``tileId`` and
-        ``tile`` (the :func:`readTileInfo` result for the pinned tile).
-        Errors with a specific message listing what could complete the
-        pinning when a channel or tile is not pinned.
+        Returns a dict with ``rootDir``, ``channelName`` (``''`` for an
+        all-channel epoch), ``tileId`` (``''`` for a stitched epoch),
+        ``source`` (``'allChannels'`` or ``'tile'``), ``channelNames``
+        (names along the C axis), ``numSlices``, ``height``, ``width``,
+        ``dtype``, ``tile`` (the :func:`readTileInfo` result for a tile
+        epoch, else None) and ``allChannels`` (the
+        :func:`readAllChannelsInfo` result for a stitched epoch, else None).
+
+        ``[ROOTDIR]`` and ``[ROOTDIR, CHANNELNAME]`` read the stitched
+        ``All_Channels`` volume when it is usable; otherwise they error
+        with a specific message listing what could complete the pinning.
         """
         root_dir, channel_name, tile_id = ndr_reader_smartspim.parseEpochstreams(epochstreams)
 
@@ -73,12 +102,51 @@ class ndr_reader_smartspim(ndr_reader_base):
         if not Path(root_dir).is_dir():
             raise NotADirectoryError(f"SmartSPIM root does not exist: {root_dir}")
 
+        info: dict[str, Any] = {
+            "rootDir": root_dir,
+            "channelName": channel_name,
+            "tileId": tile_id,
+        }
+
+        if not tile_id and hasAllChannels(root_dir):
+            stitched = readAllChannelsInfo(root_dir)
+            if not channel_name:
+                sel = list(range(len(stitched["channels"])))
+                counts = [int(c["numSlices"]) for c in stitched["channels"]]
+                if any(c != counts[0] for c in counts):
+                    raise ValueError(
+                        "All_Channels channels have different slice counts "
+                        f"({' '.join(map(str, counts))}) in {root_dir}; pin one "
+                        "channel with [rootDir, channelName]."
+                    )
+            else:
+                if channel_name not in stitched["channelNames"]:
+                    raise ValueError(
+                        f'Channel "{channel_name}" not found. Available in {root_dir}: '
+                        f"{ndr_reader_smartspim.formatNameList(stitched['channelNames'])}."
+                    )
+                sel = [stitched["channelNames"].index(channel_name)]
+            info.update(
+                {
+                    "source": "allChannels",
+                    "channelNames": [stitched["channelNames"][i] for i in sel],
+                    "numSlices": stitched["channels"][sel[0]]["numSlices"],
+                    "height": stitched["height"],
+                    "width": stitched["width"],
+                    "dtype": stitched["dtype"],
+                    "tile": None,
+                    "allChannels": stitched,
+                }
+            )
+            return info
+
         if not channel_name:
             channels = listChannels(root_dir)
             names = [c["name"] for c in channels]
             raise ValueError(
-                "Epochstream does not pin a channel. "
-                f"Available in {root_dir}: {ndr_reader_smartspim.formatNameList(names)}. "
+                f"Epochstream does not pin a channel and {root_dir} has no usable "
+                "All_Channels stitched volume. "
+                f"Available channels: {ndr_reader_smartspim.formatNameList(names)}. "
                 "Pass [rootDir, channelName, tileId] as the epochstream."
             )
 
@@ -86,41 +154,55 @@ class ndr_reader_smartspim(ndr_reader_base):
             tiles = listTiles(root_dir, channel_name)
             ids = [t["id"] for t in tiles]
             raise ValueError(
-                f'Epochstream does not pin a tile for channel "{channel_name}". '
-                f"Available in {root_dir}: {ndr_reader_smartspim.formatNameList(ids)}. "
+                f'Epochstream does not pin a tile for channel "{channel_name}" and '
+                f"{root_dir} has no usable All_Channels stitched volume. "
+                f"Available tiles: {ndr_reader_smartspim.formatNameList(ids)}. "
                 "Pass [rootDir, channelName, tileId] as the epochstream."
             )
 
-        return {
-            "rootDir": root_dir,
-            "channelName": channel_name,
-            "tileId": tile_id,
-            "tile": readTileInfo(root_dir, channel_name, tile_id),
-        }
+        tile = readTileInfo(root_dir, channel_name, tile_id)
+        info.update(
+            {
+                "source": "tile",
+                "channelNames": [channel_name],
+                "numSlices": tile["numSlices"],
+                "height": tile["height"],
+                "width": tile["width"],
+                "dtype": tile["dtype"],
+                "tile": tile,
+                "allChannels": None,
+            }
+        )
+        return info
 
     # ------------------------------------------------------------------
     # Frame API
     # ------------------------------------------------------------------
 
     def numframes(self, epochstreams: Any, epoch_select: int = 1) -> int:
-        """Return the number of frames (z-slices) in this tile."""
+        """Return the number of frames (z-slices) in this epoch."""
         info = self.resolveepoch(epochstreams)
-        return int(info["tile"]["numSlices"])
+        return int(info["numSlices"])
 
     def framesize(self, epochstreams: Any, epoch_select: int = 1) -> list[int]:
-        """Return the ``[Y X C Z T]`` extent of the tile."""
+        """Return the ``[Y X C Z T]`` extent of the epoch."""
         info = self.resolveepoch(epochstreams)
-        tile = info["tile"]
-        return [int(tile["height"]), int(tile["width"]), 1, 1, int(tile["numSlices"])]
+        return [
+            int(info["height"]),
+            int(info["width"]),
+            len(info["channelNames"]),
+            1,
+            int(info["numSlices"]),
+        ]
 
     def dimensionorder(self, epochstreams: Any, epoch_select: int = 1) -> str:
         """Return the dimension order of returned frames."""
         return "YXCZT"
 
     def datatype(self, epochstreams: Any, epoch_select: int = 1) -> str:
-        """Return the underlying numeric class of the tile (MATLAB class name)."""
+        """Return the underlying numeric class of the pixels (MATLAB class name)."""
         info = self.resolveepoch(epochstreams)
-        return info["tile"]["dtype"]
+        return info["dtype"]
 
     def frametimes(
         self,
@@ -143,23 +225,23 @@ class ndr_reader_smartspim(ndr_reader_base):
         SelectC: list[int] | np.ndarray | None = None,
         SelectZ: list[int] | np.ndarray | None = None,
     ) -> np.ndarray:
-        """Read z-slices from the pinned tile.
+        """Read z-slices from the epoch.
 
-        Reads the z-slices indexed by ``frameind`` from the pinned tile
-        and returns them in ``'YXCZT'`` order: size
-        ``[Y X 1 1 numel(frameind)]``.
+        Returns them in ``'YXCZT'`` order: size
+        ``[Y X C 1 numel(frameind)]``, where C is the number of channels
+        in the epoch (see ``resolveepoch(...)["channelNames"]``).
 
-        Frames are read one at a time (the format layer's
-        :func:`readTileVolume` can read a contiguous range; for arbitrary
-        index lists this is a simple loop). Sparse random reads are fine;
-        large contiguous reads that want the extra efficiency can call
-        :func:`readTileVolume` with a ``ZRange`` directly.
+        Stitched epochs read each run of consecutive frame indices with
+        one :func:`readAllChannelsVolume` call per channel. Tile epochs
+        read frames one at a time through :func:`readTileVolume`; large
+        contiguous reads that want the extra efficiency can call the
+        format functions with a ``ZRange`` directly.
         """
         info = self.resolveepoch(epochstreams)
-        tile = info["tile"]
-        Y = int(tile["height"])
-        X = int(tile["width"])
-        n = int(tile["numSlices"])
+        Y = int(info["height"])
+        X = int(info["width"])
+        C = len(info["channelNames"])
+        n = int(info["numSlices"])
 
         if frameind is None or len(np.asarray(frameind).ravel()) == 0:
             frameind = list(range(1, n + 1))
@@ -170,16 +252,31 @@ class ndr_reader_smartspim(ndr_reader_base):
 
         dt = self.datatype(epochstreams, epoch_select)
         np_dtype = np.dtype(_NUMPY_DTYPE.get(dt, dt))
-        frames = np.zeros((Y, X, 1, 1, len(frameind)), dtype=np_dtype)
-        for i, z in enumerate(frameind):
-            vol = readTileVolume(
-                info["rootDir"],
-                info["channelName"],
-                info["tileId"],
-                ZRange=[z, z],
-            )
-            # vol shape is (1, Y, X)
-            frames[:, :, 0, 0, i] = vol[0, :, :].astype(np_dtype)
+        frames = np.zeros((Y, X, C, 1, len(frameind)), dtype=np_dtype)
+
+        if info["source"] == "allChannels":
+            i = 0
+            while i < len(frameind):
+                j = i
+                while j + 1 < len(frameind) and frameind[j + 1] == frameind[j] + 1:
+                    j += 1
+                for c, name in enumerate(info["channelNames"]):
+                    vol = readAllChannelsVolume(
+                        info["rootDir"], name, ZRange=[frameind[i], frameind[j]]
+                    )
+                    # vol shape is (n, Y, X) -> (Y, X, n)
+                    frames[:, :, c, 0, i : j + 1] = np.moveaxis(vol, 0, -1).astype(np_dtype)
+                i = j + 1
+        else:
+            for i, z in enumerate(frameind):
+                vol = readTileVolume(
+                    info["rootDir"],
+                    info["channelName"],
+                    info["tileId"],
+                    ZRange=[z, z],
+                )
+                # vol shape is (1, Y, X)
+                frames[:, :, 0, 0, i] = vol[0, :, :].astype(np_dtype)
         return ndr_reader_base.selectframeCZ(frames, SelectC, SelectZ)
 
     def epochclock(self, epochstreams: Any, epoch_select: int = 1) -> list[ClockType]:
@@ -193,9 +290,9 @@ class ndr_reader_smartspim(ndr_reader_base):
     def getchannelsepoch(self, epochstreams: Any, epoch_select: int = 1) -> list[dict[str, Any]]:
         """List the channels available: a single image channel.
 
-        A SmartSPIM epoch pins a specific fluorophore channel via its
-        epochstream, so at the NDR-channel level the tile is
-        single-channel.
+        Matches :class:`ndr.reader.omezarr`: fluorophore channels of a
+        stitched all-channel epoch are returned together on the C axis of
+        :meth:`readframes` rather than as separate NDR channels.
         """
         return [{"name": "image1", "type": "image", "time_channel": None}]
 
