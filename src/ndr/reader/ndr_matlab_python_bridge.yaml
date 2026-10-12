@@ -1133,7 +1133,7 @@ classes:
     matlab_path: "+ndr/+reader/tiffstack.m"
     status: regular_port
     python_path: "ndr/reader/tiffstack.py"
-    matlab_last_sync_hash: "a2ffd8b"
+    matlab_last_sync_hash: "8f870c1"
     python_class: "ndr_reader_tiffstack"
     inherits: base
     decision_log: >-
@@ -1143,7 +1143,10 @@ classes:
       so it is only required when a TIFF is actually read). MATLAB's
       tiffclass derives the class from BitsPerSample plus SampleFormat;
       tifffile already resolves each page to a numpy dtype, so the Python
-      tiffclass returns that dtype's name.
+      tiffclass returns that dtype's name. MATLAB commit 8f870c1 fixed
+      tiffclass reading float TIFFs (imfinfo 'IEEE floating point') as
+      uint32; the Python port never had that bug (checked float32 and
+      int16 round-trips), so the sync needs no code change here.
     methods:
       - name: imagefiles
         input_arguments:
