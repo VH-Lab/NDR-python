@@ -8,8 +8,10 @@ subprocess and exercise the flow.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -18,7 +20,7 @@ from ndr.setup import sonpipe as setup_sonpipe
 
 
 class TestInstall:
-    def test_invokes_pip_with_the_git_url(self, monkeypatch):
+    def test_invokes_pip_with_the_sonpipe_url(self, monkeypatch):
         seen: dict[str, object] = {}
 
         def fake_run(argv, **kwargs):
@@ -53,6 +55,22 @@ class TestInstall:
         monkeypatch.setattr(subprocess, "run", fake_run)
         with pytest.raises(setup_sonpipe.SonpipeInstallError, match="pip broke"):
             setup_sonpipe.install()
+
+
+class TestUrl:
+    def test_url_needs_no_git(self):
+        # pip and uv shell out to a system git for git+ URLs; end-user
+        # installers cannot assume one exists.
+        assert "git+" not in setup_sonpipe.SONPIPE_GIT_URL
+        assert "https://" in setup_sonpipe.SONPIPE_GIT_URL
+
+    def test_matches_the_ced_extra(self):
+        # Both entry points must name the same URL, or an environment with
+        # both would hold conflicting direct references for sonpipe.
+        pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+        match = re.search(r"^ced = \[\"(.+?)\"\]$", pyproject.read_text(), re.MULTILINE)
+        assert match is not None, "[ced] extra not found in pyproject.toml"
+        assert match.group(1) == setup_sonpipe.SONPIPE_GIT_URL
 
 
 class TestCli:

@@ -55,11 +55,17 @@ formats = [
 # unconditionally would put every install of ndr behind a second repository
 # and a narrow Python. Opt in with `pip install ndr[ced]`, or run
 # `python -m ndr.setup.sonpipe` after installing ndr -- both land on the same
-# git URL. Without either the CED reader raises SonpipeNotFoundError.
-ced = ["sonpipe @ git+https://github.com/VH-Lab/sonpipe.git"]
+# URL. Without either the CED reader raises SonpipeNotFoundError.
+# The URL is GitHub's zip archive of sonpipe's main branch, fetched over plain
+# HTTPS, rather than a git+ URL: pip and uv shell out to a system `git` for
+# git+ URLs, and many end-user machines (and installers built on
+# `uv tool install`) have none. Archive URLs of a branch are cached, so picking
+# up a newer sonpipe needs `--upgrade --force-reinstall` (pip) or
+# `--reinstall` (uv).
+ced = ["sonpipe @ https://github.com/VH-Lab/sonpipe/archive/refs/heads/main.zip"]
 
 [tool.hatch.metadata]
-# The [ced] extra points at sonpipe's git URL; PEP 508 direct references
+# The [ced] extra points at sonpipe's archive URL; PEP 508 direct references
 # need this opt-in to appear in optional-dependencies.
 allow-direct-references = true
 
