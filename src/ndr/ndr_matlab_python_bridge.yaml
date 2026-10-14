@@ -12,7 +12,8 @@ project_metadata:
 #                                so the CED reader can drive CED's sonpy. Also
 #                                available as the [ced] optional extra in
 #                                pyproject.toml; both entry points install the
-#                                same git URL.
+#                                same URL (a GitHub archive zip over HTTPS,
+#                                so no system git is needed).
 #
 # Not ported (MATLAB-only tooling, no Python counterpart is meaningful):
 #   +ndr/+docs/build.m        - builds MATLAB markdown docs

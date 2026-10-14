@@ -148,10 +148,10 @@ jobs:
           python-version: "3.14"
 
       - name: Install package with dev and ced dependencies
-        # The [ced] extra pulls sonpipe from its git URL. Same install as
-        # `python -m ndr.setup.sonpipe`; downstream packages (NDI-python) use
-        # the module entry point in their own CI so they don't have to know
-        # the git URL themselves.
+        # The [ced] extra pulls sonpipe from its GitHub archive URL (plain
+        # HTTPS, no git needed). Same install as `python -m ndr.setup.sonpipe`;
+        # downstream packages (NDI-python) use the module entry point in their
+        # own CI so they don't have to know the URL themselves.
         run: pip install -e ".[dev,ced]"
 
       - name: Verify sonpipe and sonpy are usable

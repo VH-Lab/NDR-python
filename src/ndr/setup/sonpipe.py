@@ -8,8 +8,16 @@ sonpipe is not on PyPI, and the vendor pins ``sonpy`` to specific interpreter
 builds (CPython 3.14 on Linux at the time of writing). Both facts are why
 this is a runtime step rather than a declared dependency, and why the same
 install is also exposed as the ``[ced]`` optional extra in pyproject.toml --
-that extra points at the same git URL this module installs, so which entry
-point a caller uses does not change what lands.
+that extra points at the same URL this module installs, so which entry
+point a caller uses does not change what lands. (Keep the two strings
+identical: if both forms were installed into one environment with different
+URLs, pip and uv would see conflicting direct references.)
+
+The URL is GitHub's zip archive of sonpipe's main branch rather than a
+``git+`` URL, because pip and uv shell out to a system ``git`` for ``git+``
+URLs and many end-user machines have none; the archive is fetched over plain
+HTTPS. pip caches a branch archive, so ``--upgrade`` alone may not pick up a
+newer sonpipe -- reinstall with ``pip install --upgrade --force-reinstall``.
 
 Usage::
 
@@ -28,7 +36,11 @@ import argparse
 import subprocess
 import sys
 
-SONPIPE_GIT_URL = "sonpipe @ git+https://github.com/VH-Lab/sonpipe.git"
+# Historical name: this was once a git+ URL. It is now a plain-HTTPS archive
+# URL so that installing sonpipe does not need git; the name is kept because
+# callers (tests, downstream code) import it. Must match the [ced] extra in
+# pyproject.toml exactly.
+SONPIPE_GIT_URL = "sonpipe @ https://github.com/VH-Lab/sonpipe/archive/refs/heads/main.zip"
 
 
 class SonpipeInstallError(RuntimeError):
