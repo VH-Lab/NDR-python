@@ -126,7 +126,7 @@ def reader():
 class TestVideoReader:
     def test_known_readers(self, reader):
         assert isinstance(reader.ndr_reader_base, ndr_reader_video)
-        for alias in ("videoreader", "mp4", "avi", "mov"):
+        for alias in ("mp4", "avi", "mov"):
             assert isinstance(ndr_reader(alias).ndr_reader_base, ndr_reader_video)
 
     def test_greyscale_avi_is_palettised_like_matlab(self, videos):

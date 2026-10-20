@@ -1507,12 +1507,16 @@ classes:
     matlab_path: "+ndr/+reader/video.m"
     status: regular_port
     python_path: "ndr/reader/video.py"
-    matlab_last_sync_hash: "794a0e8"
+    matlab_last_sync_hash: "d2ebe98"
     python_class: "ndr_reader_video"
     inherits: base
     decision_log: >-
-      Ported 2026-10-20 from NDR-matlab #140. Native video reader; sibling
-      of tiffstack, implements the frame API only. MATLAB uses its built-in
+      Ported 2026-10-20 from NDR-matlab #140; synced to d2ebe98 (NDR-matlab
+      #143), which defines the 'video' type by the file format rather than
+      by VideoReader and drops the MATLAB-specific 'videoreader' alias, so
+      the Python registry drops it too (no change to how frames are read).
+      Native video reader; sibling of tiffstack, implements the frame API
+      only. MATLAB uses its built-in
       VideoReader; the Python port uses PyAV (`av`, the FFmpeg binding; an
       optional dependency, imported lazily). PyAV wheels bundle FFmpeg, so
       MPEG-4/QuickTime need no platform media framework as they do for

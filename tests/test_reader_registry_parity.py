@@ -55,7 +55,6 @@ MATLAB_ALIASES = {
     "vhlabview": "ndr.reader.vld",
     "labview": "ndr.reader.vld",
     "video": "ndr.reader.video",
-    "videoreader": "ndr.reader.video",
     "mp4": "ndr.reader.video",
     "avi": "ndr.reader.video",
     "mov": "ndr.reader.video",

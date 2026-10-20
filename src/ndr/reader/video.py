@@ -1,8 +1,11 @@
-"""Native video reader (.mp4/.avi/.mov/...).
+"""Reader for video files (.mp4/.avi/.mov).
 
 Port of +ndr/+reader/video.m
 
-MATLAB reads video with its built-in ``VideoReader``; the Python port uses
+The ``'video'`` reader type is defined by the FILE FORMAT, not by a library: it
+reads the frames of a video container (MPEG-4, AVI, QuickTime) and the time
+stamped on each frame, so the two ports read the same files and give the same
+times. MATLAB implements it with its built-in ``VideoReader``; this port uses
 PyAV (``av``), the FFmpeg binding, which is an optional dependency imported
 lazily so it is only required when a video is actually read. PyAV wheels ship
 their own FFmpeg, so unlike MATLAB on Linux (which needs GStreamer for
@@ -28,12 +31,12 @@ what MATLAB's 'Grayscale AVI' profile writes). Frames are returned in
 
 Timing: a video has real frame times, so the epoch clock is always
 ``dev_local_time`` and ``frametimes`` are seconds from the start of the file.
-The times are measured, not assumed: the file is decoded once in order and the
-presentation time of every decoded frame is recorded, which is correct for
-variable-frame-rate files, where ``(k-1)/FrameRate`` would drift. MATLAB
-records ``VideoReader.CurrentTime`` before each ``readFrame``; FFmpeg's
-presentation timestamp, taken relative to the stream's start time, is the same
-quantity. Because that scan decodes every frame, its result is cached per file
+A frame's time is its PRESENTATION TIME, the timestamp the container stores for
+that frame, measured from the start of the file. It is read, not assumed,
+which is correct for variable-frame-rate files, where ``(k-1)/FrameRate`` would
+drift. Here it is FFmpeg's presentation timestamp relative to the stream's
+start time, recorded for every frame as the file is decoded once in order (in
+MATLAB, ``VideoReader.CurrentTime`` before each ``readFrame``). Because that scan decodes every frame, its result is cached per file
 (keyed by full path, size and modification time) for the rest of the Python
 session, and only ``frametimes`` (and ``numframes``, when the container
 reports no count) runs it. ``t0_t1`` needs only the first and last frame

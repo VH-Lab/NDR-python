@@ -112,7 +112,6 @@
   {
     "type": [
       "video",
-      "videoreader",
       "mp4",
       "avi",
       "mov"
