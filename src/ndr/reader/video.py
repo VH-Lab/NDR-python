@@ -123,7 +123,12 @@ def _frame2array(frame) -> np.ndarray:
     if name == "pal8":
         h, w = frame.height, frame.width
         idxplane = frame.planes[0]
-        idx = np.frombuffer(idxplane, np.uint8).reshape(h, idxplane.line_size)[:, :w]
+        stride = idxplane.line_size
+        idx = np.frombuffer(idxplane, np.uint8).reshape(h, abs(stride))[:, :w]
+        if stride < 0:
+            # A bottom-up DIB (as MATLAB's VideoWriter writes AVI) decodes with
+            # a negative stride; the buffer holds the rows bottom row first.
+            idx = idx[::-1]
         # FFmpeg stores the palette as native-endian uint32 ARGB: bytes B,G,R,A.
         pal = np.frombuffer(frame.planes[1], np.uint8)[: 256 * 4].reshape(256, 4)
         rgbpal = pal[:, [2, 1, 0]]

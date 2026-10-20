@@ -330,3 +330,40 @@ class TestVideoReaderBeyondMatlab:
     def test_missing_file(self, tmp_path):
         with pytest.raises(FileNotFoundError):
             ndr_reader_video.scanframetimes(str(tmp_path), "absent.mp4")
+
+
+class TestCheckedInExampleVideos:
+    """The shared symmetry fixtures, which store frames bottom-up as MATLAB does.
+
+    FFmpeg decodes a bottom-up 8-bit DIB with a negative line stride; reading
+    the plane in memory order instead returns the frame upside down. The
+    synthetic files above are written top-down by FFmpeg and cannot catch
+    that. Pixel formulas are those of tools/make_example_data.py.
+    """
+
+    @staticmethod
+    def _grid():
+        return np.meshgrid(np.arange(6), np.arange(12), np.arange(16), indexing="ij")
+
+    def test_rgb_exact(self):
+        from ndr.fun.ndrpath import ndrpath
+
+        f, row, col = self._grid()
+        truth = np.stack([20 * f + col, 10 * row + f, 200 - 10 * f - col], axis=-1)
+        es = [str(ndrpath() / "example_data" / "example_video.avi")]
+        r = ndr_reader_video()
+        assert r.framesize(es) == [12, 16, 3, 1, 6]
+        got = np.moveaxis(r.readframes(es)[:, :, :, 0, :], -1, 0)
+        np.testing.assert_array_equal(got, truth.astype(np.uint8))
+        np.testing.assert_allclose(r.frametimes(es), np.arange(6) / 10, atol=1e-9)
+
+    def test_grey_palette_exact(self):
+        from ndr.fun.ndrpath import ndrpath
+
+        f, row, col = self._grid()
+        truth = (30 * f + 4 * row + col).astype(np.uint8)
+        es = [str(ndrpath() / "example_data" / "example_video_grey.avi")]
+        r = ndr_reader_video()
+        assert r.framesize(es) == [12, 16, 1, 1, 6]
+        np.testing.assert_array_equal(r.readframes(es)[:, :, 0, 0, :], np.moveaxis(truth, 0, -1))
+        np.testing.assert_array_equal(r.readframes(es, 1, [4, 2])[:, :, 0, 0, 0], truth[3])
