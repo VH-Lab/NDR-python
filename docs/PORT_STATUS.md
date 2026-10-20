@@ -45,6 +45,7 @@ applying the **Mirror Rule**:
 | `ndr.reader.tiffstack` | `ndr.reader.tiffstack` | `ndr_reader_tiffstack` |
 | `ndr.reader.prairieview` | `ndr.reader.prairieview` | `ndr_reader_prairieview` |
 | `ndr.reader.vld` | `ndr.reader.vld` | `ndr_reader_vld` |
+| `ndr.reader.video` | `ndr.reader.video` | `ndr_reader_video` |
 | `ndr.reader.somecompany_someformat` | `ndr.reader.somecompany_someformat` | `ndr_reader_somecompany__someformat` |
 
 ## Reader Status
@@ -111,6 +112,7 @@ The top-level `ndr_reader` class (`reader_wrapper.py`) wraps any format-specific
 | `neo` | ndr\_reader\_ced\_\_smr, ndr\_reader\_neo | Read CED SMR/SON and Blackrock files |
 | `pyabf` | ndr\_reader\_axon\_\_abf | Read Axon Binary Format files |
 | `tifffile` | ndr\_reader\_tiffstack, ndr\_reader\_prairieview | Read TIFF image stacks |
+| `av` (PyAV) | ndr\_reader\_video | Decode video files through its bundled FFmpeg |
 | `numpy` | All readers | Array operations |
 
 ## Imaging Support and Remaining Gaps
@@ -151,6 +153,7 @@ Python callers that need the numpy dtype use
 |---|---|---|
 | `ndr.reader.tiffstack` | **Ported** | Native multipage-TIFF reader, built on `tifffile`. Handles single multipage files, directory epochs, anchor/marker files, and `frametimes.txt` sidecars. |
 | `ndr.reader.prairieview` | **Ported** | Native legacy Prairie View reader. Groups channels from `Cycle`/`Ch` file-name markers, reads real per-frame timestamps from the config, and reports raster-scan metadata. Reads legacy `.pcf`, modern PVScan XML, and legacy MM-era XML configs. No NANSEN dependency. |
+| `ndr.reader.video` | **Ported** | Native video reader (`.mp4`/`.avi`/`.mov`/...), built on PyAV where MATLAB uses `VideoReader`. One video file per epoch (companion files ignored), measured per-frame presentation times (correct for variable frame rate), `t0_t1` without decoding the whole file, and seek-based random access. |
 | `ndr.reader.imagestack` | Not ported | Thin wrapper over NANSEN's `nansen.stack.ImageStack` — see the dependency note below. |
 
 ### Other readers and formats
@@ -167,7 +170,7 @@ Python callers that need the numpy dtype use
 ### Reader-types resource divergence
 
 `resource/ndr_reader_types.json` still differs between the two repositories.
-MATLAB registers 14 readers; Python now registers 13. Python is missing only
+MATLAB registers 15 readers; Python now registers 14. Python is missing only
 `imagestack` (the NANSEN-backed reader). The two files also still disagree on
 some type aliases: MATLAB maps `smrx`/`ced-smrx` (the sonpipe-backed 64-bit
 CED path, which Python does not implement) and `WMHS`.

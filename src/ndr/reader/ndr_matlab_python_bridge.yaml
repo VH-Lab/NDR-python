@@ -1502,6 +1502,121 @@ classes:
       - name: t0_t1
       - name: metadata
 
+  - name: video
+    type: class
+    matlab_path: "+ndr/+reader/video.m"
+    status: regular_port
+    python_path: "ndr/reader/video.py"
+    matlab_last_sync_hash: "794a0e8"
+    python_class: "ndr_reader_video"
+    inherits: base
+    decision_log: >-
+      Ported 2026-10-20 from NDR-matlab #140. Native video reader; sibling
+      of tiffstack, implements the frame API only. MATLAB uses its built-in
+      VideoReader; the Python port uses PyAV (`av`, the FFmpeg binding; an
+      optional dependency, imported lazily). PyAV wheels bundle FFmpeg, so
+      MPEG-4/QuickTime need no platform media framework as they do for
+      MATLAB on Linux. Frame times are FFmpeg presentation timestamps
+      relative to the stream start, the quantity MATLAB reads as
+      CurrentTime before each readFrame; both are measured per decoded
+      frame and so are correct for variable-frame-rate files. C follows
+      VideoReader: grey pixel formats and palettised video with a grey
+      palette (MATLAB's 'Grayscale AVI') give C=1, everything else RGB;
+      above 8 bits per sample both give uint16. readframes seeks by pts,
+      located from the demuxed packet timestamps (no decode) via the
+      Python-only _framepts helper, where MATLAB's read(v, idx) does the
+      seek internally. Session caches are module-level dicts where MATLAB
+      uses persistent containers.Map, keyed the same way (path, size,
+      modification time). Error identifiers map to ValueError
+      (novideofile, multiplevideofiles), IndexError (badframeind) and
+      FileNotFoundError (nofile).
+    methods:
+      - name: videofile
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str] | str"
+        output_arguments:
+          - name: filename
+            type_python: "str"
+      - name: videoobject
+        input_arguments:
+          - name: epochstreams
+            type_python: "list[str] | str"
+        output_arguments:
+          - name: v
+            type_matlab: "VideoReader"
+            type_python: "av.container.InputContainer"
+            decision_log: >-
+              The PyAV container is the counterpart of the VideoReader
+              object. The caller owns it and closes it (context manager).
+      - name: numframes
+      - name: framesize
+      - name: dimensionorder
+      - name: datatype
+      - name: frametimes
+      - name: readframes
+      - name: epochclock
+      - name: t0_t1
+      - name: getchannelsepoch
+      - name: metadata
+    static_methods:
+      - name: videoextensions
+        input_arguments: []
+        output_arguments:
+          - name: exts
+            type_matlab: "cell array of char"
+            type_python: "list[str]"
+      - name: videonumframes
+        input_arguments:
+          - name: v
+            type_matlab: "VideoReader"
+            type_python: "av.container.InputContainer"
+        output_arguments:
+          - name: n
+            type_python: "int | float"
+            decision_log: "NaN (a float) when the container reports no frame count."
+      - name: channelsanddatatype
+        input_arguments:
+          - name: v
+            type_matlab: "VideoReader"
+            type_python: "av.container.InputContainer"
+        output_arguments:
+          - name: C
+            type_python: "int"
+          - name: dt
+            type_matlab: "char"
+            type_python: "str"
+            decision_log: "The MATLAB class name ('uint8'/'uint16'), as for datatype."
+      - name: checkframeind
+        input_arguments:
+          - name: frameind
+            type_python: "list[int] | numpy.ndarray"
+            decision_log: "Semantic Parity: frame indices are 1-based."
+          - name: n
+            type_python: "int"
+        output_arguments: []
+      - name: endtimes
+        input_arguments:
+          - name: folder
+            type_python: "str"
+          - name: name
+            type_python: "str"
+        output_arguments:
+          - name: t0t1
+            type_matlab: "1x2 double"
+            type_python: "list[float]"
+      - name: scanframetimes
+        input_arguments:
+          - name: folder
+            type_python: "str"
+          - name: name
+            type_python: "str"
+        output_arguments:
+          - name: t
+            type_matlab: "Nx1 double"
+            type_python: "numpy.ndarray"
+            decision_log: "1-D array, as frametimes returns throughout the Python port."
+
   - name: imagestack
     type: class
     matlab_path: "+ndr/+reader/imagestack.m"

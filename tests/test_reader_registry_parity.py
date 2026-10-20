@@ -54,6 +54,11 @@ MATLAB_ALIASES = {
     "vhlv": "ndr.reader.vld",
     "vhlabview": "ndr.reader.vld",
     "labview": "ndr.reader.vld",
+    "video": "ndr.reader.video",
+    "videoreader": "ndr.reader.video",
+    "mp4": "ndr.reader.video",
+    "avi": "ndr.reader.video",
+    "mov": "ndr.reader.video",
 }
 
 # ndr.reader.imagestack exists in NDR-matlab with aliases imagestack / nansen /

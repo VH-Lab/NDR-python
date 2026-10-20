@@ -31,6 +31,8 @@ dev = [
     "tifffile>=2021.7.2",
     # LZW codec for SmartSPIM All_Channels slices (tests write LZW TIFFs).
     "imagecodecs>=2021.11.20",
+    # ndr.reader.video decodes (and its tests write) video through PyAV.
+    "av>=12.0",
 ]
 formats = [
     # ndr.format.stereoseq.readGEF reads Stereo-seq .gef files, which are HDF5.
@@ -47,6 +49,8 @@ formats = [
     # hand-roll chunk reading or Blosc/Zstd decoding.
     "zarr>=2.13",
     "numcodecs>=0.10",
+    # ndr.reader.video reads video through PyAV, whose wheels bundle FFmpeg.
+    "av>=12.0",
 ]
 # CED Spike2 support runs out of process through the sonpipe CLI, which pulls
 # CED's sonpy binding as its own dependency. Not in the base install because
