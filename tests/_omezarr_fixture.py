@@ -6,9 +6,14 @@ Builds a dual-pyramid store that matches the lab layout in
 ``ferret-lightsheet/formats/OurUsualZarrFormat.md``: one shared level-0
 array plus separate ``mean`` and ``max`` downsample chains. Without
 ``with_chunks`` only metadata files are written; with ``with_chunks`` a
-seeded uint16 volume is written through the ``zarr`` library so
-chunks exist on disk and their ground-truth downsamples come back for
-comparison.
+seeded uint16 volume is written so chunks exist on disk and their
+ground-truth downsamples come back for comparison.
+
+The chunks are uncompressed by default. ``codec="blosc-zstd"`` instead writes
+every array through zarr-python with Blosc+Zstd, the codec the lab's own data
+uses and the one ``makeExampleFixture.m`` writes. The OME-Zarr symmetry test
+needs that: MATLAB's reader hand-rolls the Blosc/Zstd path, so only a fixture
+compressed by zarr-python itself checks it against real zarr-python output.
 """
 
 from __future__ import annotations
@@ -122,13 +127,47 @@ def _write_chunks(array_dir: Path, vol: np.ndarray, chunks: tuple[int, ...]) -> 
                     (array_dir / key).write_bytes(chunk.tobytes(order="C"))
 
 
+def _write_zarr_array(array_dir: Path, vol: np.ndarray, chunks: tuple[int, ...]) -> None:
+    """Write ``vol`` as a zarr v2 array compressed with Blosc+Zstd, via zarr-python.
+
+    Replaces the ``.zarray`` written by :func:`_write_zarray` with zarr-python's
+    own, so the metadata and the chunks are both exactly what zarr-python
+    produces. Same codec settings as ``makeExampleFixture.m``: Blosc container,
+    Zstd, level 5, byte shuffle.
+    """
+    import zarr
+    from numcodecs import Blosc
+
+    kwargs = {
+        "mode": "w",
+        "shape": vol.shape,
+        "chunks": chunks,
+        "dtype": "<u2",
+        "compressor": Blosc(cname="zstd", clevel=5, shuffle=Blosc.SHUFFLE),
+        "fill_value": 0,
+    }
+    try:
+        arr = zarr.open_array(str(array_dir), zarr_format=2, **kwargs)
+    except TypeError:  # zarr 2.x: no zarr_format keyword, and v2 is the default
+        arr = zarr.open_array(str(array_dir), **kwargs)
+    arr[...] = vol
+
+
 def make_example_fixture(
     parent_dir: str | Path,
     *,
     with_chunks: bool = False,
     seed: int = 20260906,
+    codec: str = "none",
 ) -> tuple[Path, GroundTruth]:
-    """Write a dual-pyramid OME-Zarr store and return its root and ground truth."""
+    """Write a dual-pyramid OME-Zarr store and return its root and ground truth.
+
+    ``codec`` is ``"none"`` (uncompressed chunks written by hand, the default)
+    or ``"blosc-zstd"`` (arrays written by zarr-python with Blosc+Zstd). It
+    only matters with ``with_chunks``.
+    """
+    if codec not in ("none", "blosc-zstd"):
+        raise ValueError(f'codec must be "none" or "blosc-zstd", not {codec!r}.')
     parent = Path(parent_dir)
     parent.mkdir(parents=True, exist_ok=True)
     fixture_dir = parent / "example.zarr"
@@ -205,11 +244,12 @@ def make_example_fixture(
     mean2 = _downsample_block(mean1, "mean")
     max2 = _downsample_block(max1, "max")
 
-    _write_chunks(fixture_dir / "0", lvl0, chunks0)
-    _write_chunks(fixture_dir / "mean" / "1", mean1, chunks1)
-    _write_chunks(fixture_dir / "max" / "1", max1, chunks1)
-    _write_chunks(fixture_dir / "mean" / "2", mean2, chunks2)
-    _write_chunks(fixture_dir / "max" / "2", max2, chunks2)
+    write = _write_zarr_array if codec == "blosc-zstd" else _write_chunks
+    write(fixture_dir / "0", lvl0, chunks0)
+    write(fixture_dir / "mean" / "1", mean1, chunks1)
+    write(fixture_dir / "max" / "1", max1, chunks1)
+    write(fixture_dir / "mean" / "2", mean2, chunks2)
+    write(fixture_dir / "max" / "2", max2, chunks2)
 
     gt.level0 = lvl0
     gt.mean_level1 = mean1
