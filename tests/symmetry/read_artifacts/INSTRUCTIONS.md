@@ -70,6 +70,10 @@ class TestReadData:
 ```bash
 # Verify artifacts (skips missing sources)
 pytest tests/symmetry/read_artifacts/ -v
+
+# As CI runs it: a skip FAILS, and the pythonArtifacts cases (made later, in
+# Stage 3) are deselected rather than skipped
+NDR_SYMMETRY_CHECK_STRICT=1 pytest tests/symmetry/read_artifacts/ -v -k "not pythonArtifacts"
 ```
 
 ## Adding a new symmetry test:
@@ -78,6 +82,12 @@ pytest tests/symmetry/read_artifacts/ -v
    `make_artifacts/` (e.g., `reader/`, `format/`).
 2. Add a `test_<name>.py` file with a parameterized test class that reads from both
    `matlabArtifacts` and `pythonArtifacts`.
-3. Always use `pytest.skip()` when the expected artifact directory does not exist.
+3. Use `pytest.skip()` when the expected artifact directory does not exist, so the suite
+   still runs on a machine with only one port installed. In CI that skip **fails**:
+   `test-symmetry.yml` sets `NDR_SYMMETRY_CHECK_STRICT`, under which
+   `tests/symmetry/conftest.py` turns any skip under `tests/symmetry/` into a failure,
+   because a comparison that did not run must not report green (VH-Lab/NDR-python#34). So a
+   new read test needs its MATLAB half to exist (on NDR-matlab `main`, or on a branch with
+   the same name, pushed before this one) or the symmetry job goes red. That is the point.
 4. Mirror the MATLAB counterpart:
    `tools/tests/+ndr/+symmetry/+readArtifacts/+<namespace>/<ClassName>.m`.

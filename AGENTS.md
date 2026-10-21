@@ -73,7 +73,7 @@ commit hash in the command printed beneath it. Go there for:
 The bridge guard exists because *a check that could not run must not report
 the same result as a check that ran and passed*. The subtle part is that this
 applies to the guard's own tests, and it is easy to violate while writing
-something careful. It has now happened three times in this repo:
+something careful. It has now happened four times in this repo:
 
 1. The `bridge` job named one test file, so a new one would have skipped in
    every job and read as green.
@@ -84,6 +84,18 @@ something careful. It has now happened three times in this repo:
    actually discriminates — carried three `pytest.skip` calls gated on
    nothing. Had NDR-matlab's history made their fixture conditions true,
    the proof that the rule works would have stopped running, silently.
+4. The cross-language **symmetry** job reported green on #33 with every
+   video comparison unrun (#34). Its NDR-matlab branch was pushed seconds
+   after the run had already fallen back to `main`, so there were no MATLAB
+   video artifacts. Python's read tests skipped, which was hidden among the
+   16 skips every run carried by design, and MATLAB's read tests
+   `disp`+`return`ed, which `matlab.unittest` counts as **passed**. Now
+   `test-symmetry.yml` sets `NDR_SYMMETRY_CHECK_STRICT`:
+   `tests/symmetry/conftest.py` fails any skipped symmetry test (proved by
+   `tests/test_symmetry_strict.py`), the MATLAB stages fail on any
+   Incomplete result, the cases that cannot run in a stage by design are
+   deselected by name, and the job summary says which NDR-matlab branch was
+   used and why.
 
 None of these was careless in isolation; each was a reasonable local decision
 (*a test that cannot build its fixture should not fail*) that became a hole in
@@ -93,7 +105,9 @@ CI. So the rule here is not "never skip" — it is:
 > `NDR_BRIDGE_CHECK_STRICT`, or it will hide.** In CI every bridge check is
 > expected to be *able* to run, so a skip there is a gap, not a courtesy.
 
-`tests/conftest.py` now enforces this as a backstop: under
+The same rule now holds for the symmetry tests under
+`NDR_SYMMETRY_CHECK_STRICT` (entry 4). `tests/conftest.py` enforces it for the
+bridge as a backstop: under
 `NDR_BRIDGE_CHECK_STRICT`, **any** skip in a `test_matlab_bridge_*.py` module
 becomes a failure — including one nobody thought to gate. It is derived rather
 than enumerated for the same reason the `needs_matlab` marker is: a list of
