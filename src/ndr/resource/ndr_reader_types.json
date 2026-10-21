@@ -108,5 +108,14 @@
       "labview"
     ],
     "classname": "ndr.reader.vld.ndr_reader_vld"
+  },
+  {
+    "type": [
+      "video",
+      "mp4",
+      "avi",
+      "mov"
+    ],
+    "classname": "ndr.reader.video.ndr_reader_video"
   }
 ]

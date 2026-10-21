@@ -13,10 +13,13 @@ Each target directory receives:
     example_movie.tif                  5-page 16x12 uint16 TIFF stack
     example_movie_frametimes.txt       one frame time per page, seconds
     prairieview/                       2 channels x 4 frames + legacy .pcf
+    example_video.avi                  6-frame 12x16 uncompressed RGB AVI
+    example_video_grey.avi             the same, 8-bit greyscale (grey palette)
 """
 
 from __future__ import annotations
 
+import struct
 import sys
 from pathlib import Path
 
@@ -47,6 +50,13 @@ PV_WIDTH = 6
 # artifact can tell "read from the config" apart from "derived".
 PV_LINE_PERIOD_US = 1500.0
 PV_FRAME_PERIOD_US = 16000.0
+
+# --- video ----------------------------------------------------------------
+VIDEO_FRAMES = 6
+VIDEO_HEIGHT = 12
+# A multiple of 4, so DIB rows need no padding in either bit depth.
+VIDEO_WIDTH = 16
+VIDEO_FPS = 10
 
 
 def vld_signal() -> np.ndarray:
@@ -120,6 +130,108 @@ def write_prairieview(out: Path) -> None:
     )
 
 
+def video_rgb() -> np.ndarray:
+    """Deterministic RGB video, shape (T, Y, X, 3) uint8, distinct per frame/pixel/channel."""
+    f, row, col = np.meshgrid(
+        np.arange(VIDEO_FRAMES), np.arange(VIDEO_HEIGHT), np.arange(VIDEO_WIDTH), indexing="ij"
+    )
+    return np.stack([20 * f + col, 10 * row + f, 200 - 10 * f - col], axis=-1).astype(np.uint8)
+
+
+def video_grey() -> np.ndarray:
+    """Deterministic greyscale video, shape (T, Y, X) uint8."""
+    f, row, col = np.meshgrid(
+        np.arange(VIDEO_FRAMES), np.arange(VIDEO_HEIGHT), np.arange(VIDEO_WIDTH), indexing="ij"
+    )
+    return (30 * f + 4 * row + col).astype(np.uint8)
+
+
+def _chunk(fourcc: bytes, payload: bytes) -> bytes:
+    pad = b"\0" if len(payload) % 2 else b""
+    return fourcc + struct.pack("<I", len(payload)) + payload + pad
+
+
+def _list(kind: bytes, payload: bytes) -> bytes:
+    return _chunk(b"LIST", kind + payload)
+
+
+def write_avi(path: Path, frames: np.ndarray) -> None:
+    """Write an uncompressed (BI_RGB) AVI, laid out as MATLAB's VideoWriter does.
+
+    ``frames`` is (T, Y, X, 3) RGB for a 24-bit file, or (T, Y, X) for an
+    8-bit file with a 256-entry grey palette ('Grayscale AVI'). Frames are
+    stored bottom-up (positive biHeight), the canonical DIB orientation that
+    every AVI reader handles, rather than FFmpeg's top-down negative height.
+    """
+    t, h, w = frames.shape[:3]
+    grey = frames.ndim == 3
+    bitcount = 8 if grey else 24
+    framebytes = w * h * bitcount // 8
+
+    avih = struct.pack(
+        "<IIIIIIIIII16x",
+        round(1e6 / VIDEO_FPS),  # dwMicroSecPerFrame
+        framebytes * VIDEO_FPS,  # dwMaxBytesPerSec
+        0,  # dwPaddingGranularity
+        0x10,  # dwFlags: AVIF_HASINDEX
+        t,  # dwTotalFrames
+        0,  # dwInitialFrames
+        1,  # dwStreams
+        framebytes,  # dwSuggestedBufferSize
+        w,
+        h,
+    )
+    strh = (
+        b"vids"
+        + b"DIB "
+        + struct.pack(
+            "<IHHIIIIIIIIhhhh",
+            0,
+            0,
+            0,
+            0,
+            1,
+            VIDEO_FPS,
+            0,
+            t,
+            framebytes,
+            0xFFFFFFFF,
+            0,
+            0,
+            0,
+            w,
+            h,
+        )
+    )
+    strf = struct.pack("<IiiHHIIiiII", 40, w, h, 1, bitcount, 0, framebytes, 0, 0, 0, 0)
+    if grey:
+        strf = strf[:32] + struct.pack("<II", 256, 0)  # biClrUsed = 256
+        strf += b"".join(bytes([k, k, k, 0]) for k in range(256))  # RGBQUAD: B,G,R,0
+    hdrl = _list(
+        b"hdrl",
+        _chunk(b"avih", avih) + _list(b"strl", _chunk(b"strh", strh) + _chunk(b"strf", strf)),
+    )
+
+    movi_chunks = []
+    idx1 = b""
+    offset = 4  # idx1 offsets count from the 'movi' fourcc
+    for k in range(t):
+        img = frames[k][::-1]  # bottom-up rows
+        data = (img if grey else img[..., ::-1]).tobytes()  # DIB colour order is B,G,R
+        c = _chunk(b"00db", data)
+        idx1 += b"00db" + struct.pack("<III", 0x10, offset, len(data))  # AVIIF_KEYFRAME
+        offset += len(c)
+        movi_chunks.append(c)
+    body = b"AVI " + hdrl + _list(b"movi", b"".join(movi_chunks)) + _chunk(b"idx1", idx1)
+    path.write_bytes(b"RIFF" + struct.pack("<I", len(body)) + body)
+
+
+def write_video(out: Path) -> None:
+    """Write the RGB and greyscale example videos."""
+    write_avi(out / "example_video.avi", video_rgb())
+    write_avi(out / "example_video_grey.avi", video_grey())
+
+
 def main(targets: list[str]) -> int:
     if not targets:
         print(__doc__)
@@ -130,6 +242,7 @@ def main(targets: list[str]) -> int:
         write_vld(out)
         write_tiffstack(out)
         write_prairieview(out)
+        write_video(out)
         print(f"wrote example data into {out}")
     return 0
 
