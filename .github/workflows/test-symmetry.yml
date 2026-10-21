@@ -97,11 +97,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install NDR-python (with dev extras)
+      # formats carries zarr/numcodecs (OME-Zarr) and the other format
+      # libraries the symmetry tests read with; under strict mode a missing
+      # one is a failure, not a skip.
+      - name: Install NDR-python (with dev and formats extras)
         working-directory: NDR-python
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -e ".[dev,formats]"
 
       # -- Stage 1: MATLAB makeArtifacts ------------------------------------
       - name: "Stage 1: MATLAB makeArtifacts"
@@ -178,20 +181,9 @@ jobs:
             import matlab.unittest.TestSuite
             import matlab.unittest.TestRunner
 
+            % Every MATLAB symmetry test has a Python half, so every case here,
+            % pythonArtifacts included, must run (VH-Lab/NDR-python#36).
             suite = TestSuite.fromPackage("ndr.symmetry.readArtifacts", "IncludingSubpackages", true);
-
-            % KNOWN GAPS: MATLAB symmetry tests with no Python half, whose
-            % pythonArtifacts case therefore cannot run. Deselected by name and
-            % listed in the log, never left to come back Incomplete. Remove an
-            % entry when its Python half lands.
-            %   readOmeZarr -- NDR-python has no OME-Zarr symmetry test yet.
-            noPythonHalf = ["readOmeZarr"];
-            gap = contains({suite.Name}, "SourceType=pythonArtifacts") & ...
-                contains({suite.Name}, noPythonHalf);
-            for k = find(gap)
-                fprintf("Deselected (no Python half yet): %s\n", suite(k).Name);
-            end
-            suite = suite(~gap);
 
             fprintf("\n=== MATLAB readArtifacts: %d test(s) ===\n", numel(suite));
             assert(~isempty(suite), "No MATLAB readArtifacts tests found.")

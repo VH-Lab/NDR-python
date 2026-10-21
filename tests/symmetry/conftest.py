@@ -101,3 +101,21 @@ def pytest_runtest_makereport(item, call):
         "comparison to make this green."
     )
     return report
+
+
+def matlab_sha256(array) -> str:
+    """SHA-256 of an array's bytes in MATLAB's ``typecast(x(:), 'uint8')`` order.
+
+    Both ports' readers index arrays the same way (MATLAB ``x(i,j,k)`` is
+    numpy ``x[i-1, j-1, k-1]``), but ``x(:)`` linearizes in column-major
+    (Fortran) order, and MATLAB hosts are little-endian. So this flattens in
+    Fortran order and encodes little-endian before hashing, which gives the
+    digest a MATLAB symmetry test computes for the same array.
+    """
+    import hashlib
+
+    import numpy as np
+
+    a = np.asarray(array)
+    a = a.astype(a.dtype.newbyteorder("<"), copy=False)
+    return hashlib.sha256(a.ravel(order="F").tobytes()).hexdigest()

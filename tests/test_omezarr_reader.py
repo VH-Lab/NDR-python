@@ -188,3 +188,47 @@ class TestZarrClassMapping:
     def test_rejects_unsupported(self):
         with pytest.raises(ValueError):
             ndr_reader_omezarr.zarrClass("<c16")
+
+
+class TestBloscZstdFixture:
+    """The ``codec="blosc-zstd"`` fixture the OME-Zarr symmetry test writes.
+
+    It must really be compressed, with the codec MATLAB's reader decodes, and
+    still read back as the same ground truth as the uncompressed fixture.
+    """
+
+    def test_arrays_are_blosc_zstd(self, tmp_path):
+        import json
+
+        root, _gt = make_example_fixture(tmp_path, with_chunks=True, codec="blosc-zstd")
+        zstd_frames = 0
+        for array in ("0", "mean/1", "mean/2", "max/1", "max/2"):
+            meta = json.loads((root / array / ".zarray").read_text())
+            assert meta["zarr_format"] == 2
+            assert meta["compressor"]["id"] == "blosc"
+            assert meta["compressor"]["cname"] == "zstd"
+            assert meta["order"] == "C" and not meta["filters"]
+            for chunk_file in (root / array).glob("*.*.*.*"):
+                frame = chunk_file.read_bytes()
+                flags = frame[2]
+                assert frame[0] == 2, f"{chunk_file} is not a Blosc v1 frame"
+                # Blosc stores incompressible chunks verbatim (MEMCPYED, 0x02),
+                # and the noise in the full level-0 chunks is incompressible.
+                # Count the frames that really went through Zstd (codec bits
+                # 4 << 5, MEMCPYED clear): without some, the Zstd decode path
+                # this fixture exists to exercise would never run.
+                if flags >> 5 == 4 and not flags & 0x02:
+                    zstd_frames += 1
+        assert zstd_frames > 0, "no chunk is genuinely Zstd-compressed"
+
+    def test_reads_back_the_ground_truth(self, tmp_path):
+        from ndr.format.omezarr.readArray import readArray
+
+        root, gt = make_example_fixture(tmp_path, with_chunks=True, codec="blosc-zstd")
+        np.testing.assert_array_equal(readArray(str(root), "mean", 1), gt.level0)
+        np.testing.assert_array_equal(readArray(str(root), "mean", 2), gt.mean_level1)
+        np.testing.assert_array_equal(readArray(str(root), "max", 3), gt.max_level2)
+
+    def test_rejects_unknown_codec(self, tmp_path):
+        with pytest.raises(ValueError, match="codec"):
+            make_example_fixture(tmp_path, with_chunks=True, codec="lz4")
