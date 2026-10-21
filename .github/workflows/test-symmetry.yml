@@ -15,6 +15,13 @@ jobs:
   symmetry:
     name: MATLAB <-> Python symmetry tests
     runs-on: ubuntu-latest
+    env:
+      # Every comparison is expected to run here, so a comparison that could
+      # not run FAILS instead of reporting green: a skipped Python symmetry
+      # test fails (tests/symmetry/conftest.py), and the MATLAB stages fail
+      # on any Incomplete result. Cases that cannot run in a given stage by
+      # design are deselected by name in that stage. VH-Lab/NDR-python#34.
+      NDR_SYMMETRY_CHECK_STRICT: "1"
 
     steps:
       # -- Checkout both repos ----------------------------------------------
@@ -28,15 +35,29 @@ jobs:
       # Developers are expected to keep matching branch names across the
       # two repos when making cross-language changes. Falls back to main
       # when the matching branch does not exist in NDR-matlab.
+      #
+      # The choice is written to the job summary with its reason: a paired
+      # change whose NDR-matlab branch was pushed AFTER this run started
+      # resolves to main, and then fails in strict mode for want of the
+      # MATLAB half -- push NDR-matlab first, or re-run once it exists.
       - name: Resolve NDR-matlab branch
         id: matlab-ref
         run: |
           BRANCH="${{ github.head_ref || github.ref_name }}"
           if git ls-remote --exit-code --heads https://github.com/VH-Lab/NDR-matlab.git "$BRANCH" >/dev/null 2>&1; then
-            echo "ref=$BRANCH" >> "$GITHUB_OUTPUT"
+            REF="$BRANCH"
+            WHY="NDR-matlab has a branch named \`$BRANCH\`, matching this run."
           else
-            echo "ref=main" >> "$GITHUB_OUTPUT"
+            REF="main"
+            WHY="NDR-matlab has no branch named \`$BRANCH\`, so this run falls back to \`main\`. If this is a paired change, push the NDR-matlab branch and re-run."
           fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "NDR-matlab ref: $REF ($WHY)"
+          {
+            echo "### NDR-matlab checkout: \`$REF\`"
+            echo
+            echo "$WHY"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check out NDR-matlab (matching branch)
         uses: actions/checkout@v4
@@ -107,15 +128,29 @@ jobs:
             runner = TestRunner.withTextOutput("Verbosity", "Detailed");
             results = runner.run(suite);
 
-            fprintf("\n=== MATLAB makeArtifacts: %d passed, %d failed ===\n", ...
-                nnz([results.Passed]), nnz([results.Failed]));
+            fprintf("\n=== MATLAB makeArtifacts: %d passed, %d failed, %d incomplete ===\n", ...
+                nnz([results.Passed]), nnz([results.Failed]), nnz([results.Incomplete]));
             assert(all(~[results.Failed]), "MATLAB makeArtifacts failed")
 
+            % Incomplete = an assumption failed (a missing example file or
+            % tool), so these artifacts were never made. Strict mode: fail.
+            incomplete = results([results.Incomplete]);
+            for k = 1:numel(incomplete)
+                fprintf(2, "INCOMPLETE: %s\n", incomplete(k).Name);
+            end
+            assert(isempty(incomplete), ...
+                "%d MATLAB makeArtifacts test(s) were Incomplete: their artifacts were never made.", ...
+                numel(incomplete))
+
       # -- Stage 2: Python readArtifacts (reads MATLAB artifacts) -----------
+      # The pythonArtifacts cases cannot run yet -- Python makes those in
+      # Stage 3 -- so they are deselected here rather than skipped (MATLAB
+      # reads them in Stage 4). Every case left must run: under
+      # NDR_SYMMETRY_CHECK_STRICT a skip fails.
       - name: "Stage 2: Python readArtifacts (reads MATLAB artifacts)"
         working-directory: NDR-python
         run: |
-          pytest tests/symmetry/read_artifacts/ -v --tb=short
+          pytest tests/symmetry/read_artifacts/ -v --tb=short -k "not pythonArtifacts"
 
       # -- Stage 3: Python makeArtifacts ------------------------------------
       - name: "Stage 3: Python makeArtifacts"
@@ -137,12 +172,36 @@ jobs:
             import matlab.unittest.TestRunner
 
             suite = TestSuite.fromPackage("ndr.symmetry.readArtifacts", "IncludingSubpackages", true);
+
+            % KNOWN GAPS: MATLAB symmetry tests with no Python half, whose
+            % pythonArtifacts case therefore cannot run. Deselected by name and
+            % listed in the log, never left to come back Incomplete. Remove an
+            % entry when its Python half lands.
+            %   readOmeZarr -- NDR-python has no OME-Zarr symmetry test yet.
+            noPythonHalf = ["readOmeZarr"];
+            gap = contains({suite.Name}, "SourceType=pythonArtifacts") & ...
+                contains({suite.Name}, noPythonHalf);
+            for k = find(gap)
+                fprintf("Deselected (no Python half yet): %s\n", suite(k).Name);
+            end
+            suite = suite(~gap);
+
             fprintf("\n=== MATLAB readArtifacts: %d test(s) ===\n", numel(suite));
             assert(~isempty(suite), "No MATLAB readArtifacts tests found.")
 
             runner = TestRunner.withTextOutput("Verbosity", "Detailed");
             results = runner.run(suite);
 
-            fprintf("\n=== MATLAB readArtifacts: %d passed, %d failed ===\n", ...
-                nnz([results.Passed]), nnz([results.Failed]));
+            fprintf("\n=== MATLAB readArtifacts: %d passed, %d failed, %d incomplete ===\n", ...
+                nnz([results.Passed]), nnz([results.Failed]), nnz([results.Incomplete]));
             assert(all(~[results.Failed]), "MATLAB readArtifacts failed")
+
+            % Incomplete = the comparison did not run (the other suite's
+            % artifacts were missing). Strict mode: fail.
+            incomplete = results([results.Incomplete]);
+            for k = 1:numel(incomplete)
+                fprintf(2, "INCOMPLETE: %s\n", incomplete(k).Name);
+            end
+            assert(isempty(incomplete), ...
+                "%d MATLAB readArtifacts test(s) were Incomplete: their comparison did not run.", ...
+                numel(incomplete))
