@@ -22,6 +22,13 @@ jobs:
       # on any Incomplete result. Cases that cannot run in a given stage by
       # design are deselected by name in that stage. VH-Lab/NDR-python#34.
       NDR_SYMMETRY_CHECK_STRICT: "1"
+      # matbox resolves and downloads its MATLAB dependencies (e.g.
+      # vhlab-toolbox-matlab) through the GitHub API. Give it the runner's
+      # built-in token (auto-provided; no secret to configure) so those calls
+      # are authenticated (5000 req/hr) instead of hitting the shared
+      # unauthenticated limit (60 req/hr), which fails dependency install.
+      # Same fix as NDR-matlab's test-symmetry.yml.
+      GITHUB_TOKEN: ${{ github.token }}
 
     steps:
       # -- Checkout both repos ----------------------------------------------
