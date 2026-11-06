@@ -95,6 +95,15 @@ class TestReadAllChannelsInfo:
         assert [c["numSlices"] for c in info["channels"]] == [4, 4]
         assert Path(info["channels"][1]["slicePaths"][-1]).name == "000030_ch1.tiff"
 
+    def test_two_files_for_one_slice_are_refused(self, fixture_dir):
+        # Same channel and z under two names (tiles, not stitched slices).
+        d = _all_dir(fixture_dir)
+        src = next(d.glob("*_000000_ch0.tiff"))
+        shutil.copy(src, d / "000000_ch0.tiff")
+        with pytest.raises(RuntimeError, match="same channel and z"):
+            readAllChannelsInfo(str(fixture_dir))
+        assert hasAllChannels(str(fixture_dir)) is False
+
     def test_without_header(self, fixture_dir):
         info = readAllChannelsInfo(str(fixture_dir), ReadHeader=False)
         assert math.isnan(info["height"])

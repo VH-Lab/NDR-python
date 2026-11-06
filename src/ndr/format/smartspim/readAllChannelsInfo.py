@@ -66,6 +66,22 @@ def _index_slices(folder: Path) -> list[tuple[int, int, str]]:
         m = _SLICE_RE.match(e.name)
         if m:
             out.append((int(m.group(2)), int(m.group(1)), str(folder / e.name)))
+    # A folder cannot hold one name twice, but a network share's listing can
+    # return it twice (and leave others out): macOS SMB directory caching
+    # does, on large folders. A volume built from it would be wrong.
+    paths = [p for _, _, p in out]
+    if len(set(paths)) < len(paths):
+        raise RuntimeError(
+            f"The listing of {folder} names some files more than once, so it "
+            "cannot be trusted (on a macOS SMB share, turn off directory "
+            "caching: dir_cache_off=yes in /etc/nsmb.conf, then remount)."
+        )
+    keys = [(k, z) for k, z, _ in out]
+    if len(set(keys)) < len(keys):
+        raise RuntimeError(
+            f"{folder} holds more than one file for the same channel and z "
+            "(tiles rather than stitched slices?)."
+        )
     return out
 
 
