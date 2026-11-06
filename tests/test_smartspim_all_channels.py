@@ -83,6 +83,27 @@ class TestReadAllChannelsInfo:
         assert info["voxelSizeUm"] == [4, 4, 4]
         assert Path(info["channels"][1]["slicePaths"][-1]).name == "200000_100000_000030_ch1.tiff"
 
+    def test_slices_named_without_origins(self, fixture_dir):
+        # Some versions of the pipeline name the slices <z*10>_ch<k>.tiff.
+        before = readAllChannelsInfo(str(fixture_dir))
+        for p in list(_all_dir(fixture_dir).glob("*_ch*.tiff")):
+            y, x, rest = p.name.split("_", 2)
+            p.rename(p.with_name(rest))
+        assert hasAllChannels(str(fixture_dir)) is True
+        info = readAllChannelsInfo(str(fixture_dir))
+        assert info["channelNames"] == before["channelNames"]
+        assert [c["numSlices"] for c in info["channels"]] == [4, 4]
+        assert Path(info["channels"][1]["slicePaths"][-1]).name == "000030_ch1.tiff"
+
+    def test_two_files_for_one_slice_are_refused(self, fixture_dir):
+        # Same channel and z under two names (tiles, not stitched slices).
+        d = _all_dir(fixture_dir)
+        src = next(d.glob("*_000000_ch0.tiff"))
+        shutil.copy(src, d / "000000_ch0.tiff")
+        with pytest.raises(RuntimeError, match="same channel and z"):
+            readAllChannelsInfo(str(fixture_dir))
+        assert hasAllChannels(str(fixture_dir)) is False
+
     def test_without_header(self, fixture_dir):
         info = readAllChannelsInfo(str(fixture_dir), ReadHeader=False)
         assert math.isnan(info["height"])

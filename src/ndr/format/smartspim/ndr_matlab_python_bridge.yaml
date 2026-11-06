@@ -125,12 +125,17 @@ functions:
   - name: readAllChannelsInfo
     matlab_path: "+ndr/+format/+smartspim/readAllChannelsInfo.m"
     status: regular_port
-    matlab_last_sync_hash: "b8f0e4b"
+    matlab_last_sync_hash: "15d82e1"
     python_path: "ndr/format/smartspim/readAllChannelsInfo.py"
     decision_log: >-
       Indexes SmartSPIM AutoStitch's stitched output
       All_Channels/<Y>_<X>_<z*10>_ch<k>.tiff (ferret-lightsheet
-      formats/SmartSPIM.md). Channel -> ch<k> comes from the single
+      formats/SmartSPIM.md), or <z*10>_ch<k>.tiff as other pipeline
+      versions name the slices (NDR-matlab ffcf678, ported: the origins
+      are optional in _SLICE_RE, z is the number before _ch<k>). A listing
+      that names a file twice (macOS SMB directory caching) or two files
+      for one channel and z is refused (NDR-matlab 15d82e1, ported:
+      RuntimeError where MATLAB raises DuplicateListing / DuplicateSlice). Channel -> ch<k> comes from the single
       _ch<k> suffix in <channel>_MIP_stitched, else the stable rank of
       the filter-channel number (same rule as ferret-lightsheet's
       SmartSPIMVolume.all_channels_ch_index). Slices sort by the numeric
