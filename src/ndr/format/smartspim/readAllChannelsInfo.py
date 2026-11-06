@@ -11,7 +11,9 @@ volume Imaris is built from, and the one analysis should use
 
 ``All_Channels`` is a flat folder of 2-D TIFFs, one per (z, channel),
 named ``<Y origin>_<X origin>_<z*10>_ch<k>.tiff`` (e.g.
-``675050_455000_000110_ch1.tiff``), plus an ``ImageList.txt`` for
+``675050_455000_000110_ch1.tiff``) or, by other versions of the
+pipeline, ``<z*10>_ch<k>.tiff`` (e.g. ``000110_ch1.tiff``), plus an
+``ImageList.txt`` for
 Imaris. Every slice spans the whole stitched canvas (height = Y,
 width = X), so there are no tiles. The ``ch<k>`` index follows the
 filter-channel number, NOT the acquisition order. It is taken from the
@@ -36,8 +38,9 @@ from ndr.format.smartspim.readAcquisitionMetadata import readAcquisitionMetadata
 
 __all__ = ["readAllChannelsInfo"]
 
-# e.g. 675050_455000_000110_ch0.tiff -> (Y origin, X origin, z*10, k)
-_SLICE_RE = re.compile(r"^(\d+)_(\d+)_(\d+)_ch(\d+)\.tiff?$", re.IGNORECASE)
+# e.g. 675050_455000_000110_ch0.tiff -> (z*10, k), and, as other versions
+# of the pipeline name them, without the origins: 000110_ch0.tiff
+_SLICE_RE = re.compile(r"^(?:\d+_\d+_)?(\d+)_ch(\d+)\.tiff?$", re.IGNORECASE)
 
 _MATLAB_CLASS = {"float32": "single", "float64": "double", "bool": "logical"}
 
@@ -62,7 +65,7 @@ def _index_slices(folder: Path) -> list[tuple[int, int, str]]:
             continue
         m = _SLICE_RE.match(e.name)
         if m:
-            out.append((int(m.group(4)), int(m.group(3)), str(folder / e.name)))
+            out.append((int(m.group(2)), int(m.group(1)), str(folder / e.name)))
     return out
 
 
