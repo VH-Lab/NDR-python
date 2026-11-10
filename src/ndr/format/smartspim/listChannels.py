@@ -86,7 +86,7 @@ def listChannels(rootDir: str) -> list[dict[str, Any]]:
         raise ValueError(
             f"{rootDir} has {len(names)} channel folders ({', '.join(names)}), and {which} "
             'no "_Ch<n>" filter-channel number, so which All_Channels "_ch<k>" slices '
-            'belong to which channel is not known. Only a single channel folder may omit '
+            "belong to which channel is not known. Only a single channel folder may omit "
             '"_Ch<n>".'
         )
 
@@ -126,9 +126,7 @@ def listChannels(rootDir: str) -> list[dict[str, Any]]:
         if math.isnan(n) and math.isnan(filter_channel):
             # An unnumbered (single) channel folder: count the tiles of its
             # laser and filter, whatever filter channel metadata.json gives.
-            count = sum(
-                1 for t in tiles if t["laser"] == wavelength and t["filter"] == filter_name
-            )
+            count = sum(1 for t in tiles if t["laser"] == wavelength and t["filter"] == filter_name)
             n = float(count) if count else float("nan")
         channels.append(
             {
