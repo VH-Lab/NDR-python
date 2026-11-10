@@ -26,6 +26,8 @@ pytest.importorskip("imagecodecs")  # LZW, as in real All_Channels slices
 
 from ndr.format.smartspim import (  # noqa: E402
     hasAllChannels,
+    isSmartSPIM,
+    listChannels,
     readAllChannelsInfo,
     readAllChannelsVolume,
 )
@@ -94,6 +96,49 @@ class TestReadAllChannelsInfo:
         assert info["channelNames"] == before["channelNames"]
         assert [c["numSlices"] for c in info["channels"]] == [4, 4]
         assert Path(info["channels"][1]["slicePaths"][-1]).name == "000030_ch1.tiff"
+
+    def test_single_channel_without_ch_number(self, fixture_dir):
+        # Some SmartSPIM software versions name a single channel's folder
+        # Ex_<laser>_Em_<filter> (no _Ch<n>) and its stitched slices
+        # Z<z*10>_Ch<k>.tif. Working folders beside it are not channels.
+        root = fixture_dir
+        shutil.rmtree(root / "Ex_640_Em_640F_Ch3")
+        for p in _all_dir(root).glob("*_ch1.tiff"):
+            p.unlink()
+        (root / "Ex_561_Em_561F_Ch2").rename(root / "Ex_561_Em_561F")
+        for w in ("_MIP", "_MIP_stitched", "_stitched", "_MIDDLE"):
+            (root / f"Ex_561_Em_561F{w}").mkdir()
+        for p in list(_all_dir(root).glob("*_ch0.tiff")):
+            z = p.name.split("_")[2]
+            p.rename(p.with_name(f"Z{z}_Ch0.tif"))
+        assert isSmartSPIM(str(root)) is True
+        (ch,) = listChannels(str(root))
+        assert ch["name"] == "Ex_561_Em_561F"
+        assert ch["wavelength"] == 561 and ch["filterName"] == "561F"
+        assert math.isnan(ch["filterChannel"])
+        assert ch["numTiles"] == 2, "tiles of its laser and filter"
+        assert hasAllChannels(str(root)) is True
+        info = readAllChannelsInfo(str(root))
+        assert info["channelNames"] == ["Ex_561_Em_561F"]
+        assert info["channels"][0]["chIndex"] == 0
+        assert info["channels"][0]["numSlices"] == 4
+        vol = readAllChannelsVolume(str(root), "Ex_561_Em_561F")
+        assert list(vol[:, 0, 0]) == [1000, 1001, 1002, 1003], "in z order"
+
+    def test_several_channels_without_ch_number_are_refused(self, fixture_dir):
+        # Nothing would say which _ch<k> slices are whose: refuse, not guess.
+        root = fixture_dir
+        (root / "Ex_561_Em_561F_Ch2").rename(root / "Ex_561_Em_561F")
+        (root / "Ex_640_Em_640F_Ch3").rename(root / "Ex_640_Em_640F")
+        with pytest.raises(ValueError, match="Only a single channel folder"):
+            listChannels(str(root))
+        with pytest.raises(ValueError, match="Only a single channel folder"):
+            readAllChannelsInfo(str(root))
+        assert hasAllChannels(str(root)) is False
+        # One numbered and one not is refused too.
+        (root / "Ex_561_Em_561F").rename(root / "Ex_561_Em_561F_Ch2")
+        with pytest.raises(ValueError, match="one has"):
+            listChannels(str(root))
 
     def test_two_files_for_one_slice_are_refused(self, fixture_dir):
         # Same channel and z under two names (tiles, not stitched slices).

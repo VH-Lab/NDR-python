@@ -13,7 +13,7 @@ from pydantic import validate_call
 
 __all__ = ["isSmartSPIM"]
 
-_CHANNEL_RE = re.compile(r"^Ex_\d+_Em_\w+_Ch\d+$")
+_CHANNEL_RE = re.compile(r"^Ex_\d+_Em_(\w+_Ch\d+|[A-Za-z0-9]+)$")
 
 
 @validate_call
@@ -25,7 +25,9 @@ def isSmartSPIM(rootDir: str) -> bool:
     - ``rootDir`` is a folder
     - ``rootDir/metadata.json`` exists and parses as JSON
     - ``rootDir`` contains at least one channel directory whose name
-      matches ``"Ex_<digits>_Em_<chars>_Ch<digits>"``
+      matches ``"Ex_<digits>_Em_<chars>_Ch<digits>"``, or
+      ``"Ex_<digits>_Em_<letters/digits>"`` (a single-channel acquisition
+      from SmartSPIM software that omits the filter-channel number)
 
     Any read/parse failure returns FALSE rather than raising, so callers
     can use this to decide whether to attempt the SmartSPIM code path at

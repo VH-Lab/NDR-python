@@ -12,15 +12,17 @@ volume Imaris is built from, and the one analysis should use
 ``All_Channels`` is a flat folder of 2-D TIFFs, one per (z, channel),
 named ``<Y origin>_<X origin>_<z*10>_ch<k>.tiff`` (e.g.
 ``675050_455000_000110_ch1.tiff``) or, by other versions of the
-pipeline, ``<z*10>_ch<k>.tiff`` (e.g. ``000110_ch1.tiff``), plus an
-``ImageList.txt`` for
-Imaris. Every slice spans the whole stitched canvas (height = Y,
+pipeline, ``<z*10>_ch<k>.tiff`` (e.g. ``000110_ch1.tiff``) or
+``Z<z*10>_Ch<k>.tif`` (e.g. ``Z000110_Ch0.tif``; case does not matter),
+plus an ``ImageList.txt`` for Imaris. Every slice spans the whole stitched canvas (height = Y,
 width = X), so there are no tiles. The ``ch<k>`` index follows the
 filter-channel number, NOT the acquisition order. It is taken from the
 ``<channel>_MIP_stitched`` folder, whose files carry the same ``_ch<k>``
 suffix; when that folder is absent (e.g. a partial restore), ``k`` is
 the rank of the channel's filter-channel number among all channels
-(Ch1 -> ch0, Ch2 -> ch1, ...).
+(Ch1 -> ch0, Ch2 -> ch1, ...). A single channel whose folder has no
+``_Ch<n>`` (``Ex_<laser>_Em_<filter>``; see :func:`listChannels`) takes
+whichever one ``_ch<k>`` the slices carry.
 """
 
 from __future__ import annotations
@@ -40,7 +42,7 @@ __all__ = ["readAllChannelsInfo"]
 
 # e.g. 675050_455000_000110_ch0.tiff -> (z*10, k), and, as other versions
 # of the pipeline name them, without the origins: 000110_ch0.tiff
-_SLICE_RE = re.compile(r"^(?:\d+_\d+_)?(\d+)_ch(\d+)\.tiff?$", re.IGNORECASE)
+_SLICE_RE = re.compile(r"^(?:\d+_\d+_|Z)?(\d+)_ch(\d+)\.tiff?$", re.IGNORECASE)
 
 _MATLAB_CLASS = {"float32": "single", "float64": "double", "bool": "logical"}
 
@@ -140,7 +142,13 @@ def readAllChannelsInfo(rootDir: str, *, ReadHeader: bool = True) -> dict[str, A
 
     acq_channels = listChannels(rootDir)
     names = [c["name"] for c in acq_channels]
-    ch_indices = [_channel_index(root, n, acq_channels) for n in names]
+    ks = {kk for kk, _, _ in index}
+    if len(acq_channels) == 1 and math.isnan(acq_channels[0]["filterChannel"]) and len(ks) == 1:
+        # A single channel folder without "_Ch<n>" (listChannels refuses
+        # several): its slices are the only _ch<k> there is.
+        ch_indices = [next(iter(ks))]
+    else:
+        ch_indices = [_channel_index(root, n, acq_channels) for n in names]
     if len(set(ch_indices)) != len(ch_indices):
         raise ValueError(f"Two channels map to the same All_Channels _ch<k> index in {rootDir}.")
 
