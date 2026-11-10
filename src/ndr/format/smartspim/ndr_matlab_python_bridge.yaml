@@ -7,18 +7,22 @@ functions:
   - name: isSmartSPIM
     matlab_path: "+ndr/+format/+smartspim/isSmartSPIM.m"
     status: regular_port
-    matlab_last_sync_hash: "d329021"
+    matlab_last_sync_hash: "147073c"
     python_path: "ndr/format/smartspim/isSmartSPIM.py"
     decision_log: >-
       Cheap non-throwing probe: TRUE iff the directory has a
       metadata.json that parses as JSON AND at least one channel
       directory whose name matches "Ex_<n>_Em_<f>_Ch<n>". Straight port
       using stdlib json + re.
+      2026-11-10: synchronized with NDR-matlab 147073c: a channel folder named
+      Ex_<laser>_Em_<filter> (no _Ch<n>; filter name without underscores, so
+      _MIP / _stitched working folders do not count) also marks an
+      acquisition, as some SmartSPIM software writes for a single channel.
 
   - name: listChannels
     matlab_path: "+ndr/+format/+smartspim/listChannels.m"
     status: regular_port
-    matlab_last_sync_hash: "87ef61d"
+    matlab_last_sync_hash: "147073c"
     python_path: "ndr/format/smartspim/listChannels.py"
     decision_log: >-
       Enumerates channel directories under rootDir and enriches each with
@@ -30,6 +34,12 @@ functions:
       the Python port keys directly on the channel name because Python
       dict keys have no MATLAB-identifier restriction. Result is a list
       of dicts sorted alphabetically by name.
+      2026-11-10: synchronized with NDR-matlab 147073c: a single channel
+      folder named Ex_<laser>_Em_<filter> (no _Ch<n>) is accepted, with
+      filterChannel NaN and numTiles counted from metadata.json's tiles of
+      its laser and filter; several channel folders when any lacks _Ch<n>
+      raise ValueError (MATLAB ndr:format:smartspim:listChannels:
+      UnnumberedChannels) rather than guess which _ch<k> slices are whose.
 
   - name: listTiles
     matlab_path: "+ndr/+format/+smartspim/listTiles.m"
@@ -125,7 +135,7 @@ functions:
   - name: readAllChannelsInfo
     matlab_path: "+ndr/+format/+smartspim/readAllChannelsInfo.m"
     status: regular_port
-    matlab_last_sync_hash: "15d82e1"
+    matlab_last_sync_hash: "147073c"
     python_path: "ndr/format/smartspim/readAllChannelsInfo.py"
     decision_log: >-
       Indexes SmartSPIM AutoStitch's stitched output
@@ -146,6 +156,9 @@ functions:
       identifiers map to NotADirectoryError / FileNotFoundError (missing
       folder, slices or channel) / ValueError (duplicate ch<k>, bad
       header).
+      2026-11-10: synchronized with NDR-matlab 147073c: slices named
+      Z<z*10>_Ch<k>.tif(f) are read too, and a lone channel folder without
+      _Ch<n> takes whichever single _ch<k> its slices carry.
 
   - name: readAllChannelsVolume
     matlab_path: "+ndr/+format/+smartspim/readAllChannelsVolume.m"
