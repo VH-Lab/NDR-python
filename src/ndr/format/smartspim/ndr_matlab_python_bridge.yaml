@@ -22,7 +22,7 @@ functions:
   - name: listChannels
     matlab_path: "+ndr/+format/+smartspim/listChannels.m"
     status: regular_port
-    matlab_last_sync_hash: "147073c"
+    matlab_last_sync_hash: "a77f2d6"
     python_path: "ndr/format/smartspim/listChannels.py"
     decision_log: >-
       Enumerates channel directories under rootDir and enriches each with
@@ -40,6 +40,10 @@ functions:
       its laser and filter; several channel folders when any lacks _Ch<n>
       raise ValueError (MATLAB ndr:format:smartspim:listChannels:
       UnnumberedChannels) rather than guess which _ch<k> slices are whose.
+      2026-11-12: synchronized with NDR-matlab a77f2d6: a folder without
+      _Ch<n> takes its filterChannel from metadata.json's tiles of its laser
+      and filter when they all give one number; several folders are refused
+      only when one still has no number and IMS_Notes.txt does not name it.
 
   - name: listTiles
     matlab_path: "+ndr/+format/+smartspim/listTiles.m"
@@ -135,7 +139,7 @@ functions:
   - name: readAllChannelsInfo
     matlab_path: "+ndr/+format/+smartspim/readAllChannelsInfo.m"
     status: regular_port
-    matlab_last_sync_hash: "147073c"
+    matlab_last_sync_hash: "a77f2d6"
     python_path: "ndr/format/smartspim/readAllChannelsInfo.py"
     decision_log: >-
       Indexes SmartSPIM AutoStitch's stitched output
@@ -159,6 +163,23 @@ functions:
       2026-11-10: synchronized with NDR-matlab 147073c: slices named
       Z<z*10>_Ch<k>.tif(f) are read too, and a lone channel folder without
       _Ch<n> takes whichever single _ch<k> its slices carry.
+      2026-11-12: synchronized with NDR-matlab a77f2d6: a channel's _ch<k>
+      comes from its _MIP_stitched suffix, else IMS_Notes.txt (readImsNotes),
+      else the filter-channel rank; unnumbered folders mapped by rank raise
+      ValueError (MATLAB ChannelOrderDisagrees) when that rank and the order
+      the channels first appear in metadata.json's tiles disagree.
+
+  - name: readImsNotes
+    matlab_path: "+ndr/+format/+smartspim/readImsNotes.m"
+    status: regular_port
+    matlab_last_sync_hash: "a77f2d6"
+    python_path: "ndr/format/smartspim/readImsNotes.py"
+    decision_log: >-
+      Reads IMS_Notes.txt, the note SmartSPIM writes beside Convert2IMS.bat
+      ("The folder <channel>_stitched is represented as Ch<k> ..."), into one
+      dict per channel (channelName, chIndex). readAllChannelsInfo prefers it
+      to the filter-channel rank. A missing or unreadable file gives [], as
+      MATLAB gives an empty struct array; it never raises.
 
   - name: readAllChannelsVolume
     matlab_path: "+ndr/+format/+smartspim/readAllChannelsVolume.m"

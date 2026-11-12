@@ -14,6 +14,7 @@ Ex_640_Em_640F_Ch3 -> ch1 (filter-channel rank).
 
 from __future__ import annotations
 
+import json
 import math
 import shutil
 from pathlib import Path
@@ -30,6 +31,7 @@ from ndr.format.smartspim import (  # noqa: E402
     listChannels,
     readAllChannelsInfo,
     readAllChannelsVolume,
+    readImsNotes,
 )
 from ndr.reader.smartspim import ndr_reader_smartspim  # noqa: E402
 from tests._smartspim_fixture import make_example_fixture  # noqa: E402
@@ -42,6 +44,17 @@ _TILE1 = "100000/100000_200000"
 @pytest.fixture
 def fixture_dir(tmp_path):
     return make_example_fixture(tmp_path, all_channels=True)
+
+
+def _write_ims_notes(root: Path, rows: list[tuple[str, int]]) -> None:
+    """IMS_Notes.txt as SmartSPIM writes it."""
+    (root / "IMS_Notes.txt").write_text(
+        "\n\n".join(
+            f"The folder {name}_stitched is represented as Ch{k} with a Hex color value of #ff0000"
+            for name, k in rows
+        )
+        + "\n"
+    )
 
 
 def _all_dir(fixture_dir: Path) -> Path:
@@ -115,7 +128,7 @@ class TestReadAllChannelsInfo:
         (ch,) = listChannels(str(root))
         assert ch["name"] == "Ex_561_Em_561F"
         assert ch["wavelength"] == 561 and ch["filterName"] == "561F"
-        assert math.isnan(ch["filterChannel"])
+        assert ch["filterChannel"] == 2, "from metadata.json's tiles of its laser and filter"
         assert ch["numTiles"] == 2, "tiles of its laser and filter"
         assert hasAllChannels(str(root)) is True
         info = readAllChannelsInfo(str(root))
@@ -125,20 +138,84 @@ class TestReadAllChannelsInfo:
         vol = readAllChannelsVolume(str(root), "Ex_561_Em_561F")
         assert list(vol[:, 0, 0]) == [1000, 1001, 1002, 1003], "in z order"
 
-    def test_several_channels_without_ch_number_are_refused(self, fixture_dir):
-        # Nothing would say which _ch<k> slices are whose: refuse, not guess.
+    def test_several_channels_numbered_by_metadata(self, fixture_dir):
+        # SmartSPIM 6.0 names channel folders Ex_<laser>_Em_<filter> (no
+        # _Ch<n>); metadata.json's tiles give each its FilterChannel (561F ->
+        # 2, 640F -> 3) and the filter-channel rank gives _ch<k>.
         root = fixture_dir
         (root / "Ex_561_Em_561F_Ch2").rename(root / "Ex_561_Em_561F")
         (root / "Ex_640_Em_640F_Ch3").rename(root / "Ex_640_Em_640F")
+        ch = listChannels(str(root))
+        assert [c["name"] for c in ch] == ["Ex_561_Em_561F", "Ex_640_Em_640F"]
+        assert [c["filterChannel"] for c in ch] == [2, 3]
+        assert [c["numTiles"] for c in ch] == [2, 2]
+        info = readAllChannelsInfo(str(root))
+        assert info["channelNames"] == ["Ex_561_Em_561F", "Ex_640_Em_640F"]
+        vol = readAllChannelsVolume(str(root), "Ex_640_Em_640F")
+        assert list(vol[:, 0, 0]) == [2000, 2001, 2002, 2003], "640 is _ch1"
+        # One numbered and one not works the same way.
+        (root / "Ex_561_Em_561F").rename(root / "Ex_561_Em_561F_Ch2")
+        info = readAllChannelsInfo(str(root))
+        assert info["channelNames"] == ["Ex_561_Em_561F_Ch2", "Ex_640_Em_640F"]
+
+    def test_filter_order_and_metadata_order_must_agree(self, fixture_dir):
+        # Unnumbered folders mapped by filter-channel rank are refused when
+        # metadata.json lists the channels in the other order.
+        root = fixture_dir
+        (root / "Ex_561_Em_561F_Ch2").rename(root / "Ex_561_Em_561F")
+        (root / "Ex_640_Em_640F_Ch3").rename(root / "Ex_640_Em_640F")
+        meta_path = root / "metadata.json"
+        meta = json.loads(meta_path.read_text())
+        tiles = meta["tiles"]
+        meta["tiles"] = [t for t in tiles if t["Laser"] == "640"] + [
+            t for t in tiles if t["Laser"] != "640"
+        ]
+        meta_path.write_text(json.dumps(meta))
+        with pytest.raises(ValueError, match="not known which order the stitcher used"):
+            readAllChannelsInfo(str(root))
+        assert hasAllChannels(str(root)) is False
+        # A direct record settles it.
+        _write_ims_notes(root, [("Ex_561_Em_561F", 0), ("Ex_640_Em_640F", 1)])
+        info = readAllChannelsInfo(str(root))
+        assert info["channelNames"] == ["Ex_561_Em_561F", "Ex_640_Em_640F"]
+
+    def test_several_unnumbered_channels_without_evidence_are_refused(self, fixture_dir):
+        # No _Ch<n>, no metadata.json numbers, no IMS_Notes.txt: refuse.
+        root = fixture_dir
+        (root / "Ex_561_Em_561F_Ch2").rename(root / "Ex_561_Em_561F")
+        (root / "Ex_640_Em_640F_Ch3").rename(root / "Ex_640_Em_640F")
+        (root / "metadata.json").unlink()
         with pytest.raises(ValueError, match="Only a single channel folder"):
             listChannels(str(root))
         with pytest.raises(ValueError, match="Only a single channel folder"):
             readAllChannelsInfo(str(root))
         assert hasAllChannels(str(root)) is False
-        # One numbered and one not is refused too.
-        (root / "Ex_561_Em_561F").rename(root / "Ex_561_Em_561F_Ch2")
+        # IMS_Notes.txt naming only one of them is not enough.
+        _write_ims_notes(root, [("Ex_561_Em_561F", 0)])
         with pytest.raises(ValueError, match="one has"):
             listChannels(str(root))
+
+    def test_ims_notes_name_each_channels_slices(self, fixture_dir):
+        # IMS_Notes.txt is SmartSPIM's own record; it settles unnumbered
+        # folders and outranks the filter-channel rank (here the opposite).
+        root = fixture_dir
+        (root / "Ex_561_Em_561F_Ch2").rename(root / "Ex_561_Em_561F")
+        (root / "Ex_640_Em_640F_Ch3").rename(root / "Ex_640_Em_640F")
+        (root / "metadata.json").unlink()
+        _write_ims_notes(root, [("Ex_561_Em_561F", 1), ("Ex_640_Em_640F", 0)])
+        notes = readImsNotes(str(root))
+        assert notes == [
+            {"channelName": "Ex_561_Em_561F", "chIndex": 1.0},
+            {"channelName": "Ex_640_Em_640F", "chIndex": 0.0},
+        ]
+        info = readAllChannelsInfo(str(root))
+        assert info["channelNames"] == ["Ex_640_Em_640F", "Ex_561_Em_561F"]
+        vol = readAllChannelsVolume(str(root), "Ex_561_Em_561F")
+        assert list(vol[:, 0, 0]) == [2000, 2001, 2002, 2003], "561 is _ch1 here"
+
+    def test_read_ims_notes_without_a_file(self, fixture_dir):
+        assert readImsNotes(str(fixture_dir)) == []
+        assert readImsNotes("") == []
 
     def test_two_files_for_one_slice_are_refused(self, fixture_dir):
         # Same channel and z under two names (tiles, not stitched slices).

@@ -10,6 +10,7 @@ from ndr.format.smartspim.listTiles import listTiles
 from ndr.format.smartspim.readAcquisitionMetadata import readAcquisitionMetadata
 from ndr.format.smartspim.readAllChannelsInfo import readAllChannelsInfo
 from ndr.format.smartspim.readAllChannelsVolume import readAllChannelsVolume
+from ndr.format.smartspim.readImsNotes import readImsNotes
 from ndr.format.smartspim.readStitcherXml import readStitcherXml
 from ndr.format.smartspim.readTileInfo import readTileInfo
 from ndr.format.smartspim.readTileVolume import readTileVolume
@@ -22,6 +23,7 @@ __all__ = [
     "readAcquisitionMetadata",
     "readAllChannelsInfo",
     "readAllChannelsVolume",
+    "readImsNotes",
     "readStitcherXml",
     "readTileInfo",
     "readTileVolume",

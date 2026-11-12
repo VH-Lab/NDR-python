@@ -20,9 +20,17 @@ filter-channel number, NOT the acquisition order. It is taken from the
 ``<channel>_MIP_stitched`` folder, whose files carry the same ``_ch<k>``
 suffix; when that folder is absent (e.g. a partial restore), ``k`` is
 the rank of the channel's filter-channel number among all channels
-(Ch1 -> ch0, Ch2 -> ch1, ...). A single channel whose folder has no
-``_Ch<n>`` (``Ex_<laser>_Em_<filter>``; see :func:`listChannels`) takes
-whichever one ``_ch<k>`` the slices carry.
+(Ch1 -> ch0, Ch2 -> ch1, ...). Between the two, ``IMS_Notes.txt`` ("The
+folder <channel>_stitched is represented as Ch<k>", written when SmartSPIM
+converts All_Channels to Imaris; :func:`readImsNotes`) is used when it names
+the channel; SmartSPIM 6.0 writes no ``_ch`` suffix in ``_MIP_stitched``. A
+channel folder without ``_Ch<n>`` (``Ex_<laser>_Em_<filter>``) gets its
+filter-channel number from metadata.json (see :func:`listChannels`); a single
+one takes whichever one ``_ch<k>`` the slices carry. When such folders are
+mapped by filter-channel rank, that rank must match the order the channels
+first appear in metadata.json's tiles, or :class:`ValueError` is raised
+(MATLAB ``ndr:format:smartspim:readAllChannelsInfo:ChannelOrderDisagrees``):
+which order the stitcher follows for them is not yet known.
 """
 
 from __future__ import annotations
@@ -37,6 +45,7 @@ from pydantic import validate_call
 
 from ndr.format.smartspim.listChannels import listChannels
 from ndr.format.smartspim.readAcquisitionMetadata import readAcquisitionMetadata
+from ndr.format.smartspim.readImsNotes import readImsNotes
 
 __all__ = ["readAllChannelsInfo"]
 
@@ -87,16 +96,63 @@ def _index_slices(folder: Path) -> list[tuple[int, int, str]]:
     return out
 
 
-def _channel_index(root: Path, channel_name: str, acq_channels: list[dict[str, Any]]) -> int:
+def _check_rank_matches_metadata_order(rootDir: str, acq_channels: list[dict[str, Any]]) -> None:
+    """Refuse when filter-channel order and metadata.json order disagree.
+
+    Channel folders without ``_Ch<n>`` (SmartSPIM 6.0) and no direct record
+    of which ``_Ch<k>`` is whose: the filter-channel rank decides, as for
+    numbered folders. Until an acquisition shows which of the two the
+    stitcher follows there, refuse when that rank and the order the channels
+    first appear in metadata.json's tiles disagree.
+    """
+    try:
+        tiles = list(readAcquisitionMetadata(rootDir)["tiles"])
+    except (OSError, ValueError):
+        tiles = []
+    first_seen = []
+    for c in acq_channels:
+        j = next(
+            (
+                i
+                for i, t in enumerate(tiles)
+                if t["laser"] == c["wavelength"] and t["filter"] == c["filterName"]
+            ),
+            math.inf,
+        )
+        first_seen.append(j)
+    by_filter = sorted(range(len(acq_channels)), key=lambda i: acq_channels[i]["filterChannel"])
+    by_metadata = sorted(range(len(acq_channels)), key=lambda i: first_seen[i])
+    if math.inf in first_seen or by_filter != by_metadata:
+        raise ValueError(
+            f'In {rootDir} the channel folders have no "_Ch<n>" and nothing records which '
+            'All_Channels "_ch<k>" is which channel, and the channels\' filter-channel order '
+            f"({', '.join(acq_channels[i]['name'] for i in by_filter)}) differs from the order "
+            f"they appear in metadata.json ({', '.join(acq_channels[i]['name'] for i in by_metadata)}), "
+            "so it is not known which order the stitcher used."
+        )
+
+
+def _channel_index(
+    root: Path,
+    channel_name: str,
+    acq_channels: list[dict[str, Any]],
+    notes: list[dict[str, Any]],
+) -> tuple[int, bool]:
+    """The channel's _ch<k>, and whether it came from the filter-channel rank."""
     # Preferred: the single _ch<k> suffix used in <channel>_MIP_stitched.
     mip_dir = root / f"{channel_name}_MIP_stitched"
     if mip_dir.is_dir():
         ks = {k for k, _, _ in _index_slices(mip_dir)}
         if len(ks) == 1:
-            return ks.pop()
+            return ks.pop(), False
+    # Next: SmartSPIM's own statement in IMS_Notes.txt ("The folder
+    # <channel>_stitched is represented as Ch<k>").
+    for n in notes:
+        if n["channelName"] == channel_name:
+            return int(n["chIndex"]), False
     # Fallback: rank of the filter-channel number (stable on ties).
     ranked = sorted(acq_channels, key=lambda c: c["filterChannel"])
-    return [c["name"] for c in ranked].index(channel_name)
+    return [c["name"] for c in ranked].index(channel_name), True
 
 
 @validate_call
@@ -143,12 +199,21 @@ def readAllChannelsInfo(rootDir: str, *, ReadHeader: bool = True) -> dict[str, A
     acq_channels = listChannels(rootDir)
     names = [c["name"] for c in acq_channels]
     ks = {kk for kk, _, _ in index}
-    if len(acq_channels) == 1 and math.isnan(acq_channels[0]["filterChannel"]) and len(ks) == 1:
-        # A single channel folder without "_Ch<n>" (listChannels refuses
-        # several): its slices are the only _ch<k> there is.
+    if (
+        len(acq_channels) == 1
+        and not re.search(r"_Ch\d+$", acq_channels[0]["name"])
+        and len(ks) == 1
+    ):
+        # A single channel folder without "_Ch<n>": its slices are the only
+        # _ch<k> there is, whatever number metadata.json gives it.
         ch_indices = [next(iter(ks))]
     else:
-        ch_indices = [_channel_index(root, n, acq_channels) for n in names]
+        notes = readImsNotes(rootDir)
+        found = [_channel_index(root, n, acq_channels, notes) for n in names]
+        ch_indices = [k for k, _ in found]
+        unnumbered = any(not re.search(r"_Ch\d+$", n) for n in names)
+        if len(names) > 1 and unnumbered and any(by_rank for _, by_rank in found):
+            _check_rank_matches_metadata_order(rootDir, acq_channels)
     if len(set(ch_indices)) != len(ch_indices):
         raise ValueError(f"Two channels map to the same All_Channels _ch<k> index in {rootDir}.")
 
